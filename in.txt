@@ -1,0 +1,11 @@
+sub A(){
+	int x;
+to:
+	//renbitiankeng
+	x*=a+b-c*d/e%f&g||h!=!3.2;
+	if(sha_li_zi == (huo_zi+-sheng_dai))
+		while(sha_li_zi<3.1415926*(10^13)){
+			sha_li_zi+=ren_bi;
+			continue;
+		}
+}

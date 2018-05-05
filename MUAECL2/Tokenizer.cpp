@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Tokenizer.h"
 
+using namespace std;
 
 Tokenizer::Tokenizer(istream& ReadStream) :ReadStream(ReadStream), lineNo(1) {
 	ReadStream.get(nextChar);
@@ -8,9 +9,9 @@ Tokenizer::Tokenizer(istream& ReadStream) :ReadStream(ReadStream), lineNo(1) {
 
 Tokenizer::~Tokenizer() {}
 
-Tokenizer& Tokenizer::operator>> (Token* token) {
-	token = getToken();
-	return (*this);
+Tokenizer& operator>> (Tokenizer& t, Token*& token) {
+	token = t.getToken();
+	return t;
 }
 
 Token* Tokenizer::getToken(){
@@ -76,6 +77,7 @@ Token* Tokenizer::getToken(){
 			}
 			//除号
 			if (nextChar == '/') {
+				op += nextChar;
 				ReadStream.get(nextChar);
 				//忽略从"//"开始到"\n"为止的文本
 				if (nextChar == '/') {
@@ -95,12 +97,19 @@ Token* Tokenizer::getToken(){
 					if (nextChar != EOF) ReadStream.get(nextChar);
 					continue;
 				}
+				if (nextChar == '=') {
+					op += nextChar;
+					ReadStream.get(nextChar);
+					return new Token_Assignment(Op::ToAssignmentOperator(op));
+				}
+				return new Token_Operator(Op::ToOperator(op));
 			}
 			//减号与负号，或任何既是前缀一元运算符也是二元运算符的运算符
 			if (nextChar == '-' && willBeNegative) {
+				op += nextChar;
 				ReadStream.get(nextChar);
-				willBeNegative = true;//似乎没用，提示一下没变
-				return new Token_Operator(Op::ToOperator("(" + string(nextChar, 1) + ")"));
+				willBeNegative = true;//似乎没用，提示一下没变，允许--A取多次负号
+				return new Token_Operator(Op::ToOperator("(" + op + ")"));
 			}
 			//+-*/%^
 			willBeNegative = true;
@@ -108,6 +117,7 @@ Token* Tokenizer::getToken(){
 			ReadStream.get(nextChar);
 			if (nextChar == '=') {
 				op += nextChar;
+				ReadStream.get(nextChar);
 				return new Token_Assignment(Op::ToAssignmentOperator(op));
 			}
 			return new Token_Operator(Op::ToOperator(op));
