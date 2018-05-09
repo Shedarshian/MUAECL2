@@ -10,7 +10,7 @@ const map<Keyword, string> Op::KeywordToString = { { Int, "int" },{ Float,"float
 const map<string, Keyword> Op::StringToKeyword = swap_map(KeywordToString);
 
 const map<Op::Keyword, Token::Type> Token::KeywordToType = { { Op::Int, Token_KeywordType },{ Op::Float,Token_KeywordType },{ Op::Point,Token_KeywordType },{ Op::If,Token_KeywordIf },{ Op::Else,Token_KeywordElse },{ Op::Elsif,Token_KeywordElsif },{ Op::For,Token_KeywordFor },{ Op::While,Token_KeywordWhile },{ Op::Break,Token_KeywordBreak },{ Op::Continue,Token_KeywordContinue } ,{ Op::Goto,Token_KeywordGoto },{ Op::Sub,Token_KeywordSub } };
-const map<char, Token::Type> Token::ControlChar = { { ';', Token_Semicolon },{ ':', Token_Colon },{ '(', Token_Bra },{ ')', Token_Ket },{ '{', Token_BigBra },{ '}', Token_BigKet } };
+const map<char, Token::Type> Token::ControlChar = { { ';', Token_Semicolon },{ ':', Token_Colon },{ '(', Token_Bra },{ ')', Token_Ket },{ '{', Token_BigBra },{ '}', Token_BigKet }, { ',', Token_Comma } };
 const map<Token::Type, char> Token::ControlToChar = Op::swap_map(ControlChar);
 
 ostream& operator<< (ostream& stream, Token& token) {

@@ -42,10 +42,9 @@ public:
 	~Tokenizer();
 	friend Tokenizer& operator>> (Tokenizer& t, Token*& token);		//使用operator>>输出到Token指针里，返回是否成功
 	Token* getToken();
-	int debug_lineNo() { return lineNo; }	//debug本程序使用，发布时删
+	int debug_lineNo() { return lineNo; }
 private:
 	char nextChar;
-	//bool noOperator;					//读取一个运算符后不能无空白紧接另一个非负号运算符 用不着
 	//在此步分析减号与负号，左括号 左大括号 右大括号 冒号 分号 运算符 赋值后的"-"为负号，此外为减号
 	bool willBeNegative;
 	int lineNo;

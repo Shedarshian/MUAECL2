@@ -1,0 +1,4 @@
+Tokenizer: 1.add comma
+2.read "and" "or" as operator
+3.sin cos?
+4.Token need to save line number

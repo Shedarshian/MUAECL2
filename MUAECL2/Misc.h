@@ -43,23 +43,25 @@ using Keyword = Op::Keyword;
 
 class Token {
 public:
-	Token() {};
+	Token(int lineNo) :lineNo(lineNo) {};
 	~Token() {};
-	enum Type { Token_Int, Token_Float, Token_String, Token_Identifier, Token_Operator, Token_Assignment, Token_Semicolon, Token_Colon, Token_Bra, Token_Ket, Token_BigBra, Token_BigKet, Token_End, Token_KeywordType, Token_KeywordIf, Token_KeywordElse, Token_KeywordElsif, Token_KeywordFor, Token_KeywordWhile, Token_KeywordBreak, Token_KeywordContinue, Token_KeywordGoto, Token_KeywordSub };
+	enum Type { Token_Int, Token_Float, Token_String, Token_Identifier, Token_Operator, Token_Equal, Token_Assignment, Token_Semicolon, Token_Colon, Token_Bra, Token_Ket, Token_BigBra, Token_BigKet, Token_Comma, Token_End, Token_KeywordType, Token_KeywordIf, Token_KeywordElse, Token_KeywordElsif, Token_KeywordFor, Token_KeywordWhile, Token_KeywordBreak, Token_KeywordContinue, Token_KeywordGoto, Token_KeywordSub };
 	static const map<Op::Keyword, Type> KeywordToType;
 	static const map<char, Type> ControlChar;
 	static const map<Type, char> ControlToChar;
 	//类型
 	virtual Type type() = 0;
 	//debug输出
-	virtual string debug_out() = 0;
+	virtual string debug_out() { return to_string(lineNo); };
 	friend ostream& operator<< (ostream& stream, Token& token);
+private:
+	const int lineNo;
 };
 
 //整型常量
 class Token_Int :public Token {
 public:
-	Token_Int(int val) :val(val) {};
+	Token_Int(int lineNo, int val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Int; };
 	string debug_out() override { return to_string(val); };
 private:
@@ -69,7 +71,7 @@ private:
 //浮点型常量
 class Token_Float :public Token {
 public:
-	Token_Float(float val) :val(val) {};
+	Token_Float(int lineNo, float val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Float; };
 	string debug_out() override { return to_string(val); };
 private:
@@ -79,7 +81,7 @@ private:
 //字符串常量
 class Token_String :public Token {
 public:
-	Token_String(string val) :val(val) {};
+	Token_String(int lineNo, string val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_String; };
 	string debug_out() override { return "\"" + val + "\""; };
 private:
@@ -89,7 +91,7 @@ private:
 //标识符，包括变量函数线程以及ins
 class Token_Identifier :public Token {
 public:
-	Token_Identifier(string val) :val(val) {};
+	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Identifier; };
 	string debug_out() override { return val; };
 private:
@@ -99,7 +101,7 @@ private:
 //关键字
 class Token_Keyword :public Token {
 public:
-	Token_Keyword(Op::Keyword keyword) :val(keyword) {};
+	Token_Keyword(int lineNo, Op::Keyword keyword) :Token(lineNo), val(keyword) {};
 	Type type() override { return KeywordToType.find(val)->second; };
 	string debug_out() override { return Op::ToString(val); };
 private:
@@ -109,7 +111,7 @@ private:
 //运算符
 class Token_Operator :public Token {
 public:
-	Token_Operator(Operator val) :val(val) {};
+	Token_Operator(int lineNo, Operator val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Operator; };
 	string debug_out() override { return Op::ToString(val); };
 private:
@@ -119,18 +121,18 @@ private:
 //赋值运算符
 class Token_Assignment :public Token {
 public:
-	Token_Assignment(Assignment val) :val(val) {};
-	Type type() override { return Type::Token_Assignment; };
+	Token_Assignment(int lineNo, Assignment val) :Token(lineNo), val(val) {};
+	Type type() override { return val == Assignment::Equal ? Type::Token_Equal : Type::Token_Assignment; };
 	string debug_out() override { return Op::ToString(val); };
 private:
 	Assignment val;
 };
 
-//分号冒号大小括号
+//逗号分号冒号大小括号
 class Token_ControlChar :public Token {
 public:
-	Token_ControlChar(char c) :t(Token::ControlChar.find(c)->second) {};
-	Token_ControlChar(Token::Type t) :t(t) {};
+	Token_ControlChar(int lineNo, char c) :Token(lineNo), t(Token::ControlChar.find(c)->second) {};
+	Token_ControlChar(int lineNo, Token::Type t) :Token(lineNo), t(t) {};
 	Type type() override { return t; };
 	string debug_out() override { return string(1, Token::ControlToChar.find(t)->second); };
 private:
@@ -140,6 +142,7 @@ private:
 //文档结束
 class Token_End :public Token {
 public:
+	Token_End(int lineNo) :Token(lineNo) {};
 	Type type() override { return Type::Token_End; };
 	string debug_out() override { return ""; };
 };

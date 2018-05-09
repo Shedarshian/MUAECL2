@@ -24,7 +24,7 @@ Token* Tokenizer::getToken(){
 		}
 		//若文档结束，则返回结束token
 		if (nextChar == EOF)
-			return new Token_End();
+			return new Token_End(lineNo);
 		//若在运算符char集中
 		if (Op::OperatorChar.find(nextChar) != Op::OperatorChar.end()) {
 			//是运算符
@@ -35,17 +35,17 @@ Token* Tokenizer::getToken(){
 				ReadStream.get(nextChar);
 				if (nextChar == '=') {
 					ReadStream.get(nextChar);
-					return new Token_Operator(Op::Operator::EqualTo);
+					return new Token_Operator(lineNo, Op::Operator::EqualTo);
 				}
 				else
-					return new Token_Assignment(Op::AssignmentOperator::Equal);
+					return new Token_Assignment(lineNo, Op::AssignmentOperator::Equal);
 			}
 			//没有组合的运算符，如点，或者将来有的一些运算符
 			if (nextChar == '.') {
 				willBeNegative = true;
 				op += nextChar;
 				ReadStream.get(nextChar);
-				return new Token_Operator(Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::ToOperator(op));
 			}
 			//&和|，因为有&&=和||=所以麻烦一些
 			if (nextChar == '&' || nextChar == '|') {
@@ -60,9 +60,9 @@ Token* Tokenizer::getToken(){
 				if (nextChar == '=') {
 					op += nextChar;
 					ReadStream.get(nextChar);
-					return new Token_Assignment(Op::ToAssignmentOperator(op));
+					return new Token_Assignment(lineNo, Op::ToAssignmentOperator(op));
 				}
-				return new Token_Operator(Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::ToOperator(op));
 			}
 			//<>!，由于!= <= >=不是赋值运算符所以分开处理
 			if (nextChar == '!' || nextChar == '<' || nextChar == '>') {
@@ -73,7 +73,7 @@ Token* Tokenizer::getToken(){
 					op += nextChar;
 					ReadStream.get(nextChar);
 				}
-				return new Token_Operator(Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::ToOperator(op));
 			}
 			//除号
 			if (nextChar == '/') {
@@ -100,16 +100,16 @@ Token* Tokenizer::getToken(){
 				if (nextChar == '=') {
 					op += nextChar;
 					ReadStream.get(nextChar);
-					return new Token_Assignment(Op::ToAssignmentOperator(op));
+					return new Token_Assignment(lineNo, Op::ToAssignmentOperator(op));
 				}
-				return new Token_Operator(Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::ToOperator(op));
 			}
 			//减号与负号，或任何既是前缀一元运算符也是二元运算符的运算符
 			if (nextChar == '-' && willBeNegative) {
 				op += nextChar;
 				ReadStream.get(nextChar);
 				willBeNegative = true;//似乎没用，提示一下没变，允许--A取多次负号
-				return new Token_Operator(Op::ToOperator("(" + op + ")"));
+				return new Token_Operator(lineNo, Op::ToOperator("(" + op + ")"));
 			}
 			//+-*/%^
 			willBeNegative = true;
@@ -118,9 +118,9 @@ Token* Tokenizer::getToken(){
 			if (nextChar == '=') {
 				op += nextChar;
 				ReadStream.get(nextChar);
-				return new Token_Assignment(Op::ToAssignmentOperator(op));
+				return new Token_Assignment(lineNo, Op::ToAssignmentOperator(op));
 			}
-			return new Token_Operator(Op::ToOperator(op));
+			return new Token_Operator(lineNo, Op::ToOperator(op));
 		}
 		//字符串
 		if (nextChar == '"') {
@@ -136,14 +136,14 @@ Token* Tokenizer::getToken(){
 				ReadStream.get(nextChar);
 			}
 			ReadStream.get(nextChar);
-			return new Token_String(s);
+			return new Token_String(lineNo, s);
 		}
 		//分号，冒号，括号
 		if (Token::ControlChar.find(nextChar) != Token::ControlChar.end()) {
 			char c = nextChar;
 			ReadStream.get(nextChar);
 			willBeNegative = (c != ')');
-			return new Token_ControlChar(c);
+			return new Token_ControlChar(lineNo, c);
 		}
 		//标识符
 		if (nextChar >= 'a' && nextChar <= 'z' || nextChar >= 'A' && nextChar <= 'Z' || nextChar == '_') {
@@ -153,7 +153,7 @@ Token* Tokenizer::getToken(){
 				s += nextChar;
 				ReadStream.get(nextChar);
 			}
-			return new Token_Identifier(s);
+			return new Token_Identifier(lineNo, s);
 		}
 		//数值
 		if (nextChar >= '0' && nextChar <= '9') {
@@ -171,7 +171,7 @@ Token* Tokenizer::getToken(){
 						else
 							break;
 					}
-					return new Token_Int(stoi(s, 0, 16));
+					return new Token_Int(lineNo, stoi(s, 0, 16));
 				}
 				else
 					s = '0';
@@ -197,9 +197,9 @@ Token* Tokenizer::getToken(){
 					break;
 			}
 			if (!dotted)
-				return new Token_Int(stoi(s));
+				return new Token_Int(lineNo, stoi(s));
 			else
-				return new Token_Float(stof(s));
+				return new Token_Float(lineNo, stof(s));
 		}
 		throw(ErrUnknownCharacter(lineNo));
 	}

@@ -1,0 +1,719 @@
+R0	E->stmts
+R1	stmts->stmt stmts
+R2	stmts->id : stmt stmts
+R3	stmts->\e
+R4	stmt->id as_op inif ;
+R5	stmt->type vdecl ;
+R6	stmt->id ( insv ) ;
+R7	stmt->if ( expr ) stmt ifa
+R8	stmt->while ( expr ) stmt
+R9	stmt->for ( exprf ) stmt
+R10	stmt->goto id ;
+R11	stmt->{ stmts }
+R32	vdecl->id
+R33	vdecl->id = inif
+R34	vdecl->id , vdecl
+R35	vdecl->id = inif , vdecl
+R36	insv->exprf
+R37	insv->exprf , insv
+R18	insv->\e
+R22	ifa->else stmt
+R23	ifa->\e
+R24	inif->ini
+R25	inif->ini : ini : ini : ini
+R26	ini->expr
+R27	ini->{ expr inia }
+R28	inia->, expr inia
+R29	inia->\e
+R30	exprf->expr
+R31	exprf->expr : expr : expr : expr
+
+FOLLOW
+E	$
+stmts	$ }
+stmt	$ id type if else while for goto { }
+inif	; ,
+ini	; , :
+inia	}
+exprf	) ,
+expr	) : , ; }
+vdecl	;
+vdecla	;
+insv	)
+insva	)
+ifa	$ id type if else while for goto { }
+
+
+FIRST
+E	
+stmts	\e id type if while for goto {
+stmt	id type if while for goto {
+inif	expr {
+ini	expr {
+inia	\e ,
+exprf	expr
+vdecl	id
+vdecla	\e ,
+insv	\e expr
+insva	\e ,
+ifa	\e else
+
+35 44 49 50 51 52 56 65 66 67 68 69
+
+
+I127:
+E->stmts\.
+I0:
+E->\.stmts
+stmts->\.stmt stmts
+stmts->\.id : stmt stmts
+stmts->\.
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I0---id----------->I1
+  ---type--------->I2
+  ---if(---------->I3
+  ---while(------->I4
+  ---for(--------->I5
+  ---goto id ;---->I6
+  ---stmt--------->I7
+  ---{------------>I77
+  ---stmts-------->I32767
+I1:
+stmts->id\.: stmt stmts
+stmt->id\.as_op inif ;
+stmt->id\.( insv ) ;
+I1---:------------>I8
+  ---as_op-------->I9
+  ---(------------>I10
+I2:
+stmt->type\.vdecl ;
+vdecl->\.id
+vdecl->\.id = inif
+vdecl->\.id , vdecl
+vdecl->\.id = inif , vdecl
+I2---id----------->I11
+  ---vdecl-------->I12
+I3:
+stmt->if (\.expr ) stmt ifa
+I3---expr--------->I13
+I4:
+stmt->while (\.expr ) stmt
+I4---expr--------->I14
+I5:
+stmt->for(\.exprf ) stmt
+exprf->\.expr
+exprf->\.expr : expr : expr : expr
+I5---expr--------->I15
+  ---exprf-------->I16
+I6:
+stmt->goto id ;\.
+I7:
+stmts->stmt\.stmts
+stmts->\.stmt stmts
+stmts->\.id : stmt stmts
+stmts->\.
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I7---id----------->I1
+  ---type--------->I2
+  ---if(---------->I3
+  ---while(------->I4
+  ---for(--------->I5
+  ---goto id ;---->I6
+  ---stmt--------->I7
+  ---{------------>I77
+  ---stmts-------->I17
+I77:
+stmt->{\.stmts }
+stmts->\.stmt stmts
+stmts->\.id : stmt stmts
+stmts->\.
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I77---id----------->I1
+   ---type--------->I2
+   ---if(---------->I3
+   ---while(------->I4
+   ---for(--------->I5
+   ---goto id ;---->I6
+   ---stmt--------->I7
+   ---{------------>I77
+   ---stmts-------->I78
+I8:
+stmts->id :\.stmt stmts
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I8---id----------->I59
+  ---type--------->I2
+  ---if(---------->I3
+  ---while(------->I4
+  ---for(--------->I5
+  ---goto id ;---->I6
+  ---stmt--------->I79
+  ---{------------>I77
+I79:
+stmts->id : stmt\.stmts
+stmts->\.stmt stmts
+stmts->\.id : stmts
+stmts->\.
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I79---id----------->I1
+   ---type--------->I2
+   ---if(---------->I3
+   ---while(------->I4
+   ---for(--------->I5
+   ---goto id ;---->I6
+   ---stmt--------->I7
+   ---{------------>I77
+   ---stmts-------->I18
+I9:
+stmt->id as_op\.inif ;
+inif->\.ini
+inif->\.ini : ini : ini : ini
+ini->\.expr
+ini->\.{ expr inia }
+I9---expr---------->I19
+  ---{------------->I20
+  ---ini----------->I21
+  ---inif---------->I34
+I10:
+stmt->id (\.insv ) ;
+insv->\.exprf insva
+insv->\.exprf , insv
+insv->\.
+exprf->\.expr
+exprf->\.expr : expr : expr : expr
+I10---expr---------->I15
+   ---exprf--------->I42
+   ---insv---------->I46
+I11:
+vdecl->id\.
+vdecl->id\. = inif
+vdecl->id\. , vdecl
+vdecl->id\. = inif , vdecl
+I11---,------------->I60
+   ---=------------->I53
+I60:
+vdecl->id ,\.vdecl
+vdecl->\.id
+vdecl->\.id = inif
+vdecl->\.id , vdecl
+vdecl->\.id = inif , vdecl
+I60---id------------>I11
+   ---vdecl--------->I48
+I48:
+vdecl->id , vdecl\.
+I12:
+stmt->type vdecl\.;
+I12---;------------->I57
+I13:
+stmt->if ( expr\.) stmt ifa
+I13---)------------->I58
+I14:
+stmt->while ( expr\.) stmt
+I14---)------------->I73
+I15:
+exprf->expr\.
+exprf->expr\.: expr : expr : expr
+I15---:------------->I36
+I16:
+stmt->for( exprf\.) stmt
+I16---)------------->I75
+I17:
+stmts->stmt stmts\.
+I18:
+stmts->id : stmt stmts\.
+I19:
+ini->expr\.
+I20:
+ini->{\.expr inia }
+I20---expr---------->I22
+I21:
+inif->ini\.
+inif->ini\.: ini : ini : ini
+I21---:------------->I28
+I22:
+ini->{ expr\.inia }
+inia->\., expr inia
+inia->\.
+I22---,-------------->I23
+   ---inia----------->I26
+I23:
+inia->,\.expr inia
+I23---expr----------->I24
+I24:
+inia->, expr\.inia
+inia->\., expr inia
+inia->\.
+I24---,-------------->I23
+   ---inia----------->I25
+I25:
+inia->, expr inia\.
+I26:
+ini->{ expr inia\.}
+I26---}-------------->I27
+I27:
+ini->{ expr inia }\.
+I28:
+inif->ini :\.ini : ini : ini
+ini->\.expr
+ini->\.{ expr inia }
+I28---expr----------->I19
+   ---{-------------->I20
+   ---ini------------>I29
+I29:
+inif->ini : ini\.: ini : ini
+I29---:-------------->I30
+I30:
+inif->ini : ini :\.ini : ini
+ini->\.expr
+ini->\.{ expr inia }
+I30---expr----------->I19
+   ---{-------------->I20
+   ---ini------------>I31
+I31:
+inif->ini : ini : ini\.: ini
+I31---:-------------->I32
+I32:
+inif->ini : ini : ini :\.ini
+ini->\.expr
+ini->\.{ expr inia }
+I32---expr----------->I19
+   ---{-------------->I20
+   ---ini------------>I33
+I33:
+inif->ini : ini : ini : ini\.
+I34:
+stmt->id as_op inif\.
+I36:
+exprf->expr :\.expr : expr : expr
+I36---expr----------->I37
+I37:
+exprf->expr : expr\.: expr : expr
+I37---:-------------->I38
+I38:
+exprf->expr : expr :\.expr : expr
+I38---expr----------->I39
+I39:
+exprf->expr : expr : expr\.: expr
+I39---:-------------->I40
+I40:
+exprf->expr : expr : expr :\.expr
+I40---expr----------->I41
+I41:
+exprf->expr : expr : expr : expr\.
+I42:
+insv->exprf\.
+insv->exprf\., insv
+I42---,-------------->I43
+I43:
+insv->exprf ,\.insv
+insv->\.exprf insva
+insv->\.exprf , insv
+insv->\.
+exprf->\.expr
+exprf->\.expr : expr : expr : expr
+I43---expr----------->I15
+   ---exprf---------->I42
+   ---insv----------->I45
+I45:
+insv->exprf , insv\.
+I46:
+stmt->id ( insv\.) ;
+I46---) ;------------>I47(61)
+I47:
+stmt->id ( insv ) ;\.
+I53:
+vdecl->id =\.inif
+vdecl->id =\.inif , vdecl
+inif->\.ini
+inif->\.ini : ini : ini : ini
+ini->\.expr
+ini->\.{ expr inia }
+I53---expr-------->I19
+   ---{----------->I20
+   ---ini--------->I21
+   ---inif-------->I80
+I80:
+vdecl->id = inif\.
+vdecl->id = inif\., vdecl
+I80---,----------->I54
+I54:
+vdecl->id = inif ,\.vdecl
+vdecl->\.id
+vdecl->\.id = inif
+vdecl->\.id , vdecl
+vdecl->\.id = inif , vdecl
+I54---id-------->I11
+   ---vdecl----->I55
+I55:
+vdecl->id = inif , vdecl\.
+I57:
+stmt->type vdecl ;\.
+I58:
+stmt->if ( expr )\.stmt ifa
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I58---id----------->I59
+   ---type--------->I2
+   ---if(---------->I3
+   ---while(------->I4
+   ---for(--------->I5
+   ---goto id ;---->I6
+   ---{------------>I77
+   ---stmt--------->I64
+I59:
+stmt->id\.as_op inif ;
+stmt->id\. ( insv ) ;
+I59---as_op------->I9
+   ---(----------->I10
+I64:
+stmt->if ( expr ) stmt\.ifa
+ifa->\.else stmt
+ifa->\.
+I64---ifa-------->I72
+   ---else------->I70
+I70:
+ifa->else\.stmt
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) l1 ifa
+stmt->\.while ( expr ) l1
+stmt->\.for ( exprf ) l1
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I70---id----------->I59
+   ---type--------->I2
+   ---if(---------->I3
+   ---while(------->I4
+   ---for(--------->I5
+   ---goto id ;---->I6
+   ---{------------>I77
+   ---stmt--------->I71
+I71:
+ifa->else stmt\.
+I72:
+stmt->if ( expr ) stmt ifa\.
+I73:
+stmt->while ( expr )\.stmt
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I73---id----------->I59
+   ---type--------->I2
+   ---if(---------->I3
+   ---while(------->I4
+   ---for(--------->I5
+   ---goto id ;---->I6
+   ---{------------>I77
+   ---stmt--------->I74
+I74:
+stmt->while ( expr ) stmt\.
+I75:
+stmt->for ( exprf )\.stmt
+stmt->\.id as_op inif ;
+stmt->\.type vdecl ;
+stmt->\.id ( insv ) ;
+stmt->\.if ( expr ) stmt ifa
+stmt->\.while ( expr ) stmt
+stmt->\.for ( exprf ) stmt
+stmt->\.goto id ;
+stmt->\.{ stmts }
+I75---id----------->I59
+   ---type--------->I2
+   ---if(---------->I3
+   ---while(------->I4
+   ---for(--------->I5
+   ---goto id ;---->I6
+   ---{------------>I77
+   ---stmt--------->I76
+I76:
+stmt->for ( exprf ) stmt\.
+I78:
+stmt->{ stmts\.}
+I78---}------------>I81
+I81:
+stmt->{ stmts }\.
+
+
+
+
+
+action
+   id  :   ;   ,   (   )   {   }   $   =   exp aop typ if( els wh( fr( gt.
+-1                             %acc% acc
+0  s1                      s77 r3  r3              s2  s3      s4  s5  s6
+1      s8          s10                 %s9%      s9
+2  s11
+3                                          s13
+4                                          s14
+5                                          s15
+6  r10                     r10 r10 r10             r10 r10 r10 r10 r10 r10
+7  s1                      s77 r3  r3              s2  s3      s4  s5  s6
+8  s59                     s77                     s2  s3      s4  s5  s6
+9                          s20             s19
+10                     r18                 s15
+11         r32 s60                     s53
+12         s57
+13                     s58
+14                     s73
+15     s36     r30     r30
+16                     s75
+17                             r1  r1
+18                             r2  r2
+19     r26 r26 r26
+20                                         s22
+21     s28 r24 r24
+22             s23             r29
+23                                         s24
+24             s23             r29
+25                             r28
+26                             s27
+27     r27 r27 r27
+28                         s20             s19
+29     s30
+30                         s20             s19
+31     s32
+32                         s20             s19
+33         r25 r25
+34 r4                      r4  r4  r4              r4  r4  r4  r4  r4  r4
+36                                         s37
+37     s38
+38                                         s39
+39     s40
+40                                         s41
+41             r31     r31
+42             s43     r36
+43                     r18                 s15
+45                     r37
+46                     s61
+47 r6                      r6  r6  r6              r6  r6  r6  r6  r6  r6
+48         r34
+53                         s20             s19
+54 s11
+   id  :   ;   ,   (   )   {   }   $   =   exp aop typ if( els wh( fr( gt.
+55         r35
+57 r5                      r5  r5  r5              r5  r5  r5  r5  r5  r5
+58 s59                     s77                     s2  s3      s4  s5  s6
+59                 s10                 %s9%      s9
+60 s11
+61         s47
+62 s48
+63 s48
+64 r23                     r23 r23 r23             r23 r23 s70 r23 r23 r23
+70 s59                     s77                     s2  s3      s4  s5  s6
+71 r22                     r22 r22 r22             r22 r22 r22 r22 r22 r22
+72 r7                      r7  r7  r7              r7  r7  r7  r7  r7  r7
+73 s59                     s77                     s2  s3      s4  s5  s6
+74 r8                      r8  r8  r8              r8  r8  r8  r8  r8  r8
+75 s59                     s77                     s2  s3      s4  s5  s6
+76 r9                      r9  r9  r9              r9  r9  r9  r9  r9  r9
+77 s59                     s77                     s2  s3      s4  s5  s6
+78                             s81
+79 s1                      s77                     s2  s3      s4  s5  s6
+80         r33 s54
+81 r11                     r11 r11 r11             r11 r11 r11 r11 r11 r11
+
+
+goto
+   stmt  stmts vdecl insv  ifa   ini   inif  inia  exprf
+127
+0  g7    g127
+1
+2              g12
+3
+4
+5                                                  g16
+6
+7  g7    g17
+8  g79
+9                                g21   g34
+10                   g46                           g42
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22                                           g26
+23
+24                                           g25
+25
+26
+27
+28                               g29
+29
+30                               g31
+31
+32                               g33
+33
+34
+36
+37
+38
+39
+40
+41
+42
+43                   g45                           g42
+45
+46
+47
+48
+53                               g21   g80
+54             g55
+55
+   stmt  stmts vdecl insv  ifa   ini   inif  inia  exprf
+57
+58 g64
+59
+60             g48
+61
+62
+63
+64                         g72
+70 g71
+71
+72
+73 g74
+74
+75 g76
+76
+77 g7    g78
+78
+79 g7    g18
+80
+81
+
+
+action
+   id  :   ;   ,   (   )   {   }   $   =   exp aop typ if( els wh( fr( gt.
+127                            %acc% acc
+0  s1                      s77 r3  r3              s2  s3      s4  s5  s6
+7  s1                      s77 r3  r3              s2  s3      s4  s5  s6
+79 s1                      s77 r3  r3              s2  s3      s4  s5  s6
+8  s59                     s77                     s2  s3      s4  s5  s6
+58 s59                     s77                     s2  s3      s4  s5  s6
+70 s59                     s77                     s2  s3      s4  s5  s6
+73 s59                     s77                     s2  s3      s4  s5  s6
+75 s59                     s77                     s2  s3      s4  s5  s6
+77 s59                     s77                     s2  s3      s4  s5  s6
+6  r10                     r10 r10 r10             r10 r10 r10 r10 r10 r10
+34 r4                      r4  r4  r4              r4  r4  r4  r4  r4  r4
+47 r6                      r6  r6  r6              r6  r6  r6  r6  r6  r6
+57 r5                      r5  r5  r5              r5  r5  r5  r5  r5  r5
+64 r23                     r23 r23 r23             r23 r23 s70 r23 r23 r23
+71 r22                     r22 r22 r22             r22 r22 r22 r22 r22 r22
+72 r7                      r7  r7  r7              r7  r7  r7  r7  r7  r7
+74 r8                      r8  r8  r8              r8  r8  r8  r8  r8  r8
+76 r9                      r9  r9  r9              r9  r9  r9  r9  r9  r9
+81 r11                     r11 r11 r11             r11 r11 r11 r11 r11 r11
+1      s8          s10                 %s9%      s9
+59                 s10                 %s9%      s9
+2  s11
+54 s11
+60 s11
+3                                          s13
+4                                          s14
+5                                          s15
+9                          s20             s19
+28                         s20             s19
+30                         s20             s19
+32                         s20             s19
+53                         s20             s19
+10                     r18                 s15
+11         r32 s60                     s53
+12         s57
+13                     s58
+14                     s73
+15     s36     r30     r30
+16                     s75
+17                             r1  r1
+18                             r2  r2
+19     r26 r26 r26
+20                                         s22
+21     s28 r24 r24
+22             s23             r29
+24             s23             r29
+23                                         s24
+25                             r28
+26                             s27
+27     r27 r27 r27
+   id  :   ;   ,   (   )   {   }   $   =   exp aop typ if( els wh( fr( gt.
+29     s30
+31     s32
+33         r25 r25
+36                                         s37
+37     s38
+38                                         s39
+39     s40
+40                                         s41
+41             r31     r31
+42             s43     r36
+43                     r18                 s15
+45                     r37
+46                     s61
+48         r34
+55         r35
+61         s47
+62 s48
+63 s48
+78                             s81
+80         r33 s54
+
+
+
+
+
+
+
+// vim:ft=temp cole=2 cocu+=nic ts=8 cuc cul
