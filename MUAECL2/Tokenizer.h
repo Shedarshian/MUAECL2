@@ -40,7 +40,7 @@ class Tokenizer {
 public:
 	Tokenizer(istream &ReadStream);		//从输入流中读取文本
 	~Tokenizer();
-	friend Tokenizer& operator>> (Tokenizer& t, Token*& token);		//使用operator>>输出到Token指针里，返回是否成功
+	friend Tokenizer& operator>> (Tokenizer& t, Token*& token);		//使用operator>>输出到Token指针里
 	Token* getToken();
 	int debug_lineNo() { return lineNo; }
 private:

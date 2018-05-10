@@ -17,7 +17,7 @@ public:
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum Operator { Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Dot, And, Or, Sin, Cos, Sqrt };//sin cos tan...
+	enum Operator { Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Dot, And, Or, Sin, Cos, Sqrt, Bra, Ket, End };//braket and end use for expression
 	enum AssignmentOperator { Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual };
 	enum Keyword { Int, Float, Point, If, Else, Elsif, For, While, Break, Continue, Goto, Sub };
 	static const unordered_set<char> OperatorChar;
@@ -37,6 +37,11 @@ public:
 	static AssignmentOperator ToAssignmentOperator(string s) { return StringToAssignmentOperator.find(s)->second; }
 	static string ToString(Keyword wd) { return KeywordToString.find(wd)->second; }
 	static Keyword ToKeyword(string wd) { return StringToKeyword.find(wd)->second; }
+	friend bool operator<(Operator opL, Operator opR);
+	friend bool operator==(Operator opL, Operator opR);
+	friend bool operator>(Operator opL, Operator opR);
+	friend bool operator<=(Operator opL, Operator opR);
+	friend bool operator>=(Operator opL, Operator opR);
 };
 
 using Operator = Op::Operator;

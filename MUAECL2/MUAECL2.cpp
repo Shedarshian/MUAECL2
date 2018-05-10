@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
 	Tokenizer tokenizer(in);
 	Token* t = nullptr;
 	do {
+		if (t != nullptr)
+			delete t;
 		tokenizer >> t;
 		cout << t->debug_out() << " " << tokenizer.debug_lineNo() << endl;
 	} while (t->type() != Token::Token_End);

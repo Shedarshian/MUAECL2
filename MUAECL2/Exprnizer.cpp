@@ -2,7 +2,6 @@
 #include "Exprnizer.h"
 
 
-Exprnizer::Exprnizer() {}
-
+Exprnizer::Exprnizer(Tokenizer& t) :t(t) {}
 
 Exprnizer::~Exprnizer() {}

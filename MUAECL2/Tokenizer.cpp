@@ -154,11 +154,13 @@ Token* Tokenizer::getToken(){
 				ReadStream.get(nextChar);
 			}
 			//如果是keyword
-			auto 
+			auto it = Op::StringToKeyword.find(s);
+			if (it != Op::StringToKeyword.end())
+				return new Token_Keyword(lineNo, it->second);
 			//如果是and or sin cos sqrt
-			auto it = Op::StringToOperator.find(s);
-			if (it != Op::StringToOperator.end())
-				return new Token_Operator(lineNo, it->second);
+			auto it2 = Op::StringToOperator.find(s);
+			if (it2 != Op::StringToOperator.end())
+				return new Token_Operator(lineNo, it2->second);
 			return new Token_Identifier(lineNo, s);
 		}
 		//数值
@@ -171,9 +173,8 @@ Token* Tokenizer::getToken(){
 					//0x开头数字
 					while (1) {
 						ReadStream.get(nextChar);
-						if (nextChar >= '0' && nextChar <= '9' || nextChar >= 'A' && nextChar <= 'F' || nextChar >= 'a' && nextChar <= 'f') {
+						if (nextChar >= '0' && nextChar <= '9' || nextChar >= 'A' && nextChar <= 'F' || nextChar >= 'a' && nextChar <= 'f')
 							s += nextChar;
-						}
 						else
 							break;
 					}
