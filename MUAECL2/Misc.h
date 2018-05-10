@@ -17,7 +17,7 @@ public:
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum Operator { Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Dot, And, Or };//sin cos tan...
+	enum Operator { Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Dot, And, Or, Sin, Cos, Sqrt };//sin cos tan...
 	enum AssignmentOperator { Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual };
 	enum Keyword { Int, Float, Point, If, Else, Elsif, For, While, Break, Continue, Goto, Sub };
 	static const unordered_set<char> OperatorChar;
@@ -28,6 +28,8 @@ public:
 	static const map<string, AssignmentOperator> StringToAssignmentOperator;
 	static const map<Keyword, string> KeywordToString;
 	static const map<string, Keyword> StringToKeyword;
+	static const map<Operator, int> Op_f;
+	static const map<Operator, int> Op_g;
 
 	static string ToString(Operator op) { return OperatorToString.find(op)->second; }
 	static Operator ToOperator(string s) { return StringToOperator.find(s)->second; }

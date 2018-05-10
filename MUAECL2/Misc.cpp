@@ -2,7 +2,7 @@
 #include "Misc.h"
 
 const unordered_set<char> Op::OperatorChar = { '+','-','*','/','%','&','|','!','^','=','>','<','.' };
-const map<Operator, string> Op::OperatorToString = { { Plus, "+" },{ Minus, "-" },{ Times, "*" },{ Divides, "/" },{ Mod, "%" },{ EqualTo, "==" },{ NotEqual, "!=" },{ Less, "<" },{ LessEqual, "<=" },{ Greater, ">" },{ GreaterEqual, ">=" },{ Not, "!" },{ LogicalOr, "||" },{ LogicalAnd, "&&" },{ BitOr, "|" },{ BitAnd, "&" },{ BitXor, "^" },{ Negative, "(-)" },{ Dot, "." },{ And, "and" },{ Or, "or" } };
+const map<Operator, string> Op::OperatorToString = { { Plus, "+" },{ Minus, "-" },{ Times, "*" },{ Divides, "/" },{ Mod, "%" },{ EqualTo, "==" },{ NotEqual, "!=" },{ Less, "<" },{ LessEqual, "<=" },{ Greater, ">" },{ GreaterEqual, ">=" },{ Not, "!" },{ LogicalOr, "||" },{ LogicalAnd, "&&" },{ BitOr, "|" },{ BitAnd, "&" },{ BitXor, "^" },{ Negative, "(-)" },{ Dot, "." },{ And, "and" },{ Or, "or" },{ Sin, "sin" },{ Cos, "cos" },{ Sqrt, "sqrt" } };
 const map<string, Operator> Op::StringToOperator = swap_map(OperatorToString);
 const map<Assignment, string> Op::AssignmentOperatorToString = { { Equal,"=" },{ PlusEqual,"+=" },{ MinusEqual,"-=" },{ TimesEqual,"*=" },{ DividesEqual,"/=" },{ ModEqual,"%=" },{ LogicalOrEqual,"||=" },{ LogicalAndEqual,"&&=" },{ BitOrEqual,"|=" },{ BitAndEqual,"&=" },{ BitXorEqual,"^=" } };
 const map<string, Assignment> Op::StringToAssignmentOperator = swap_map(AssignmentOperatorToString);

@@ -153,6 +153,12 @@ Token* Tokenizer::getToken(){
 				s += nextChar;
 				ReadStream.get(nextChar);
 			}
+			//如果是keyword
+			auto 
+			//如果是and or sin cos sqrt
+			auto it = Op::StringToOperator.find(s);
+			if (it != Op::StringToOperator.end())
+				return new Token_Operator(lineNo, it->second);
 			return new Token_Identifier(lineNo, s);
 		}
 		//数值

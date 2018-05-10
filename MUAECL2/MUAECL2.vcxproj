@@ -145,6 +145,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Exprnizer.h" />
     <ClInclude Include="Misc.h">
       <FileType>CppHeader</FileType>
     </ClInclude>
@@ -154,6 +155,7 @@
     <ClInclude Include="Tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Exprnizer.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="MUAECL2.cpp" />
     <ClCompile Include="Parser.cpp" />
