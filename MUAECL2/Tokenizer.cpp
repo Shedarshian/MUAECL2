@@ -10,8 +10,18 @@ Tokenizer::Tokenizer(istream& ReadStream) :ReadStream(ReadStream), lineNo(1) {
 Tokenizer::~Tokenizer() {}
 
 Tokenizer& operator>> (Tokenizer& t, Token*& token) {
-	token = t.getToken();
+	token = t.popToken();
 	return t;
+}
+
+Token* Tokenizer::popToken() {
+	Token* old = bufferToken;
+	bufferToken = getToken();
+	return old;
+}
+
+Token* Tokenizer::peekToken() {
+	return bufferToken;
 }
 
 Token* Tokenizer::getToken(){
