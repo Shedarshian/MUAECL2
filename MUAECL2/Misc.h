@@ -58,6 +58,11 @@ public:
 	static const map<Type, char> ControlToChar;
 	//类型
 	virtual Type type() = 0;
+	//检验
+	virtual bool isIdNum() { return false; };
+	virtual bool isExprFollow() { return false; };
+	//取数
+	virtual Operator getOperator() { throw(ErrDesignApp("no operator found in getOperator()")); };
 	//debug输出
 	virtual string debug_out() { return to_string(lineNo); };
 	friend ostream& operator<< (ostream& stream, Token& token);
@@ -70,6 +75,7 @@ class Token_Int :public Token {
 public:
 	Token_Int(int lineNo, int val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Int; };
+	bool isIdNum() override { return true; };
 	string debug_out() override { return to_string(val); };
 private:
 	int val;
@@ -80,6 +86,7 @@ class Token_Float :public Token {
 public:
 	Token_Float(int lineNo, float val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Float; };
+	bool isIdNum() override { return true; };
 	string debug_out() override { return to_string(val); };
 private:
 	float val;
@@ -100,6 +107,7 @@ class Token_Identifier :public Token {
 public:
 	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {};
 	Type type() override { return Type::Token_Identifier; };
+	bool isIdNum() override { return true; };
 	string debug_out() override { return val; };
 private:
 	string val;
@@ -119,6 +127,7 @@ private:
 class Token_Operator :public Token {
 public:
 	Token_Operator(int lineNo, Operator val) :Token(lineNo), val(val) {};
+	Operator getOperator() override { return val; };
 	Type type() override { return Type::Token_Operator; };
 	string debug_out() override { return Op::ToString(val); };
 private:
@@ -141,6 +150,8 @@ public:
 	Token_ControlChar(int lineNo, char c) :Token(lineNo), t(Token::ControlChar.find(c)->second) {};
 	Token_ControlChar(int lineNo, Token::Type t) :Token(lineNo), t(t) {};
 	Type type() override { return t; };
+	//FOLLOW(expr)=; , : ) }
+	bool isExprFollow() override { return t == Token::Type::Token_Colon || t == Token::Type::Token_BigKet || t == Token::Type::Token_Comma || t == Token::Type::Token_Ket || t == Token::Type::Token_Semicolon; };
 	string debug_out() override { return string(1, Token::ControlToChar.find(t)->second); };
 private:
 	Token::Type t;
@@ -159,6 +170,13 @@ class ExceptionWithLineNo :public exception {
 public:
 	ExceptionWithLineNo(int lineNo) :lineNo(lineNo) {};
 	const int lineNo;
+};
+
+class ErrDesignApp :public exception {
+public:
+	ErrDesignApp(const char* what) :s(what) {};
+	virtual const char* what() const throw() { return s; }
+	const char* s;
 };
 
 class ErrOpenedString :public ExceptionWithLineNo {
@@ -183,4 +201,14 @@ class ErrUnknownOperator :public ExceptionWithLineNo {
 public:
 	ErrUnknownOperator(int lineNo) :ExceptionWithLineNo(lineNo) {};
 	virtual const char* what() const throw() { return "Unknown operator."; }
+};
+
+class ErrIllegalToken :public ExceptionWithLineNo {
+public:
+	ErrIllegalToken(int lineNo, Token* token) :ExceptionWithLineNo(lineNo) {
+		s = "illegal token "s + token->debug_out() + "."s;
+	};
+	virtual const char* what() const throw() { return s.c_str(); }
+private:
+	string s;
 };

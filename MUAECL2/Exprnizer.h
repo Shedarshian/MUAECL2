@@ -33,20 +33,15 @@
 using namespace std;
 
 struct ExprTree {
-	ExprTree() :left(nullptr), right(nullptr) {};
-	ExprTree(ExprTree* one_subtree) :left(nullptr), right(one_subtree) {};
-	ExprTree(ExprTree* left_subtree, ExprTree* right_subtree) :left(left_subtree), right(right_subtree) {};
+	ExprTree(Token* token) :left(nullptr), right(nullptr), token(token) {};
+	ExprTree(Token* token, ExprTree* one_subtree) :left(nullptr), right(one_subtree), token(token) {};
+	ExprTree(Token* token, ExprTree* left_subtree, ExprTree* right_subtree) :left(left_subtree), right(right_subtree), token(token) {};
+	~ExprTree();
 
 	ExprTree* left;
 	ExprTree* right;
 	Token* token;
 };
 
-class Exprnizer {
-public:
-	Exprnizer(Tokenizer& t);
-	~Exprnizer();
-private:
-	Tokenizer& t;
-};
+ExprTree* Exprnizer(Tokenizer& t);
 
