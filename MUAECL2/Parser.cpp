@@ -91,7 +91,7 @@ map<int, map<Parser::Terminator, int>*> makeAction() {
 }
 
 const map<int, map<Parser::Terminator, int>*> Action = makeAction();
-const map<Parser::NonTerminator, map<int, int>> Goto = { 
+const map<Parser::NonTerminator, map<int, int>> Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 0, 7 },{ 7, 7 },{ 8, 79 },{ 58, 64 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
 	{ NonTerm::stmts, map<int, int>({ { 0, 127 },{ 7, 17 },{ 77, 78 },{ 79, 18 } }) },
 	{ NonTerm::vdecl, map<int, int>({ { 2, 12 },{ 54, 55 },{ 60, 48 } }) },
@@ -100,7 +100,8 @@ const map<Parser::NonTerminator, map<int, int>> Goto = {
 	{ NonTerm::ini, map<int, int>({ { 9, 21 },{ 28, 29 },{ 30, 31 },{ 32, 33 },{ 53, 21 } }) },
 	{ NonTerm::inif, map<int, int>({ { 9, 34 },{ 53, 80 } }) },
 	{ NonTerm::inia, map<int, int>({ { 22, 26 },{ 24, 25 } }) },
-	{ NonTerm::exprf, map<int, int>({ { 5, 16 },{ 10, 42 },{ 43, 42 } }) } };
+	{ NonTerm::exprf, map<int, int>({ { 5, 16 },{ 10, 42 },{ 43, 42 } }) }
+};
 
 Parser::Parser(Tokenizer &tokenizer) :tokenizer(tokenizer) {}
 

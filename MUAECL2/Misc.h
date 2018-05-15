@@ -30,6 +30,7 @@ public:
 	static const map<string, Keyword> StringToKeyword;
 	static const map<Operator, int> Op_f;
 	static const map<Operator, int> Op_g;
+	static const map<Operator, int> id;
 
 	static string ToString(Operator op) { return OperatorToString.find(op)->second; }
 	static Operator ToOperator(string s) { return StringToOperator.find(s)->second; }
@@ -37,6 +38,8 @@ public:
 	static AssignmentOperator ToAssignmentOperator(string s) { return StringToAssignmentOperator.find(s)->second; }
 	static string ToString(Keyword wd) { return KeywordToString.find(wd)->second; }
 	static Keyword ToKeyword(string wd) { return StringToKeyword.find(wd)->second; }
+	//二元运算符返回2，一元运算符返回1，括号和栈底返回0
+	static int Id(Operator op) { return id.find(op)->second; }
 	friend bool operator<(Operator opL, Operator opR);
 	friend bool operator==(Operator opL, Operator opR);
 	friend bool operator>(Operator opL, Operator opR);
@@ -174,9 +177,9 @@ public:
 
 class ErrDesignApp :public exception {
 public:
-	ErrDesignApp(const char* what) :s(what) {};
-	virtual const char* what() const throw() { return s; }
-	const char* s;
+	ErrDesignApp(const char* what) :s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {};
+	virtual const char* what() const throw() { return s.c_str(); }
+	const string s;
 };
 
 class ErrOpenedString :public ExceptionWithLineNo {
