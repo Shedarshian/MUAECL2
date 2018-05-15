@@ -63,7 +63,7 @@ ExprTree* Exprnizer(Tokenizer& t) {
 			else
 				opstack.push(t.popToken());
 		}
-		else if (t.peekToken()->isExprFollow() && opstack.top()->getOperator() == Token::End) {
+		else if (t.peekToken()->isExprFollow() && opstack.top()->getOperator() == Operator::End) {
 			//若是$接FOLLOW(expr)，则退出
 			testempty = true;
 			break;

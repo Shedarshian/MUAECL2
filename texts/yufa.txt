@@ -1,16 +1,24 @@
 TODO: 58 73
-R0	E->stmts
+R0	E->subs
+R12	subs->\e
+R13	subs->sub id ( subv ) { stmts } subs
+R14	subv->\e
+R15	subv->type id subva
+R16	subva->\e
+R17	subva->, type id subva
 R1	stmts->stmt stmts
 R2	stmts->id : stmt stmts
 R3	stmts->\e
 R4	stmt->expr ;
 R5	stmt->type vdecl ;
 R7	stmt->if ( expr ) stmt
-R15	stmt->if ( expr ) stmt else stmt
+R18	stmt->if ( expr ) stmt else stmt
 R8	stmt->while ( expr ) stmt
 R9	stmt->for ( exprf ) stmt
 R10	stmt->goto id ;
 R11	stmt->{ stmts }
+R19	stmt->break ;
+R20	stmt->continue ;
 R32	vdecl->id
 R33	vdecl->id = inif
 R34	vdecl->id , vdecl
@@ -58,8 +66,11 @@ R67	expr->expr as_op exprf
 
 FOLLOW
 E	$
+subs	$
+subv	)
+subva	)
 stmts	$ }
-stmt	$ id num type if else while for goto { } op1 (
+stmt	$ id num type if else while for goto break continue { } op1 (
 inif	; ,
 ini	; , :
 inia	}
@@ -71,6 +82,8 @@ insv	)
 
 FIRST
 E	
+subs	
+subv	
 stmts	\e id type if while for goto {
 stmt	id type if while for goto {
 inif	expr {
@@ -80,13 +93,19 @@ exprf	expr
 vdecl	id
 insv	\e expr
 
-9 34 35 49 50 51 52 56 59 61 62 63 65 66 67 68 69 72 96-100 124-129
+52 72 98-100 124-129
 
 
 I255:
-E->stmts\.
+E->subs\.
 I0:
-E->\.stmts
+E->\.subs
+subs->\.
+subs->\.sub id ( subv ) { stmts } subs
+I0---sub id (--->I61(I34 I35)
+  ---subs------->I255
+I9:
+subs->sub id ( subv ) {\.stmts } subs
 stmts->\.stmt stmts
 stmts->\.id : stmt stmts
 stmts->\.
@@ -97,6 +116,8 @@ stmt->\.if ( expr ) stmt else stmt
 stmt->\.while ( expr ) stmt
 stmt->\.for ( exprf ) stmt
 stmt->\.goto id ;
+stmt->\.break ;
+stmt->\.continue ;
 stmt->\.{ stmts }
 expr->\.id
 expr->\.num
@@ -127,13 +148,15 @@ expr->\.(*) expr
 expr->\.(&) expr
 expr->\.expr [ expr ]
 expr->\.expr as_op exprf
-I0---id----------->I1
+I9---id----------->I1
   ---num---------->I44
   ---type--------->I2
   ---if(---------->I3
   ---while(------->I4
   ---for(--------->I5
   ---goto id ;---->I6
+  ---break ;------>I96
+  ---continue ;--->I97
   ---{------------>I77
   ---(-)---------->I82
   ---!------------>I83
@@ -141,7 +164,7 @@ I0---id----------->I1
   ---(*)---------->I85
   ---(&)---------->I86
   ---stmt--------->I7
-  ---stmts-------->I255
+  ---stmts-------->I49
   ---expr--------->I87
 I1:
 stmts->id\.: stmt stmts
@@ -229,15 +252,15 @@ vdecl->id\.
 vdecl->id\. = inif
 vdecl->id\. , vdecl
 vdecl->id\. = inif , vdecl
-I11---,------------->I60
+I11---,------------->I59
    ---=------------->I53
-I60:
+I59:
 vdecl->id ,\.vdecl
 vdecl->\.id
 vdecl->\.id = inif
 vdecl->\.id , vdecl
 vdecl->\.id = inif , vdecl
-I60---id------------>I11
+I59---id------------>I11
    ---vdecl--------->I48
 I48:
 vdecl->id , vdecl\.
@@ -396,6 +419,17 @@ expr->id ( insv\.)
 I46---)------------>I47
 I47:
 expr->id ( insv )\.
+I49:
+subs->sub id ( subv ) { stmts\.} subs
+I49---}------------>I50
+I50:
+subs->sub id ( subv ) { stmts }\.subs
+subs->\.
+subs->\.sub id ( subv ) { stmts } subs
+I50---sub id (-->I61(I34 I35)
+   ---subs------>I51
+I51:
+subs->sub id ( subv ) { stmts } subs\.
 I53:
 vdecl->id =\.inif
 vdecl->id =\.inif , vdecl
@@ -431,12 +465,46 @@ stmt->if ( expr )\.stmt else stmt
 \.stmt
 \.expr
 I58---same---I8
-   ---stmt--------->I64
+   ---stmt--------->I60
    ---expr--------->I87
-I64:
+I60:
 stmt->if ( expr ) stmt\.
 stmt->if ( expr ) stmt\.else stmt
-I64---else------->I70
+I60---else------->I70
+I61:
+subs->sub id (\.subv ) { stmts } subs
+subv->\.
+subv->\.type id subva
+I61---type------->I62
+   ---subv------->I69
+I62:
+subv->type\.id subva
+I62---id--------->I63
+I63:
+subv->type id\.subva
+subva->\.
+subva->, type id subva
+I63---,---------->I64
+   ---subva------>I67
+I64:
+subva->,\.type id subva
+I64---type------->I65
+I65:
+subva->, type\.id subva
+I65---id--------->I66
+I66:
+subva->, type id\.subva
+subva->\.
+subva->, type id subva
+I66---,---------->I64
+   ---subva------>I68
+I67:
+subv->type id subva\.
+I68:
+subva->, type id subva\.
+I69:
+subs->sub id ( subv\.) { stmts } subs
+I69---) {-------->I9(I56)
 I70:
 stmt->if ( expr ) stmt else\.stmt
 \.stmt
@@ -574,6 +642,10 @@ expr->id\.( insv )
 I94---(------------>I10
 I95:
 stmt->expr ;\.
+I96:
+stmt->break ;\.
+I97:
+stmt->continue ;\.
 I101:
 expr->expr ||\.expr
 \.expr

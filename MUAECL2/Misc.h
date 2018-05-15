@@ -10,62 +10,38 @@ using namespace std;
 class Op {
 public:
 	template<typename T1, typename T2>
-	static pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
+	constexpr static pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
 	template<typename T1, typename T2>
-	static map<T2, T1> swap_map(const map<T1, T2>& m) {
+	constexpr static map<T2, T1> swap_map(const map<T1, T2>& m) {
 		map<T2, T1> mo;
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum Operator { Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Dot, And, Or, Sin, Cos, Sqrt, Bra, Ket, End };//braket and end use for expression
-	enum AssignmentOperator { Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual };
-	enum Keyword { Int, Float, Point, If, Else, Elsif, For, While, Break, Continue, Goto, Sub };
+	enum Token { Identifier, Number, String, Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Deref, Address, Dot, And, Or, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Type, If, Else, Elsif, For, While, Break, Continue, Goto, Sub, Semicolon, Colon, Bra, Ket, MidBra, MidKet, BigBra, BigKet, Comma, End };
+	enum BuiltInType { Int, Float, Point };
 	static const unordered_set<char> OperatorChar;
 
-	static const map<Operator, string> OperatorToString;
-	static const map<string, Operator> StringToOperator;
-	static const map<AssignmentOperator, string> AssignmentOperatorToString;
-	static const map<string, AssignmentOperator> StringToAssignmentOperator;
-	static const map<Keyword, string> KeywordToString;
-	static const map<string, Keyword> StringToKeyword;
-	static const map<Operator, int> Op_f;
-	static const map<Operator, int> Op_g;
-	static const map<Operator, int> id;
+	static const map<Token, string> OperatorToString;
+	static const map<string, Token> StringToOperator;
+	static const map<BuiltInType, string> TypeToString;
+	static const map<string, BuiltInType> StringToType;
 
-	static string ToString(Operator op) { return OperatorToString.find(op)->second; }
-	static Operator ToOperator(string s) { return StringToOperator.find(s)->second; }
-	static string ToString(AssignmentOperator op) { return AssignmentOperatorToString.find(op)->second; }
-	static AssignmentOperator ToAssignmentOperator(string s) { return StringToAssignmentOperator.find(s)->second; }
-	static string ToString(Keyword wd) { return KeywordToString.find(wd)->second; }
-	static Keyword ToKeyword(string wd) { return StringToKeyword.find(wd)->second; }
-	//二元运算符返回2，一元运算符返回1，括号和栈底返回0
-	static int Id(Operator op) { return id.find(op)->second; }
-	friend bool operator<(Operator opL, Operator opR);
-	friend bool operator==(Operator opL, Operator opR);
-	friend bool operator>(Operator opL, Operator opR);
-	friend bool operator<=(Operator opL, Operator opR);
-	friend bool operator>=(Operator opL, Operator opR);
+	static string ToString(Token op) { return OperatorToString.find(op)->second; }
+	static Token ToOperator(string s) { return StringToOperator.find(s)->second; }
+	static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
+	static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
 };
-
-using Operator = Op::Operator;
-using Assignment = Op::AssignmentOperator;
-using Keyword = Op::Keyword;
 
 class Token {
 public:
 	Token(int lineNo) :lineNo(lineNo) {};
 	~Token() {};
-	enum Type { Token_Int, Token_Float, Token_String, Token_Identifier, Token_Operator, Token_Equal, Token_Assignment, Token_Semicolon, Token_Colon, Token_Bra, Token_Ket, Token_BigBra, Token_BigKet, Token_Comma, Token_End, Token_KeywordType, Token_KeywordIf, Token_KeywordElse, Token_KeywordElsif, Token_KeywordFor, Token_KeywordWhile, Token_KeywordBreak, Token_KeywordContinue, Token_KeywordGoto, Token_KeywordSub };
-	static const map<Op::Keyword, Type> KeywordToType;
-	static const map<char, Type> ControlChar;
-	static const map<Type, char> ControlToChar;
 	//类型
-	virtual Type type() = 0;
+	virtual Op::Token type() = 0;
 	//检验
 	virtual bool isIdNum() { return false; };
 	virtual bool isExprFollow() { return false; };
 	//取数
-	virtual Operator getOperator() { throw(ErrDesignApp("no operator found in getOperator()")); };
 	//debug输出
 	virtual string debug_out() { return to_string(lineNo); };
 	friend ostream& operator<< (ostream& stream, Token& token);
@@ -77,7 +53,7 @@ private:
 class Token_Int :public Token {
 public:
 	Token_Int(int lineNo, int val) :Token(lineNo), val(val) {};
-	Type type() override { return Type::Token_Int; };
+	Op::Token type() override { return Op::Token::Number; };
 	bool isIdNum() override { return true; };
 	string debug_out() override { return to_string(val); };
 private:
@@ -88,7 +64,7 @@ private:
 class Token_Float :public Token {
 public:
 	Token_Float(int lineNo, float val) :Token(lineNo), val(val) {};
-	Type type() override { return Type::Token_Float; };
+	Op::Token type() override { return Op::Token::Number; };
 	bool isIdNum() override { return true; };
 	string debug_out() override { return to_string(val); };
 private:
@@ -99,7 +75,7 @@ private:
 class Token_String :public Token {
 public:
 	Token_String(int lineNo, string val) :Token(lineNo), val(val) {};
-	Type type() override { return Type::Token_String; };
+	Op::Token type() override { return Op::Token::String; };
 	string debug_out() override { return "\"" + val + "\""; };
 private:
 	string val;
@@ -109,62 +85,38 @@ private:
 class Token_Identifier :public Token {
 public:
 	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {};
-	Type type() override { return Type::Token_Identifier; };
+	Op::Token type() override { return Op::Token::Identifier; };
 	bool isIdNum() override { return true; };
 	string debug_out() override { return val; };
 private:
 	string val;
 };
 
-//关键字
-class Token_Keyword :public Token {
-public:
-	Token_Keyword(int lineNo, Op::Keyword keyword) :Token(lineNo), val(keyword) {};
-	Type type() override { return KeywordToType.find(val)->second; };
-	string debug_out() override { return Op::ToString(val); };
-private:
-	Op::Keyword val;
-};
-
-//运算符
+//关键字,运算符,赋值运算符,逗号分号冒号大小括号
 class Token_Operator :public Token {
 public:
-	Token_Operator(int lineNo, Operator val) :Token(lineNo), val(val) {};
-	Operator getOperator() override { return val; };
-	Type type() override { return Type::Token_Operator; };
+	Token_Operator(int lineNo, Op::Token val) :Token(lineNo), val(val) {};
+	Op::Token type() override { return val; };
+	bool isExprFollow() override { return val == Op::Token::Colon || val == Op::Token::BigKet || val == Op::Token::Comma || val == Op::Token::Ket || val == Op::Token::Semicolon; };
 	string debug_out() override { return Op::ToString(val); };
 private:
-	Operator val;
+	Op::Token val;
 };
 
-//赋值运算符
-class Token_Assignment :public Token {
+//内建类型
+class Token_KeywordType :public Token_Operator {
 public:
-	Token_Assignment(int lineNo, Assignment val) :Token(lineNo), val(val) {};
-	Type type() override { return val == Assignment::Equal ? Type::Token_Equal : Type::Token_Assignment; };
+	Token_KeywordType(int lineNo, Op::BuiltInType type) :Token_Operator(lineNo, Op::Token::Type), val(type) {};
 	string debug_out() override { return Op::ToString(val); };
 private:
-	Assignment val;
-};
-
-//逗号分号冒号大小括号
-class Token_ControlChar :public Token {
-public:
-	Token_ControlChar(int lineNo, char c) :Token(lineNo), t(Token::ControlChar.find(c)->second) {};
-	Token_ControlChar(int lineNo, Token::Type t) :Token(lineNo), t(t) {};
-	Type type() override { return t; };
-	//FOLLOW(expr)=; , : ) }
-	bool isExprFollow() override { return t == Token::Type::Token_Colon || t == Token::Type::Token_BigKet || t == Token::Type::Token_Comma || t == Token::Type::Token_Ket || t == Token::Type::Token_Semicolon; };
-	string debug_out() override { return string(1, Token::ControlToChar.find(t)->second); };
-private:
-	Token::Type t;
+	Op::BuiltInType val;
 };
 
 //文档结束
 class Token_End :public Token {
 public:
 	Token_End(int lineNo) :Token(lineNo) {};
-	Type type() override { return Type::Token_End; };
+	Op::Token type() override { return Op::Token::End; };
 	string debug_out() override { return ""; };
 };
 
