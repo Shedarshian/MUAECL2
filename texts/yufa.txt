@@ -3,14 +3,14 @@ R0	E->subs
 R12	subs->\e
 R13	subs->sub id ( subv ) { stmts } subs
 R14	subv->\e
-R15	subv->type id subva
+R15	subv->types id subva
 R16	subva->\e
-R17	subva->, type id subva
+R17	subva->, types id subva
 R1	stmts->stmt stmts
 R2	stmts->id : stmt stmts
 R3	stmts->\e
 R4	stmt->expr ;
-R5	stmt->type vdecl ;
+R5	stmt->types vdecl ;
 R7	stmt->if ( expr ) stmt
 R18	stmt->if ( expr ) stmt else stmt
 R8	stmt->while ( expr ) stmt
@@ -19,6 +19,8 @@ R10	stmt->goto id ;
 R11	stmt->{ stmts }
 R19	stmt->break ;
 R20	stmt->continue ;
+R21	types->type
+R22	types->types (*)
 R32	vdecl->id
 R33	vdecl->id = inif
 R34	vdecl->id , vdecl
@@ -63,6 +65,7 @@ R64	expr->(*) expr
 R65	expr->(&) expr
 R66	expr->expr [ expr ]
 R67	expr->expr as_op exprf
+R68	expr->( types ) expr
 
 FOLLOW
 E	$
@@ -78,6 +81,7 @@ exprf	) , ;
 expr	) : , ; } op2 [ ] = as_op
 vdecl	;
 insv	)
+types	(*) id )
 
 
 FIRST
@@ -93,7 +97,7 @@ exprf	expr
 vdecl	id
 insv	\e expr
 
-52 72 98-100 124-129
+128 129 130
 
 
 I255:
@@ -110,7 +114,7 @@ stmts->\.stmt stmts
 stmts->\.id : stmt stmts
 stmts->\.
 stmt->\.expr ;
-stmt->\.type vdecl ;
+stmt->\.types vdecl ;
 stmt->\.if ( expr ) stmt
 stmt->\.if ( expr ) stmt else stmt
 stmt->\.while ( expr ) stmt
@@ -148,15 +152,17 @@ expr->\.(*) expr
 expr->\.(&) expr
 expr->\.expr [ expr ]
 expr->\.expr as_op exprf
+types->\.type
+types->\.types (*)
 I9---id----------->I1
   ---num---------->I44
-  ---type--------->I2
-  ---if(---------->I3
-  ---while(------->I4
-  ---for(--------->I5
-  ---goto id ;---->I6
-  ---break ;------>I96
-  ---continue ;--->I97
+  ---type--------->I151
+  ---if(---------->I3(I98)
+  ---while(------->I4(I99)
+  ---for(--------->I5(I100)
+  ---goto id ;---->I6(I124 I125)
+  ---break ;------>I96(I126)
+  ---continue ;--->I97(I127)
   ---{------------>I77
   ---(-)---------->I82
   ---!------------>I83
@@ -166,6 +172,7 @@ I9---id----------->I1
   ---stmt--------->I7
   ---stmts-------->I49
   ---expr--------->I87
+  ---types-------->I2
 I1:
 stmts->id\.: stmt stmts
 expr->id\.
@@ -173,13 +180,15 @@ expr->id\.( insv )
 I1---:------------>I8
   ---(------------>I10
 I2:
-stmt->type\.vdecl ;
+stmt->types\.vdecl ;
 vdecl->\.id
 vdecl->\.id = inif
 vdecl->\.id , vdecl
 vdecl->\.id = inif , vdecl
+types->types\.(*)
 I2---id----------->I11
   ---vdecl-------->I12
+  ---(*)---------->I72
 I3:
 stmt->if (\.expr ) stmt
 stmt->if (\.expr ) stmt else stmt
@@ -265,7 +274,7 @@ I59---id------------>I11
 I48:
 vdecl->id , vdecl\.
 I12:
-stmt->type vdecl\.;
+stmt->types vdecl\.;
 I12---;------------->I57
 I13:
 stmt->if ( expr\.) stmt
@@ -430,6 +439,8 @@ I50---sub id (-->I61(I34 I35)
    ---subs------>I51
 I51:
 subs->sub id ( subv ) { stmts } subs\.
+I52:
+types->type\.
 I53:
 vdecl->id =\.inif
 vdecl->id =\.inif , vdecl
@@ -458,7 +469,7 @@ I54---id-------->I11
 I55:
 vdecl->id = inif , vdecl\.
 I57:
-stmt->type vdecl ;\.
+stmt->types vdecl ;\.
 I58:
 stmt->if ( expr )\.stmt
 stmt->if ( expr )\.stmt else stmt
@@ -474,34 +485,44 @@ I60---else------->I70
 I61:
 subs->sub id (\.subv ) { stmts } subs
 subv->\.
-subv->\.type id subva
-I61---type------->I62
+subv->\.types id subva
+types->\.type
+types->\.types (*)
+I61---types------>I62
    ---subv------->I69
+   ---type------->I52
 I62:
-subv->type\.id subva
+subv->types\.id subva
+types->types\.(*)
 I62---id--------->I63
+   ---(*)-------->I72
 I63:
-subv->type id\.subva
+subv->types id\.subva
 subva->\.
-subva->, type id subva
+subva->, types id subva
 I63---,---------->I64
    ---subva------>I67
 I64:
-subva->,\.type id subva
-I64---type------->I65
+subva->,\.types id subva
+types->\.type
+types->\.types (*)
+I64---types------>I65
+   ---type------->I52
 I65:
-subva->, type\.id subva
+subva->, types\.id subva
+types->types\.(*)
 I65---id--------->I66
+   ---(*)-------->I72
 I66:
-subva->, type id\.subva
+subva->, types id\.subva
 subva->\.
-subva->, type id subva
+subva->, types id subva
 I66---,---------->I64
    ---subva------>I68
 I67:
-subv->type id subva\.
+subv->types id subva\.
 I68:
-subva->, type id subva\.
+subva->, types id subva\.
 I69:
 subs->sub id ( subv\.) { stmts } subs
 I69---) {-------->I9(I56)
@@ -514,6 +535,8 @@ I70---same---I8
    ---stmt--------->I71
 I71:
 stmt->if ( expr ) stmt else stmt\.
+I72:
+types->types (*)\.
 I73:
 stmt->while ( expr )\.stmt
 \.stmt
@@ -555,9 +578,14 @@ I83---same---I82
    ---expr--------->I89
 I84:
 expr->(\.expr )
+expr->(\.types ) expr
 \.expr
+types->\.type
+types->\.types (*)
 I84---same---I82
    ---expr--------->I92
+   ---type--------->I52
+   ---types-------->I151
 I85:
 expr->(*)\.expr
 \.expr
@@ -838,7 +866,60 @@ expr->expr [ expr\.]
 expr\.
 I150---op---I87
     ---]-------->I123
+I151:
+expr->( types\.) expr
+types->types\.(*)
+I151---)-------->I152
+    ---(*)------>I72
+I152:
+expr->( types )\.expr
+\.expr
+I152---same---I82
+    ---expr----->I153
+I153:
+expr->( types ) expr\.
+expr\.
+I153---op---I87
 
+
+
+
+Grammar error
+-1  :Unexpected TOKEN, expect sub declare
+-2  :Unexpected TOKEN, expect parameter list
+-3  :Missing type specifier
+-4  :Missing parameter name
+-5  :Unexpected TOKEN, unclosed braket
+-6  :Unexpected TOKEN, expect code block begin
+-7  :Missing label name
+-8  :Blank statement not allowed
+-10 :Unclosed big braket
+-11 :Unexpected TOKEN, probably missing identifier
+-12 :Nesting sub declare not allowed
+-13 :Floating else without if
+-14 :Missing Operator
+-16 :Please don't use keyword TOKEN
+-17 :Unexpected TOKEN, we don't know what you want to do
+-18 :Missing semicolon
+-19 :Redundant TOKEN
+-20 :Label at block's end not allowed
+-21 :Can't declare non-variable
+-22 :Unbalanced braket
+-24 :Missing comma
+-25 :Missing assignment sign
+-26 :Can't use TOKEN for variable initialize
+-27 :Can't declare array! (At least for this version of MUAECL)
+-28 :Can't use difficulty switch inside if or while
+-29 :Unexpected TOKEN, expect code block end
+-30 :Unexpected TOKEN in initializer list
+-31 :Unexpected TOKEN, expect initializer list end
+-32 :Difficulty switch need to have four expression
+-33 :Unexpected TOKEN, expect left braket
+-34 :Unexpected TOKEN, expect file end
+
+
+
+-255:Design error
 
 
 

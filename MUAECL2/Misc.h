@@ -17,7 +17,7 @@ public:
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum Token { Identifier, Number, String, Plus, Minus, Times, Divides, Mod, EqualTo, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, LogicalOr, LogicalAnd, BitOr, BitAnd, BitXor, Negative, Deref, Address, Dot, And, Or, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Type, If, Else, Elsif, For, While, Break, Continue, Goto, Sub, Semicolon, Colon, Bra, Ket, MidBra, MidKet, BigBra, BigKet, Comma, End };
+	enum Token { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	enum BuiltInType { Int, Float, Point };
 	static const unordered_set<char> OperatorChar;
 
@@ -75,7 +75,7 @@ private:
 class Token_String :public Token {
 public:
 	Token_String(int lineNo, string val) :Token(lineNo), val(val) {};
-	Op::Token type() override { return Op::Token::String; };
+	Op::Token type() override { return Op::Token::Number; };
 	string debug_out() override { return "\"" + val + "\""; };
 private:
 	string val;
