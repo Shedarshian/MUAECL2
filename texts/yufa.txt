@@ -1,4 +1,3 @@
-TODO: 58 73
 R0	E->subs
 R12	subs->\e
 R13	subs->sub id ( subv ) { stmts } subs

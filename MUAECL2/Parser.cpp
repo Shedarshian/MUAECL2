@@ -4,9 +4,9 @@
 
 using namespace std;
 using Term = Op::Token;
-using NonTerm = Parser::NonTerminator;
+using NonTerm = Op::NonTerm;
 
-const map<Parser::NonTerminator, map<int, int>> Goto = {
+const map<Op::NonTerm, map<int, int>> Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 7, 7 },{ 8, 79 },{ 9, 7 },{ 58, 60 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
 	{ NonTerm::stmts, map<int, int>({ { 7, 17 },{ 9, 49 },{ 77, 78 },{ 79, 18 } }) },
 	{ NonTerm::subs, map<int, int>({ { 0, 255 },{ 50, 51 } }) },
@@ -76,6 +76,6 @@ int Parser::action(int s, Op::Token t) {
 	return it->second;
 }
 
-int Parser::gotostat(int s, Parser::NonTerminator t) {
+int Parser::gotostat(int s, Op::NonTerm t) {
 	return Goto.find(t)->second.find(s)->second;
 }
