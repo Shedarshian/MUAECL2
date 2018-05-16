@@ -128,12 +128,13 @@ Token* Tokenizer::getToken(){
 		}
 		//标识符
 		if (nextChar >= 'a' && nextChar <= 'z' || nextChar >= 'A' && nextChar <= 'Z' || nextChar == '_') {
-			willBeNegative = false;
 			string s;
 			while (nextChar >= 'a' && nextChar <= 'z' || nextChar >= 'A' && nextChar <= 'Z' || nextChar == '_') {
 				s += nextChar;
 				ReadStream.get(nextChar);
 			}
+			//keyword后面为负号
+			willBeNegative = true;
 			//如果是build-in type
 			auto it = Op::StringToType.find(s);
 			if (it == Op::StringToType.end())
@@ -142,6 +143,7 @@ Token* Tokenizer::getToken(){
 			auto it2 = Op::StringToOperator.find(s);
 			if (it2 != Op::StringToOperator.end())
 				return new Token_Operator(lineNo, it2->second);
+			willBeNegative = false;
 			return new Token_Identifier(lineNo, s);
 		}
 		//数值
