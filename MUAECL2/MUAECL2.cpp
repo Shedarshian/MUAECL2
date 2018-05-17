@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "Tokenizer.h"
+#include "Parser.h"
 #include <fstream>
 #include <iostream>
 
@@ -19,7 +20,7 @@ int main(int argc, char* argv[])
 			delete t;
 		tokenizer >> t;
 		cout << t->debug_out() << " " << tokenizer.debug_lineNo() << endl;
-	} while (t->type() != Token::Token_End);
+	} while (t->type() != Op::Token::End);
 
     return 0;
 }

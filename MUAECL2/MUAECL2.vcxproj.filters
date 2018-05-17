@@ -36,6 +36,9 @@
     <ClInclude Include="Exprnizer.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="GrammarTree.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -56,5 +59,10 @@
     <ClCompile Include="Exprnizer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MUAECL2.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

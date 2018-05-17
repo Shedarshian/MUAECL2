@@ -46,6 +46,13 @@ Token* Tokenizer::getToken(){
 				ReadStream.get(nextChar);
 				return new Token_Operator(lineNo, Op::ToOperator(op));
 			}
+			//减号负号，解引用符乘号，取地址符按位与，或任何既是前缀一元运算符也是二元运算符的运算符
+			if ((nextChar == '-' || nextChar == '*' || nextChar == '&') && willBeNegative) {
+				op += nextChar;
+				ReadStream.get(nextChar);
+				willBeNegative = true;//似乎没用，提示一下没变，允许--A取多次负号
+				return new Token_Operator(lineNo, Op::ToOperator("(" + op + ")"));
+			}
 			//&和|，因为有&&=和||=所以麻烦一些
 			if (nextChar == '&' || nextChar == '|') {
 				willBeNegative = true;
@@ -91,13 +98,6 @@ Token* Tokenizer::getToken(){
 					return new Token_Operator(lineNo, Op::ToOperator(op));
 				}
 				return new Token_Operator(lineNo, Op::ToOperator(op));
-			}
-			//减号负号，解引用符乘号，取地址符按位与，或任何既是前缀一元运算符也是二元运算符的运算符
-			if ((nextChar == '-'|| nextChar == '*'|| nextChar == '&') && willBeNegative) {
-				op += nextChar;
-				ReadStream.get(nextChar);
-				willBeNegative = true;//似乎没用，提示一下没变，允许--A取多次负号
-				return new Token_Operator(lineNo, Op::ToOperator("(" + op + ")"));
 			}
 			//+-*/%^<>!=
 			willBeNegative = (nextChar != ')');

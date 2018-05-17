@@ -146,6 +146,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Exprnizer.h" />
+    <ClInclude Include="GrammarTree.h" />
     <ClInclude Include="Misc.h">
       <FileType>CppHeader</FileType>
     </ClInclude>
@@ -166,6 +167,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Tokenizer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MUAECL2.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

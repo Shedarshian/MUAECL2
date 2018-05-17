@@ -18,7 +18,7 @@ public:
 		return mo;
 	}
 	enum Token { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
-	enum BuiltInType { Int, Float, Point };
+	enum BuiltInType { type_error, Void, Int, Float, Point };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, subva, vdecl, insv, ini, inif, inia, exprf, expr, types };
 	static const unordered_set<char> OperatorChar;
@@ -37,7 +37,7 @@ public:
 class Token {
 public:
 	Token(int lineNo) :lineNo(lineNo) {};
-	~Token() {};
+	virtual ~Token() {};
 	//类型
 	virtual Op::Token type() = 0;
 	//检验
@@ -120,18 +120,6 @@ public:
 	Token_End(int lineNo) :Token(lineNo) {};
 	Op::Token type() override { return Op::Token::End; };
 	string debug_out() override { return ""; };
-};
-
-//语法树节点类型
-//语法树以终结符与非终结符为节点，以每个产生式为子类型
-class GrammarTree {
-public:
-	virtual Op::NonTerm getType() = 0;
-};
-
-class SubBlock : public GrammarTree {
-public:
-	Op::NonTerm getType() override { return Op::NonTerm::subs; };
 };
 
 //error-type
