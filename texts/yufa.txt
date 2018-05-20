@@ -1,70 +1,69 @@
-R0	E->subs
-R12	subs->\e
-R13	subs->sub id ( subv ) { stmts } subs
-R14	subv->\e
-R15	subv->types id subva
-R16	subva->\e
-R17	subva->, types id subva
-R1	stmts->stmt stmts
-R2	stmts->id : stmt stmts
-R3	stmts->\e
-R4	stmt->expr ;
-R5	stmt->types vdecl ;
-R7	stmt->if ( expr ) stmt
-R18	stmt->if ( expr ) stmt else stmt
-R8	stmt->while ( expr ) stmt
-R9	stmt->for ( exprf ) stmt
-R10	stmt->goto id ;
-R11	stmt->{ stmts }
-R19	stmt->break ;
-R20	stmt->continue ;
-R21	types->type
-R22	types->types (*)
-R32	vdecl->id
-R33	vdecl->id = inif
-R34	vdecl->id , vdecl
-R35	vdecl->id = inif , vdecl
-R36	insv->exprf
-R37	insv->exprf , insv
-R38	insv->\e
-R24	inif->ini
-R25	inif->ini : ini : ini : ini
-R26	ini->expr
-R27	ini->{ expr inia }
-R28	inia->, expr inia
-R29	inia->\e
-R30	exprf->expr
-R31	exprf->expr : expr : expr : expr
-R39	expr->id
-R40	expr->num
-R41	expr->expr || expr
-R42	expr->expr && expr
-R43	expr->expr or expr
-R44	expr->expr and expr
-R45	expr->expr | expr
-R46	expr->expr ^ expr
-R47	expr->expr & expr
-R48	expr->expr == expr
-R49	expr->expr != expr
-R50	expr->expr > expr
-R51	expr->expr >= expr
-R52	expr->expr < expr
-R53	expr->expr <= expr
-R54	expr->expr + expr
-R55	expr->expr - expr
-R56	expr->expr * expr
-R57	expr->expr / expr
-R58	expr->expr \% expr
-R59	expr->(-) expr
-R60	expr->! expr
-R61	expr->expr . expr
-R62	expr->( expr )
-R63	expr->id ( insv )
-R64	expr->(*) expr
-R65	expr->(&) expr
-R66	expr->expr [ expr ]
-R67	expr->expr as_op exprf
-R68	expr->( types ) expr
+R0		E->subs
+R12		subs->\e
+R13		subs->sub id ( subv ) { stmts } subs
+R14		subv->\e
+R15		subv->types id
+R16		subv->types id , subv
+R1		stmts->stmt stmts
+R2		stmts->id : stmt stmts
+R3		stmts->\e
+R4	id2	stmt->expr ;
+R5	id3	stmt->types vdecl ;
+R7	id5	stmt->if ( expr ) stmt
+R18	id4	stmt->if ( expr ) stmt else stmt
+R8	id6	stmt->while ( expr ) stmt
+R9	id7	stmt->for ( exprf ) stmt
+R10	id8	stmt->goto id ;
+R11	id9	stmt->{ stmts }
+R19	id10	stmt->break ;
+R20	id11	stmt->continue ;
+R21		types->type
+R22		types->types (*)
+R32		vdecl->id
+R33		vdecl->id = inif
+R34		vdecl->id , vdecl
+R35		vdecl->id = inif , vdecl
+R36	id19	insv->exprf
+R37		insv->exprf , insv
+R38	id19	insv->\e
+R24	id14c	inif->ini
+R25	id15	inif->ini : ini : ini : ini
+R26	id16c	ini->expr
+R27	id17c	ini->{ inia }
+R28		inia->expr , inia
+R29	id12	inia->expr
+R30	id20	exprf->expr
+R31	id21	exprf->expr : expr : expr : expr
+R39	id22	expr->id
+R40	id23	expr->num
+R41	id26	expr->expr || expr
+R42	id26	expr->expr && expr
+R43	id26	expr->expr or expr
+R44	id26	expr->expr and expr
+R45	id26	expr->expr | expr
+R46	id26	expr->expr ^ expr
+R47	id26	expr->expr & expr
+R48	id26	expr->expr == expr
+R49	id26	expr->expr != expr
+R50	id26	expr->expr > expr
+R51	id26	expr->expr >= expr
+R52	id26	expr->expr < expr
+R53	id26	expr->expr <= expr
+R54	id26	expr->expr + expr
+R55	id26	expr->expr - expr
+R56	id26	expr->expr * expr
+R57	id26	expr->expr / expr
+R58	id26	expr->expr \% expr
+R59	id25	expr->(-) expr
+R60	id25	expr->! expr
+R61	id26	expr->expr . expr
+R62	id_expr	expr->( expr )
+R63	id24	expr->id ( insv )
+R64	id25	expr->(*) expr
+R65	id25	expr->(&) expr
+R66	id27	expr->expr [ expr ]
+R67	id26	expr->expr as_op exprf
+R68	id28	expr->( types ) expr
 
 FOLLOW
 E	$
@@ -96,7 +95,7 @@ exprf	expr
 vdecl	id
 insv	\e expr
 
-128 129 130
+24 65 66 67 128 129 130
 
 
 I255:
@@ -304,39 +303,35 @@ ini->expr\.
 expr\.
 I19---op---I87
 I20:
-ini->{\.expr inia }
+ini->{\.inia }
+inia->\.expr , inia
+inia->\.expr
 \.expr
 I20---same---I82
    ---expr---------->I22
+   ---inia---------->
 I21:
 inif->ini\.
 inif->ini\.: ini : ini : ini
 I21---:------------->I28
 I22:
-ini->{ expr\.inia }
-inia->\., expr inia
-inia->\.
+inia->expr\., inia
+inia->expr\.
 expr\.
 I22---op---I87
    ---,-------------->I23
-   ---inia----------->I26
 I23:
-inia->,\.expr inia
+inia->expr ,\.inia
+inia->\.expr , inia
+inia->\.expr
 \.expr
 I23---same---I3
    ---expr----------->I24
-I24:
-inia->, expr\.inia
-inia->\., expr inia
-inia->\.
-expr\.
-I24---op---I87
-   ---,-------------->I23
    ---inia----------->I25
 I25:
-inia->, expr inia\.
+inia->expr , inia\.
 I26:
-ini->{ expr inia\.}
+ini->{ inia\.}
 I26---}-------------->I27
 I27:
 ini->{ expr inia }\.
@@ -484,44 +479,35 @@ I60---else------->I70
 I61:
 subs->sub id (\.subv ) { stmts } subs
 subv->\.
-subv->\.types id subva
+subv->\.types id
+subv->\.types id , subv
 types->\.type
 types->\.types (*)
 I61---types------>I62
    ---subv------->I69
    ---type------->I52
 I62:
-subv->types\.id subva
+subv->types\.id
+subv->types\.id , subv
 types->types\.(*)
 I62---id--------->I63
    ---(*)-------->I72
 I63:
-subv->types id\.subva
-subva->\.
-subva->, types id subva
+subv->types id\.
+subv->types id\., subv
 I63---,---------->I64
-   ---subva------>I67
 I64:
-subva->,\.types id subva
+subv->types id ,\.subv
+subv->\.
+subv->\.types id
+subv->\.types id , subv
 types->\.type
 types->\.types (*)
-I64---types------>I65
+I64---types------>I62
    ---type------->I52
-I65:
-subva->, types\.id subva
-types->types\.(*)
-I65---id--------->I66
-   ---(*)-------->I72
-I66:
-subva->, types id\.subva
-subva->\.
-subva->, types id subva
-I66---,---------->I64
-   ---subva------>I68
-I67:
-subv->types id subva\.
+   ---subv------->I68
 I68:
-subva->, types id subva\.
+subv->types id , subv\.
 I69:
 subs->sub id ( subv\.) { stmts } subs
 I69---) {-------->I9(I56)

@@ -51,7 +51,7 @@ const map<int, map<Op::Token, int>*> Parser::makeAction() {
 40,3,94,44,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,82,83,85,86,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-18,-18,-18,-18,-18,-18,-18,-18,-18,-11,-11,-11,84,-11,-11,-11,-10,
 41,,-14,-14,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,-14,-14,-14,-14,119,120,-22,121,121,121,121,121,121,121,121,121,121,121,-18,-18,-18,-18,-18,-18,-18,-18,-18,-32,1031,1031,-14,1031,-18,-18,-10,
 42,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,43,-5,1036,-5,-5,-10,
-43,10,94,44,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,82,83,85,86,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-5,-5,-5,-5,-5,-5,-5,-5,-5,-11,-5,-11,84,1038,-5,-5,-5,
+43,,94,44,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,82,83,85,86,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-5,-5,-5,-5,-5,-5,-5,-5,-5,-11,-5,-11,84,-11,-5,-5,-5,
 44,,-14,-14,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,-14,-14,-14,-14,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,1040,-18,-18,-18,-18,-18,-18,-18,-18,-18,1040,1040,1040,-14,1040,-18,1040,-10,
 45,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,1037,-5,-5,-5,
 46,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,47,-5,-5,-5,
@@ -71,12 +71,9 @@ const map<int, map<Op::Token, int>*> Parser::makeAction() {
 60,,1007,1007,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,1007,1007,1007,1007,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-12,1007,1007,70,1007,1007,1007,1007,1007,-7,-19,-17,1007,-12,1007,1007,-10,
 61,,-3,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,52,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,1014,-2,-2,-2,
 62,,63,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,72,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-4,-2,-4,-2,-2,-2,
-63,,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,64,-2,1016,-2,-2,-2,
+63,,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,64,-2,1015,-2,-2,-2,
 64,,-3,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,52,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
-65,,66,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,72,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-4,-2,-4,-2,-2,-2,
-66,63,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,64,-2,1016,-2,-2,-2,
-67,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,1015,-5,-5,-5,
-68,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,1017,-5,-5,-5,
+68,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,1016,-5,-5,-5,
 69,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,56,-5,-5,-5,
 70,8,94,44,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,82,83,85,86,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-12,52,98,-13,99,100,124,126,127,-19,-8,-11,84,-22,77,-20,-10,
 71,,1018,1018,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,1018,1018,1018,1018,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-12,1018,1018,1018,1018,1018,1018,1018,1018,-7,-19,-17,1018,-12,1018,1018,-10,
@@ -194,63 +191,31 @@ const map<Op::NonTerm, map<int, int>> Goto = {
 	{ NonTerm::stmts, map<int, int>({ { 7, 17 },{ 9, 49 },{ 77, 78 },{ 79, 18 } }) },
 	{ NonTerm::subs, map<int, int>({ { 0, 255 },{ 50, 51 } }) },
 	{ NonTerm::subv, map<int, int>({ { 61, 69 } }) },
-	{ NonTerm::subva, map<int, int>({ { 63, 67 },{ 66, 68 } }) },
 	{ NonTerm::vdecl, map<int, int>({ { 2, 12 },{ 54, 55 },{ 59, 48 } }) },
 	{ NonTerm::insv, map<int, int>({ { 10, 46 },{ 43, 45 } }) },
 	{ NonTerm::ini, map<int, int>({ { 28, 29 },{ 30, 31 },{ 32, 33 },{ 53, 21 } }) },
 	{ NonTerm::inif, map<int, int>({ { 53, 80 } }) },
-	{ NonTerm::inia, map<int, int>({ { 22, 26 },{ 24, 25 } }) },
+	{ NonTerm::inia, map<int, int>({ { 20, 26 },{ 23, 25 } }) },
 	{ NonTerm::exprf, map<int, int>({ { 5, 16 },{ 10, 42 },{ 43, 42 },{ 121, 122 } }) },
 	{ NonTerm::expr, map<int, int>({ { 3, 13 },{ 4, 14 },{ 5, 15 },{ 7, 87 },{ 8, 87 },{ 9, 87 },{ 10, 15 },{ 20, 22 },{ 23, 24 },{ 28, 19 },{ 30, 19 },{ 32, 19 },{ 36, 37 },{ 38, 39 },{ 40, 41 },{ 43, 15 },{ 53, 19 },{ 58, 87 },{ 70, 87 },{ 77, 87 },{ 82, 88 },{ 83, 89 },{ 84, 92 },{ 85, 90 },{ 86, 91 },{ 101, 131 },{ 102, 132 },{ 103, 133 },{ 104, 134 },{ 105, 135 },{ 106, 136 },{ 107, 137 },{ 108, 138 },{ 109, 139 },{ 110, 140 },{ 111, 141 },{ 112, 142 },{ 113, 143 },{ 114, 144 },{ 115, 145 },{ 116, 146 },{ 117, 147 },{ 118, 148 },{ 119, 149 },{ 120, 150 },{ 121, 15 } }) },
-	{ NonTerm::types, map<int, int>({ { 9, 2 },{ 61, 62 },{ 64, 65 },{ 84, 151 } }) }
+	{ NonTerm::types, map<int, int>({ { 9, 2 },{ 61, 62 },{ 64, 62 },{ 84, 151 } }) }
 };
 
-Parser::Parser(Tokenizer &tokenizer) :tokenizer(tokenizer) {}
-
-Parser::~Parser() {}
-
-/*void Parser::initialize(ifstream& f) {
-	string s;
-	//抛弃索引行
-	getline(f, s);
-	while (!f.eof()) {
-		getline(f, s, ',');
-		if (s == "NonTerm")
-			break;
-		int index = stoi(s);
-		getline(f, s, ',');
-		if (s != "") {
-			//如果指定ptr则直接链接，跳过这行的读取
-			ptr.insert(index);
-			Action[index] = Action[stoi(s)];
-			getline(f, s);
-		}
-		else {
-			//否则按顺序读取并塞入map中
-			auto m = new map<Op::Token, int>();
-			for (int i = 0; i <= Term::End; i++) {
-				getline(f, s, ',');
-				(*m)[(Term)i] = stoi(s);
-			}
-			Action[index] = m;
-			//抛弃剩下的占位
-			getline(f, s);
-		}
+template<typename _Ty, typename _Container>
+void popd(stack<_Ty, _Container> s, int n = 1) {
+	for (int i = 0; i < n; i++) {
+		delete s.top(); s.pop();
 	}
-	//goto表手动塞好了
-	//抛弃索引行
-	getline(f, s);
-	while (!f.eof()) {
-		getline(f, s, ',');
-		int index = stoi(s);
-		getline(f, s, ',');
-		for (int i = 0; i <= NonTerm::types; i++) {
-			getline(f, s, ',');
-			if (s != "")
-				Goto[(NonTerm)i][index] = stoi(s);
-		}
+}
+
+Parser::Parser(Tokenizer &tokenizer) :tokenizer(tokenizer), saveTree(nullptr) {}
+
+Parser::~Parser() {
+	while (!s.empty()) {
+		popd(s);
 	}
-}*/
+	delete saveTree;
+}
 
 void Parser::clear() {
 	for (auto i : Action)
@@ -281,19 +246,297 @@ GrammarTree* Parser::analyse() {
 			}
 			else {
 				//按产生式n-1000规约
-				//TODO 将n-1000 map到一个类函数对象上，作用返回一个GrammarTree*
-				//goto,push
+				auto t = mergeTree(n - 1000, s);
+				int state = s.top()->state();
+				s.push(t);
+				s.push(new tState(gotostat(state, t->type())));
 			}
 		}
-		return s.top();
+		saveTree = s.top();
+		return saveTree;
 	}
 	catch (...) {
 		//析构
 		while (!s.empty()) {
-			delete s.top();
-			s.pop();
+			popd(s);
 		}
 		throw;
+	}
+}
+
+void Parser::TypeCheck() {
+	try {
+
+	}
+	catch (...) {
+		//析构
+		while (!s.empty()) {
+			popd(s);
+		}
+		delete saveTree;
+		throw;
+	}
+}
+
+//依据产生式id号由stack构造tree
+GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
+	switch (id) {
+	case 12:
+	//subs->\e
+		return new tRoot();
+	case 13:
+	{ //subs->sub id ( subv ) { stmts } subs
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s, 3);
+		auto stmts = s.top(); s.pop();
+		popd(s, 5);
+		auto subv = s.top(); s.pop();
+		popd(s, 3);
+		auto str = s.top()->getToken()->getId(); popd(s);
+		popd(s, 2);
+		static_cast<tRoot*>(t)->addSub(new tSub(str, static_cast<tSubVars*>(subv), stmts));
+		//构造函数中提取所有label与var，存到sub里
+		return t; }
+	case 14:
+	//subv->\e
+		return new tSubVars();
+	case 15:
+	{ //subv->types id
+		popd(s);
+		auto str = s.top()->getToken()->getId(); popd(s);
+		popd(s);
+		auto typ = s.top()->getType()->clone(); popd(s);
+		return new tSubVars(mVar(typ, str)); }
+	case 16:
+	{ //subv->types id, subv
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s, 3);
+		auto str = s.top()->getToken()->getId(); popd(s);
+		popd(s);
+		auto typ = s.top()->getType()->clone(); popd(s);
+		static_cast<tSubVars*>(t)->emplaceVar(typ, str);
+		return t; }
+	case 1:
+	{ //stmts->stmt stmts
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s);
+		t->addTree(s.top()); s.pop();
+		return t; }
+	case 2:
+	{ //stmts->id : stmt stmts
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s);
+		auto t2 = s.top(); t->addTree(t2); s.pop();
+		popd(s, 3);
+		static_cast<tStmts*>(t)->insertlabel(
+			s.top()->getToken()->getId(), t2); popd(s);
+		return t; }
+	case 3: //stmts->\e
+		return new tStmts();
+	case 4:
+	{ //stmt->expr ;
+		popd(s, 3);
+		auto t = new tNoVars(2, s.top()); s.pop();
+		return t; }
+	case 5:
+	{ //stmt->types vdecl ;
+		popd(s, 3);
+		auto t = s.top(); s.pop();
+		popd(s);
+		auto typ = s.top()->getType()->clone(); popd(s);
+		static_cast<tDeclVars*>(t)->setDeclType(typ);
+		return new tNoVars(3, t);
+	}
+	case 18:
+	{ //stmt->if ( expr ) stmt else stmt
+		popd(s);
+		auto t1 = s.top(); s.pop();
+		popd(s, 3);
+		auto t2 = s.top(); s.pop();
+		popd(s, 3);
+		auto t3 = s.top(); s.pop();
+		popd(s, 4);
+		return new tNoVars(4, t1, t2, t3); }
+	case 7: //stmt->if ( expr ) stmt
+	case 8: //stmt->while ( expr ) stmt
+	case 9:
+	{ //stmt->for ( exprf ) stmt
+		popd(s);
+		auto t1 = s.top(); s.pop();
+		popd(s, 3);
+		auto t2 = s.top(); s.pop();
+		popd(s, 4);
+		return new tNoVars(id - 2, t1, t2); }
+	case 10: //stmt->goto id ;
+	case 11:
+	{ //stmt->{ stmts }
+		popd(s, 3);
+		auto t = s.top(); s.pop();
+		popd(s, 2);
+		return new tNoVars(id - 2, t); }
+	case 19: //stmt->break;
+	case 20: //stmt->continue;
+		popd(s, 4);
+		return new tNoVars(id - 9);
+	case 21:
+	{ //types->type
+		popd(s);
+		auto type = s.top()->getToken()->getType(); popd(s);
+		return new tType(new mTBasic(type)); }
+	case 22:
+	{ //types->type (*)
+		popd(s, 3);
+		auto t = s.top(); s.pop();
+		static_cast<tType*>(t)->makePointer();
+		return t; }
+	case 32:
+	{ //vdecl->id
+		popd(s);
+		auto str = s.top()->getToken()->getId(); s.pop();
+		return new tDeclVars(str); }
+	case 33:
+	{ //vdecl->id = inif
+		popd(s);
+		auto t1 = s.top(); s.pop();
+		popd(s);
+		auto tok = s.top(); s.pop();
+		popd(s);
+		auto t2 = s.top(); auto str = t2->getToken()->getId(); s.pop();
+		auto ta = new tNoVars(26, t1, tok, t2);
+		return new tDeclVars(str, ta); }
+	case 34:
+	{ //vdecl->id , vdecl
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s, 3);
+		auto str = s.top()->getToken()->getId(); s.pop();
+		static_cast<tDeclVars*>(t)->addVar(str);
+		return t; }
+	case 35:
+	{ //vdecl->id = inif , vdecl
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s, 3);
+		auto t1 = s.top(); s.pop();
+		popd(s);
+		auto tok = s.top(); s.pop();
+		popd(s);
+		auto t2 = s.top(); auto str = t2->getToken()->getId(); s.pop();
+		auto ta = new tNoVars(26, t1, tok, t2);
+		static_cast<tDeclVars*>(t)->addVar(str, ta);
+		return t; }
+	case 29: //inia->expr
+	case 36: //insv->exprf
+	case 39: //expr->id
+	case 40:
+	{ //expr->num
+		popd(s);
+		auto t = new tNoVars(id - 17, s.top()); s.pop();
+		return t; }
+	case 28: //inia->expr , inia
+	case 37:
+	{ //insv->exprf , insv
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s, 3);
+		t->addTree(s.top()); s.pop();
+		return t; }
+	case 38:
+	//insv->\e
+		return new tNoVars(19);
+	case 24: //inif->ini
+	case 26: //ini->expr
+	case 30:
+	{ //exprf->expr
+		popd(s);
+		auto t = s.top(); s.pop();
+		t->changeid(id - 10);
+		return t; }
+	case 25:
+	//inif->ini:ini:ini:ini
+	case 31:
+	{ //exprf->expr:expr:expr:expr
+		GrammarTree* t[4];
+		for (int i = 0; i < 4; i++) {
+			popd(s, i ? 2 : 1);
+			t[i] = s.top(); s.pop();
+			popd(s);
+		}
+		return new tNoVars(id - 10, t[0], t[1], t[2], t[3]); }
+	case 27:
+	{ //ini->{ inia }
+		popd(s, 3);
+		auto t = s.top(); s.pop();
+		popd(s, 2);
+		t->changeid(id - 10);
+		return t; }
+	case 41: //expr->expr || expr
+	case 42: //expr->expr && expr
+	case 43: //expr->expr or expr
+	case 44: //expr->expr and expr
+	case 45: //expr->expr | expr
+	case 46: //expr->expr ^ expr
+	case 47: //expr->expr & expr
+	case 48: //expr->expr == expr
+	case 49: //expr->expr != expr
+	case 50: //expr->expr > expr
+	case 51: //expr->expr >= expr
+	case 52: //expr->expr < expr
+	case 53: //expr->expr <= expr
+	case 54: //expr->expr + expr
+	case 55: //expr->expr - expr
+	case 56: //expr->expr * expr
+	case 57: //expr->expr / expr
+	case 58: //expr->expr % expr
+	case 61: //expr->expr . expr
+	case 67:
+	{ //expr->expr as_op exprf
+		popd(s);
+		auto t1 = s.top(); s.pop();
+		popd(s);
+		auto tok = s.top(); s.pop();
+		popd(s);
+		auto t2 = s.top(); s.pop();
+		return new tNoVars(26, t1, tok, t2); }
+	case 62:
+	{ //expr->( expr )
+		popd(s, 3);
+		auto t = s.top(); s.pop();
+		popd(s, 2);
+		return t; }
+	case 59: //expr->(-) expr
+	case 60: //expr->! expr
+	case 64: //expr->(*) expr
+	case 65:
+	{ //expr->(&) expr
+		popd(s);
+		auto t1 = s.top(); s.pop();
+		popd(s);
+		auto tok = s.top(); s.pop();
+		return new tNoVars(25, t1, tok); }
+	case 63:
+	//expr->id ( insv )
+	case 66:
+	{ //expr->expr [ expr ]
+		popd(s, 3);
+		auto t1 = s.top(); s.pop();
+		popd(s, 3);
+		auto t2 = s.top(); s.pop();
+		return new tNoVars(id - (63 - 24) , t1, t2); }
+	case 68:
+	{ //expr->( types ) expr
+		popd(s);
+		auto t = s.top(); s.pop();
+		popd(s, 3);
+		auto t2 = s.top(); s.pop();
+		popd(s, 2);
+		return new tNoVars(28, t, t2); }
+	default:
+		return nullptr;
 	}
 }
 

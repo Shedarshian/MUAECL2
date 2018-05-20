@@ -20,7 +20,7 @@ public:
 	enum Token { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	enum BuiltInType { type_error, Void, Int, Float, Point };
 	//非终结符
-	enum NonTerm { stmt, stmts, subs, subv, subva, vdecl, insv, ini, inif, inia, exprf, expr, types };
+	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
 	static const unordered_set<char> OperatorChar;
 
 	static const map<Token, string> OperatorToString;
@@ -32,11 +32,20 @@ public:
 	static Token ToOperator(string s) { return StringToOperator.find(s)->second; }
 	static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
 	static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
+	static NonTerm ToType(int id) {
+		if (id >= 2 && id <= 11) return NonTerm::stmt;
+		if (id >= 22 && id <= 28) return NonTerm::expr;
+		if (id == 12) return NonTerm::inia;
+		if (id == 14 || id == 15) return NonTerm::inif;
+		if (id == 16 || id == 17) return NonTerm::ini;
+		if (id == 20 || id == 21) return NonTerm::exprf;
+		throw(ErrDesignApp("NonTerminator saved error."));
+	}
 };
 
 class Token {
 public:
-	Token(int lineNo) :lineNo(lineNo) {};
+	explicit Token(int lineNo) :lineNo(lineNo) {};
 	virtual ~Token() {};
 	//类型
 	virtual Op::Token type() = 0;
@@ -44,6 +53,8 @@ public:
 	virtual bool isIdNum() { return false; };
 	virtual bool isExprFollow() { return false; };
 	//取数
+	virtual string getId() { throw(ErrDesignApp("Extract identifier error.")); };
+	virtual Op::BuiltInType getType() { throw(ErrDesignApp("Extract Built-in Type error.")); };
 	//debug输出
 	virtual string debug_out() { return to_string(lineNo); };
 	friend ostream& operator<< (ostream& stream, Token& token);
@@ -89,6 +100,7 @@ public:
 	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {};
 	Op::Token type() override { return Op::Token::Identifier; };
 	bool isIdNum() override { return true; };
+	string getId() override { return val; };
 	string debug_out() override { return val; };
 private:
 	string val;
@@ -109,6 +121,7 @@ private:
 class Token_KeywordType :public Token_Operator {
 public:
 	Token_KeywordType(int lineNo, Op::BuiltInType type) :Token_Operator(lineNo, Op::Token::Type), val(type) {};
+	Op::BuiltInType getType() override { return val; };
 	string debug_out() override { return Op::ToString(val); };
 private:
 	Op::BuiltInType val;
@@ -117,7 +130,7 @@ private:
 //文档结束
 class Token_End :public Token {
 public:
-	Token_End(int lineNo) :Token(lineNo) {};
+	explicit Token_End(int lineNo) :Token(lineNo) {};
 	Op::Token type() override { return Op::Token::End; };
 	string debug_out() override { return ""; };
 };
@@ -125,7 +138,7 @@ public:
 //error-type
 class ExceptionWithLineNo :public exception {
 public:
-	ExceptionWithLineNo(int lineNo) :lineNo(lineNo) {};
+	explicit ExceptionWithLineNo(int lineNo) :lineNo(lineNo) {};
 	const int lineNo;
 };
 
