@@ -3,10 +3,10 @@
 #include <algorithm>
 
 using namespace std;
-using Term = Op::Token;
+using Term = Op::TokenType;
 using NonTerm = Op::NonTerm;
 
-const map<int, map<Op::Token, int>*> Parser::makeAction() {
+const map<int, map<Op::TokenType, int>*> Parser::makeAction() {
 	char sAction[] = R"(255,,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,-34,0,
 0,,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,34,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1012,
 1,,-14,-14,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,-14,-14,-14,-14,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,1039,-18,-18,-18,-18,-18,-18,-18,-18,-18,8,1039,1039,10,1039,-18,1039,-10,
@@ -156,7 +156,7 @@ const map<int, map<Op::Token, int>*> Parser::makeAction() {
 151,,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,72,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,152,-5,-5,-5,
 152,3,94,44,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,82,83,85,86,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-11,-18,-18,-18,-18,-18,-18,-18,-18,-18,-11,-11,-11,84,-11,-11,-11,-10,
 153,,-14,-14,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,-14,-14,-14,-14,119,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,1068,-18,-18,-18,-18,-18,-18,-18,-18,-18,1068,1068,1068,-14,1068,-18,1068,-10,)";
-	map<int, map<Op::Token, int>*> Action;
+	map<int, map<Op::TokenType, int>*> Action;
 	char* s;
 	const char* split = ",\n";
 	while (s != NULL) {
@@ -171,7 +171,7 @@ const map<int, map<Op::Token, int>*> Parser::makeAction() {
 		}
 		else {
 			//否则按顺序读取并塞入map中
-			auto m = new map<Op::Token, int>();
+			auto m = new map<Op::TokenType, int>();
 			for (int i = 0; i <= Term::End; i++) {
 				s = strtok(NULL, split);
 				(*m)[(Term)i] = atoi(s);
@@ -184,7 +184,7 @@ const map<int, map<Op::Token, int>*> Parser::makeAction() {
 	return Action;
 }
 
-const map<int, map<Op::Token, int>*> Action = Parser::makeAction();
+const map<int, map<Op::TokenType, int>*> Action = Parser::makeAction();
 
 const map<Op::NonTerm, map<int, int>> Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 7, 7 },{ 8, 79 },{ 9, 7 },{ 58, 60 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
@@ -540,7 +540,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	}
 }
 
-int Parser::action(int s, Op::Token t) {
+int Parser::action(int s, Op::TokenType t) {
 	auto m = Action.find(s)->second;
 	auto it = m->find(t);
 	if (it == m->end())

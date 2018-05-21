@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 			delete t;
 		tokenizer >> t;
 		cout << t->debug_out() << " " << tokenizer.debug_lineNo() << endl;
-	} while (t->type() != Op::Token::End);
+	} while (t->type() != Op::TokenType::End);
 
     return 0;
 }

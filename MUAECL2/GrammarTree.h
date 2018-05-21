@@ -57,7 +57,7 @@ private:
 //types
 class tType : public GrammarTree {
 public:
-	explicit tType(mRealType t) :t(t) {}
+	explicit tType(mRealType t) :t(move(t)) {}
 	~tType() {}
 	Op::NonTerm type() override { return Op::NonTerm::types; }
 	mRealType& getType() override { return t; }

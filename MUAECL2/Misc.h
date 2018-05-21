@@ -8,7 +8,8 @@
 #include <exception>
 using namespace std;
 
-struct mType;
+struct mRealType;
+class Token;
 class Op {
 public:
 	template<typename T1, typename T2>
@@ -19,19 +20,19 @@ public:
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum Token { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
+	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	enum BuiltInType { type_error, Void, Int, Float, Point };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
 	static const unordered_set<char> OperatorChar;
 
-	static const map<Token, string> OperatorToString;
-	static const map<string, Token> StringToOperator;
+	static const map<TokenType, string> OperatorToString;
+	static const map<string, TokenType> StringToOperator;
 	static const map<BuiltInType, string> TypeToString;
 	static const map<string, BuiltInType> StringToType;
 
-	static string ToString(Token op) { return OperatorToString.find(op)->second; }
-	static Token ToOperator(string s) { return StringToOperator.find(s)->second; }
+	static string ToString(TokenType op) { return OperatorToString.find(op)->second; }
+	static TokenType ToOperator(string s) { return StringToOperator.find(s)->second; }
 	static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
 	static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
 	static NonTerm ToType(int id) {
@@ -45,7 +46,8 @@ public:
 	}
 
 	enum LRvalue { null, lvalue, rvalue, rliteral };
-	static const map<Token, mType*(mType*, mType*)> OpTypeCheck;
+	static const mRealType& OpTypeAllowed(TokenType, const mRealType&, const mRealType&);
+	static const Token* OpLiteralCal(TokenType, const Token*, const Token*);
 };
 
 //类型
@@ -54,8 +56,9 @@ struct mRealType {
 	Op::LRvalue lrvalue;
 	unique_ptr<mType> type;
 	void makePointer() { type = make_unique<mTPointer>(move(type)); }
+	mType* operator->() const { return type.get(); }
 	//复制构造函数，提供深层复制
-	mRealType(const mRealType& p) {
+	/*mRealType(const mRealType& p) {
 		type = p.type->clone();
 		lrvalue = p.lrvalue;
 	}
@@ -63,7 +66,7 @@ struct mRealType {
 	mRealType& operator=(const mRealType& p) {
 		type = p.type->clone();
 		lrvalue = p.lrvalue;
-	}
+	}*/
 };
 /*
 struct mType {
@@ -150,7 +153,7 @@ public:
 	explicit Token(int lineNo) :lineNo(lineNo) {};
 	virtual ~Token() {};
 	//类型
-	virtual Op::Token type() = 0;
+	virtual Op::TokenType type() = 0;
 	//检验
 	virtual bool isIdNum() { return false; };
 	virtual bool isExprFollow() { return false; };
@@ -168,7 +171,7 @@ private:
 class Token_Int :public Token {
 public:
 	Token_Int(int lineNo, int val) :Token(lineNo), val(val) {};
-	Op::Token type() override { return Op::Token::Number; };
+	Op::TokenType type() override { return Op::TokenType::Number; };
 	bool isIdNum() override { return true; };
 	string debug_out() override { return to_string(val); };
 private:
@@ -179,7 +182,7 @@ private:
 class Token_Float :public Token {
 public:
 	Token_Float(int lineNo, float val) :Token(lineNo), val(val) {};
-	Op::Token type() override { return Op::Token::Number; };
+	Op::TokenType type() override { return Op::TokenType::Number; };
 	bool isIdNum() override { return true; };
 	string debug_out() override { return to_string(val); };
 private:
@@ -190,7 +193,7 @@ private:
 class Token_String :public Token {
 public:
 	Token_String(int lineNo, string val) :Token(lineNo), val(val) {};
-	Op::Token type() override { return Op::Token::Number; };
+	Op::TokenType type() override { return Op::TokenType::Number; };
 	string debug_out() override { return "\"" + val + "\""; };
 private:
 	string val;
@@ -200,7 +203,7 @@ private:
 class Token_Identifier :public Token {
 public:
 	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {};
-	Op::Token type() override { return Op::Token::Identifier; };
+	Op::TokenType type() override { return Op::TokenType::Identifier; };
 	bool isIdNum() override { return true; };
 	string getId() override { return val; };
 	string debug_out() override { return val; };
@@ -211,18 +214,18 @@ private:
 //关键字,运算符,赋值运算符,逗号分号冒号大小括号
 class Token_Operator :public Token {
 public:
-	Token_Operator(int lineNo, Op::Token val) :Token(lineNo), val(val) {};
-	Op::Token type() override { return val; };
-	bool isExprFollow() override { return val == Op::Token::Colon || val == Op::Token::BigKet || val == Op::Token::Comma || val == Op::Token::Ket || val == Op::Token::Semicolon; };
+	Token_Operator(int lineNo, Op::TokenType val) :Token(lineNo), val(val) {};
+	Op::TokenType type() override { return val; };
+	bool isExprFollow() override { return val == Op::TokenType::Colon || val == Op::TokenType::BigKet || val == Op::TokenType::Comma || val == Op::TokenType::Ket || val == Op::TokenType::Semicolon; };
 	string debug_out() override { return Op::ToString(val); };
 private:
-	Op::Token val;
+	Op::TokenType val;
 };
 
 //内建类型
 class Token_KeywordType :public Token_Operator {
 public:
-	Token_KeywordType(int lineNo, Op::BuiltInType type) :Token_Operator(lineNo, Op::Token::Type), val(type) {};
+	Token_KeywordType(int lineNo, Op::BuiltInType type) :Token_Operator(lineNo, Op::TokenType::Type), val(type) {};
 	Op::BuiltInType getType() override { return val; };
 	string debug_out() override { return Op::ToString(val); };
 private:
@@ -233,7 +236,7 @@ private:
 class Token_End :public Token {
 public:
 	explicit Token_End(int lineNo) :Token(lineNo) {};
-	Op::Token type() override { return Op::Token::End; };
+	Op::TokenType type() override { return Op::TokenType::End; };
 	string debug_out() override { return ""; };
 };
 
