@@ -5,56 +5,16 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <memory>
 #include "Misc.h"
 
-//类型
-struct mType {
-	virtual ~mType() {}
-	virtual mType* clone() const = 0;
-	bool operator==(mType& t2) const { return t2._typeid == _typeid; }
-	virtual int _typeid() const = 0;
-	//TODO 左值/右值
-};
-
-struct mTPointer : public mType {
-	explicit mTPointer(mType* r) :reference(r), __typeid(r->_typeid() + 32) {}
-	~mTPointer() { delete reference; }
-	mType* reference;
-	int __typeid;
-	//复制构造函数，提供深层复制
-	mTPointer(const mTPointer& p) :mType(p._typeid) {
-		reference = p.clone();
-	}
-	//复制赋值运算符，提供深层复制
-	mTPointer& operator=(const mTPointer& p) {
-		delete reference;
-		reference = p.clone();
-		__typeid = p.__typeid;
-	}
-	mTPointer(mTPointer&&) = default;
-	mTPointer& operator=(mTPointer&&) = default;
-	mType* clone() const override { return new mTPointer(*this); }
-	int _typeid() const override { return __typeid; }
-	mType* dereference() {
-		auto p = reference;
-		reference = nullptr;
-		delete this;
-		return p;
-	}
-};
-
-struct mTBasic : public mType {
-	explicit mTBasic(Op::BuiltInType t) : t(t) {}
-	const Op::BuiltInType t;
-	mType* clone() const override { return new mTBasic(*this); }
-	int _typeid() const override { return t; }
-};
+using namespace std;
 
 //变量
 struct mVar {
-	mVar(mType* type, string id) :type(type), id(id) {}
-	~mVar() { delete type; }
-	mType* type;
+	mVar(unique_ptr<mType> type, string id) :type(move(type)), id(id) {}
+	~mVar() {}
+	unique_ptr<mType> type;
 	string id;
 };
 
@@ -72,7 +32,7 @@ public:
 	virtual void extractlabel(map<string, GrammarTree*>& labels) {};
 	//取数
 	virtual Token* getToken() { throw(ErrDesignApp("GrammarTree::getToken")); }
-	virtual mType* getType() { throw(ErrDesignApp("GrammarTree::getType")); }
+	virtual mRealType& getType() { throw(ErrDesignApp("GrammarTree::getType")); }
 };
 
 //为入栈所使用的状态标记
@@ -97,20 +57,22 @@ private:
 //types
 class tType : public GrammarTree {
 public:
-	explicit tType(mType* t) :t(t) {}
-	~tType() { delete t; }
+	explicit tType(mRealType t) :t(t) {}
+	~tType() {}
 	Op::NonTerm type() override { return Op::NonTerm::types; }
-	mType* getType() override { return t; }
-	void makePointer() { t = new mTPointer(t); }
+	mRealType& getType() override { return t; }
+	void makePointer() { t.makePointer(); }
 private:
-	mType* t;
+	mRealType t;
 };
 
 //subv
 class tSubVars :public GrammarTree {
 public:
 	tSubVars() = default;
-	explicit tSubVars(mVar v) :vars({ v }) {}
+	//explicit tSubVars(mVar v) { vars.push_back(move(v)); }
+	template<class... Args>
+	explicit tSubVars(Args&&... args) { vars.emplace_back(&args...); }
 	Op::NonTerm type() override { return Op::NonTerm::subv; }
 	template<class... Args>
 	void emplaceVar(Args&&... args) { vars.emplace_back(&args...); }
@@ -122,26 +84,24 @@ private:
 //vdecl
 class tDeclVars :public GrammarTree {
 public:
-	explicit tDeclVars(string id) :vars({ id }), typedecl(nullptr) {}
+	explicit tDeclVars(string id) :varsi({ { id, nullptr } }), typedecl(nullptr) {}
 	tDeclVars(string id, GrammarTree* inif) :varsi({ { id, inif } }), typedecl(nullptr) {}
-	~tDeclVars() { delete typedecl; }
+	~tDeclVars() {}
 	Op::NonTerm type() override { return Op::NonTerm::vdecl; }
-	void addVar(string id) { vars.push_back(id); }
+	void addVar(string id) { varsi.emplace_back(id, nullptr); }
 	void addVar(string id, GrammarTree* inif) { varsi.emplace_back(id, inif); }
-	void setDeclType(mType* type) { this->typedecl = type; }
+	void setDeclType(unique_ptr<mType> type) { this->typedecl = move(type); }
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override {
 		auto l = new list<GrammarTree*>();
-		for (auto s : vars)
-			v.emplace_back(typedecl->clone(), s);
 		for (auto s : varsi) {
 			v.emplace_back(typedecl->clone(), s.first);
-			l->push_back(s.second);
+			if (s.second != nullptr)
+				l->push_back(s.second);
 		}
 		return l;
 	}
 private:
-	mType* typedecl;
-	vector<string> vars;						//逆序储存
+	unique_ptr<mType> typedecl;
 	vector<pair<string, GrammarTree*>> varsi;	//逆序储存
 };
 

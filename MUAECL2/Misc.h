@@ -4,9 +4,11 @@
 #include <unordered_set>
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <exception>
 using namespace std;
 
+struct mType;
 class Op {
 public:
 	template<typename T1, typename T2>
@@ -41,6 +43,106 @@ public:
 		if (id == 20 || id == 21) return NonTerm::exprf;
 		throw(ErrDesignApp("NonTerminator saved error."));
 	}
+
+	enum LRvalue { null, lvalue, rvalue, rliteral };
+	static const map<Token, mType*(mType*, mType*)> OpTypeCheck;
+};
+
+//类型
+struct mRealType {
+	mRealType(unique_ptr<mType> type, Op::LRvalue lrvalue) :type(move(type)), lrvalue(lrvalue) {};
+	Op::LRvalue lrvalue;
+	unique_ptr<mType> type;
+	void makePointer() { type = make_unique<mTPointer>(move(type)); }
+	//复制构造函数，提供深层复制
+	mRealType(const mRealType& p) {
+		type = p.type->clone();
+		lrvalue = p.lrvalue;
+	}
+	//复制赋值运算符，提供深层复制
+	mRealType& operator=(const mRealType& p) {
+		type = p.type->clone();
+		lrvalue = p.lrvalue;
+	}
+};
+/*
+struct mType {
+	virtual ~mType() {}
+	virtual mType* clone() const = 0;
+	bool operator==(mType& t2) const { return t2._typeid == _typeid; }
+	virtual int _typeid() const = 0;
+};
+
+struct mTPointer : public mType {
+	explicit mTPointer(mType* r) :reference(r), __typeid(r->_typeid() + 32) {}
+	~mTPointer() { delete reference; }
+	mType* reference;
+	int __typeid;
+	//复制构造函数，提供深层复制
+	mTPointer(const mTPointer& p) :mType(p) {
+		reference = p.clone();
+		__typeid = p.__typeid;
+	}
+	//复制赋值运算符，提供深层复制
+	mTPointer& operator=(const mTPointer& p) {
+		delete reference;
+		reference = p.clone();
+		__typeid = p.__typeid;
+	}
+	mTPointer(mTPointer&&) = default;
+	mTPointer& operator=(mTPointer&&) = default;
+	mType* clone() const override { return new mTPointer(*this); }
+	int _typeid() const override { return __typeid; }
+	mType* dereference(Op::LRvalue lrvalue) {
+		auto p = reference;
+		reference = nullptr;
+		delete this;
+		return p;
+	}
+};
+
+struct mTBasic : public mType {
+	mTBasic(Op::BuiltInType t) : t(t) {}
+	const Op::BuiltInType t;
+	mType* clone() const override { return new mTBasic(*this); }
+	int _typeid() const override { return t; }
+};*/
+
+struct mType {
+	virtual ~mType() {}
+	virtual unique_ptr<mType> clone() const = 0;
+	bool operator==(const mType& t2) const { return t2._typeid == _typeid; }
+	virtual int _typeid() const = 0;
+};
+
+struct mTPointer : public mType {
+	explicit mTPointer(unique_ptr<mType> r) :reference(move(r)), __typeid(r->_typeid() + 32) {}
+	~mTPointer() {}
+	unique_ptr<mType> reference;
+	int __typeid;
+	//复制构造函数，提供深层复制
+	mTPointer(const mTPointer& p) {
+		reference = p.reference->clone();
+		__typeid = p.__typeid;
+	}
+	//复制赋值运算符，提供深层复制
+	mTPointer& operator=(const mTPointer& p) {
+		reference = p.reference->clone();
+		__typeid = p.__typeid;
+	}
+	mTPointer(mTPointer&&) = default;
+	mTPointer& operator=(mTPointer&&) = default;
+	unique_ptr<mType> clone() const override { return make_unique<mTPointer>(*this); }
+	int _typeid() const override { return __typeid; }
+	//深层复制
+	unique_ptr<mType> dereference(Op::LRvalue lrvalue) { return reference->clone(); }
+};
+
+struct mTBasic : public mType {
+	mTBasic(Op::BuiltInType t) : t(t) {}
+	const Op::BuiltInType t;
+	unique_ptr<mType> clone() const override { return make_unique<mTBasic>(*this); }
+	int _typeid() const override { return t; }
 };
 
 class Token {
