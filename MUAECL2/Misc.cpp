@@ -1,9 +1,10 @@
 #include "stdafx.h"
 #include "Misc.h"
 //#include "GrammarTree.h"
+using TT = Op::TokenType;
 
 const unordered_set<char> Op::OperatorChar = { '+', '-', '*', '/', '%', '&', '|', '!', '^', '=', '>', '<', '.', ';', ':', '(', ')', '{', '}', ',', '[', ']' };
-const map<Op::TokenType, string> Op::OperatorToString = { { Plus, "+" },{ Minus, "-" },{ Times, "*" },{ Divide, "/" },{ Mod, "%" },{ EqualTo, "==" },{ NotEqual, "!=" },{ Less, "<" },{ LessEqual, "<=" },{ Greater, ">" },{ GreaterEqual, ">=" },{ Not, "!" },{ LogicalOr, "||" },{ LogicalAnd, "&&" },{ BitOr, "|" },{ BitAnd, "&" },{ BitXor, "^" },{ Negative, "(-)" },{ Deref,"(*)" },{ Address,"(&)" },{ Dot, "." },{ And, "and" },{ Or, "or" },{ Equal,"=" },{ PlusEqual,"+=" },{ MinusEqual,"-=" },{ TimesEqual,"*=" },{ DividesEqual,"/=" },{ ModEqual,"%=" },{ LogicalOrEqual,"||=" },{ LogicalAndEqual,"&&=" },{ BitOrEqual,"|=" },{ BitAndEqual,"&=" },{ BitXorEqual,"^=" },{ If, "if" },{ Else,"else" },{ For,"for" },{ While,"while" },{ Break,"break" },{ Continue,"continue" },{ Goto,"goto" },{ Sub,"sub" },{ Semicolon,";" },{ Colon,":" },{ Bra,"(" },{ Ket,")" },{ MidBra,"[" },{ MidKet,"]" },{ BigBra,"{" },{ BigKet,"}" },{ Comma,"," } };
+const map<TT, string> Op::OperatorToString = { { TT::Plus, "+" },{ TT::Minus, "-" },{ TT::Times, "*" },{ TT::Divide, "/" },{ TT::Mod, "%" },{ TT::EqualTo, "==" },{ TT::NotEqual, "!=" },{ TT::Less, "<" },{ TT::LessEqual, "<=" },{ TT::Greater, ">" },{ TT::GreaterEqual, ">=" },{ TT::Not, "!" },{ TT::LogicalOr, "||" },{ TT::LogicalAnd, "&&" },{ TT::BitOr, "|" },{ TT::BitAnd, "&" },{ TT::BitXor, "^" },{ TT::Negative, "(-)" },{ TT::Deref,"(*)" },{ TT::Address,"(&)" },{ TT::Dot, "." },{ TT::And, "and" },{ TT::Or, "or" },{ TT::Equal,"=" },{ TT::PlusEqual,"+=" },{ TT::MinusEqual,"-=" },{ TT::TimesEqual,"*=" },{ TT::DividesEqual,"/=" },{ TT::ModEqual,"%=" },{ TT::LogicalOrEqual,"||=" },{ TT::LogicalAndEqual,"&&=" },{ TT::BitOrEqual,"|=" },{ TT::BitAndEqual,"&=" },{ TT::BitXorEqual,"^=" },{ TT::If, "if" },{ TT::Else,"else" },{ TT::For,"for" },{ TT::While,"while" },{ TT::Break,"break" },{ TT::Continue,"continue" },{ TT::Goto,"goto" },{ TT::Sub,"sub" },{ TT::Semicolon,";" },{ TT::Colon,":" },{ TT::Bra,"(" },{ TT::Ket,")" },{ TT::MidBra,"[" },{ TT::MidKet,"]" },{ TT::BigBra,"{" },{ TT::BigKet,"}" },{ TT::Comma,"," } };
 const map<string, Op::TokenType> Op::StringToOperator = swap_map(OperatorToString);
 const map<Op::BuiltInType, string> TypeToString = { { Op::BuiltInType::Int,"int" },{ Op::BuiltInType::Float,"float" },{ Op::BuiltInType::Point,"point" } };
 const map<string, Op::BuiltInType> Op::StringToType = swap_map(TypeToString);
@@ -25,77 +26,77 @@ const map<string, Op::BuiltInType> Op::StringToType = swap_map(TypeToString);
 
 const Token* Op::OpLiteralCal(TokenType typ, const Token* tl, const Token* tr) {
 	switch (typ) {
-	case Op::LogicalOr:
+	case Op::TokenType::LogicalOr:
 		break;
-	case Op::LogicalAnd:
+	case Op::TokenType::LogicalAnd:
 		break;
-	case Op::Or:
+	case Op::TokenType::Or:
 		break;
-	case Op::And:
+	case Op::TokenType::And:
 		break;
-	case Op::BitOr:
+	case Op::TokenType::BitOr:
 		break;
-	case Op::BitXor:
+	case Op::TokenType::BitXor:
 		break;
-	case Op::BitAnd:
+	case Op::TokenType::BitAnd:
 		break;
-	case Op::EqualTo:
+	case Op::TokenType::EqualTo:
 		break;
-	case Op::NotEqual:
+	case Op::TokenType::NotEqual:
 		break;
-	case Op::Greater:
+	case Op::TokenType::Greater:
 		break;
-	case Op::GreaterEqual:
+	case Op::TokenType::GreaterEqual:
 		break;
-	case Op::Less:
+	case Op::TokenType::Less:
 		break;
-	case Op::LessEqual:
+	case Op::TokenType::LessEqual:
 		break;
-	case Op::Plus:
+	case Op::TokenType::Plus:
 		break;
-	case Op::Minus:
+	case Op::TokenType::Minus:
 		break;
-	case Op::Times:
+	case Op::TokenType::Times:
 		break;
-	case Op::Divide:
+	case Op::TokenType::Divide:
 		break;
-	case Op::Mod:
+	case Op::TokenType::Mod:
 		break;
-	case Op::Negative:
+	case Op::TokenType::Negative:
 		break;
-	case Op::Not:
+	case Op::TokenType::Not:
 		break;
-	case Op::Deref:
+	case Op::TokenType::Deref:
 		break;
-	case Op::Address:
+	case Op::TokenType::Address:
 		break;
-	case Op::Dot:
+	case Op::TokenType::Dot:
 		break;
-	case Op::MidBra:
+	case Op::TokenType::MidBra:
 		break;
-	case Op::MidKet:
+	case Op::TokenType::MidKet:
 		break;
-	case Op::Equal:
+	case Op::TokenType::Equal:
 		break;
-	case Op::PlusEqual:
+	case Op::TokenType::PlusEqual:
 		break;
-	case Op::MinusEqual:
+	case Op::TokenType::MinusEqual:
 		break;
-	case Op::TimesEqual:
+	case Op::TokenType::TimesEqual:
 		break;
-	case Op::DividesEqual:
+	case Op::TokenType::DividesEqual:
 		break;
-	case Op::ModEqual:
+	case Op::TokenType::ModEqual:
 		break;
-	case Op::LogicalOrEqual:
+	case Op::TokenType::LogicalOrEqual:
 		break;
-	case Op::LogicalAndEqual:
+	case Op::TokenType::LogicalAndEqual:
 		break;
-	case Op::BitOrEqual:
+	case Op::TokenType::BitOrEqual:
 		break;
-	case Op::BitAndEqual:
+	case Op::TokenType::BitAndEqual:
 		break;
-	case Op::BitXorEqual:
+	case Op::TokenType::BitXorEqual:
 		break;
 	default:
 		//throw

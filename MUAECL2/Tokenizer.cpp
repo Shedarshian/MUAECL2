@@ -9,7 +9,7 @@ Tokenizer::Tokenizer(istream& ReadStream) :ReadStream(ReadStream), lineNo(1) {
 
 Tokenizer::~Tokenizer() {}
 
-Tokenizer& operator>> (Tokenizer& t, Token*& token) {
+[[deprecated]] Tokenizer& operator>> (Tokenizer& t, Token*& token) {
 	token = t.popToken();
 	return t;
 }

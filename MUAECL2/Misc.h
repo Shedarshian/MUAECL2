@@ -13,17 +13,17 @@ class Token;
 class Op {
 public:
 	template<typename T1, typename T2>
-	constexpr static pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
+	constexpr static const pair<T2, T1>& swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
 	template<typename T1, typename T2>
-	constexpr static map<T2, T1> swap_map(const map<T1, T2>& m) {
+	constexpr static const map<T2, T1>& swap_map(const map<T1, T2>& m) {
 		map<T2, T1> mo;
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
-	enum BuiltInType { type_error, Void, Int, Float, Point };
+	enum class TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
+	enum class BuiltInType { type_error, Void, Int, Float, Point };
 	//·ÇÖÕ½á·û
-	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
+	enum class NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
 	static const unordered_set<char> OperatorChar;
 
 	static const map<TokenType, string> OperatorToString;
@@ -31,10 +31,10 @@ public:
 	static const map<BuiltInType, string> TypeToString;
 	static const map<string, BuiltInType> StringToType;
 
-	static string ToString(TokenType op) { return OperatorToString.find(op)->second; }
-	static TokenType ToOperator(string s) { return StringToOperator.find(s)->second; }
-	static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
-	static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
+	inline static string ToString(TokenType op) { return OperatorToString.find(op)->second; }
+	inline static TokenType ToOperator(string s) { return StringToOperator.find(s)->second; }
+	inline static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
+	inline static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
 	static NonTerm ToType(int id) {
 		if (id >= 2 && id <= 11) return NonTerm::stmt;
 		if (id >= 22 && id <= 28) return NonTerm::expr;
@@ -45,7 +45,7 @@ public:
 		throw(ErrDesignApp("NonTerminator saved error."));
 	}
 
-	enum LRvalue { null, lvalue, rvalue, rliteral };
+	enum class LRvalue { null, lvalue, rvalue, rliteral };
 	static const mRealType& OpTypeAllowed(TokenType, const mRealType&, const mRealType&);
 	static const Token* OpLiteralCal(TokenType, const Token*, const Token*);
 };
@@ -145,7 +145,7 @@ struct mTBasic : public mType {
 	mTBasic(Op::BuiltInType t) : t(t) {}
 	const Op::BuiltInType t;
 	unique_ptr<mType> clone() const override { return make_unique<mTBasic>(*this); }
-	int _typeid() const override { return t; }
+	int _typeid() const override { return (int)t; }
 };
 
 class Token {

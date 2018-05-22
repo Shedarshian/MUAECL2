@@ -172,7 +172,7 @@ const map<int, map<Op::TokenType, int>*> Parser::makeAction() {
 		else {
 			//否则按顺序读取并塞入map中
 			auto m = new map<Op::TokenType, int>();
-			for (int i = 0; i <= Term::End; i++) {
+			for (int i = 0; i <= (int)Term::End; i++) {
 				s = strtok(NULL, split);
 				(*m)[(Term)i] = atoi(s);
 			}
@@ -362,7 +362,9 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 4);
 		return new tNoVars(4, t1, t2, t3); }
 	case 7: //stmt->if ( expr ) stmt
+		[[fallthrough]]
 	case 8: //stmt->while ( expr ) stmt
+		[[fallthrough]]
 	case 9:
 	{ //stmt->for ( exprf ) stmt
 		popd(s);
@@ -372,6 +374,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 4);
 		return new tNoVars(id - 2, t1, t2); }
 	case 10: //stmt->goto id ;
+		[[fallthrough]]
 	case 11:
 	{ //stmt->{ stmts }
 		popd(s, 3);
@@ -379,6 +382,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 2);
 		return new tNoVars(id - 2, t); }
 	case 19: //stmt->break;
+		[[fallthrough]]
 	case 20: //stmt->continue;
 		popd(s, 4);
 		return new tNoVars(id - 9);
@@ -430,14 +434,18 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		static_cast<tDeclVars*>(t)->addVar(str, ta);
 		return t; }
 	case 29: //inia->expr
+		[[fallthrough]]
 	case 36: //insv->exprf
+		[[fallthrough]]
 	case 39: //expr->id
+		[[fallthrough]]
 	case 40:
 	{ //expr->num
 		popd(s);
 		auto t = new tNoVars(id - 17, s.top()); s.pop();
 		return t; }
 	case 28: //inia->expr , inia
+		[[fallthrough]]
 	case 37:
 	{ //insv->exprf , insv
 		popd(s);
@@ -449,7 +457,9 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	//insv->\e
 		return new tNoVars(19);
 	case 24: //inif->ini
+		[[fallthrough]]
 	case 26: //ini->expr
+		[[fallthrough]]
 	case 30:
 	{ //exprf->expr
 		popd(s);
@@ -458,6 +468,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		return t; }
 	case 25:
 	//inif->ini:ini:ini:ini
+		[[fallthrough]]
 	case 31:
 	{ //exprf->expr:expr:expr:expr
 		GrammarTree* t[4];
@@ -475,24 +486,43 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		t->changeid(id - 10);
 		return t; }
 	case 41: //expr->expr || expr
+		[[fallthrough]]
 	case 42: //expr->expr && expr
+		[[fallthrough]]
 	case 43: //expr->expr or expr
+		[[fallthrough]]
 	case 44: //expr->expr and expr
+		[[fallthrough]]
 	case 45: //expr->expr | expr
+		[[fallthrough]]
 	case 46: //expr->expr ^ expr
+		[[fallthrough]]
 	case 47: //expr->expr & expr
+		[[fallthrough]]
 	case 48: //expr->expr == expr
+		[[fallthrough]]
 	case 49: //expr->expr != expr
+		[[fallthrough]]
 	case 50: //expr->expr > expr
+		[[fallthrough]]
 	case 51: //expr->expr >= expr
+		[[fallthrough]]
 	case 52: //expr->expr < expr
+		[[fallthrough]]
 	case 53: //expr->expr <= expr
+		[[fallthrough]]
 	case 54: //expr->expr + expr
+		[[fallthrough]]
 	case 55: //expr->expr - expr
+		[[fallthrough]]
 	case 56: //expr->expr * expr
+		[[fallthrough]]
 	case 57: //expr->expr / expr
+		[[fallthrough]]
 	case 58: //expr->expr % expr
+		[[fallthrough]]
 	case 61: //expr->expr . expr
+		[[fallthrough]]
 	case 67:
 	{ //expr->expr as_op exprf
 		popd(s);
@@ -509,8 +539,11 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 2);
 		return t; }
 	case 59: //expr->(-) expr
+		[[fallthrough]]
 	case 60: //expr->! expr
+		[[fallthrough]]
 	case 64: //expr->(*) expr
+		[[fallthrough]]
 	case 65:
 	{ //expr->(&) expr
 		popd(s);
@@ -518,8 +551,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto tok = s.top(); s.pop();
 		return new tNoVars(25, t1, tok); }
-	case 63:
-	//expr->id ( insv )
+	case 63: //expr->id ( insv )
+		[[fallthrough]]
 	case 66:
 	{ //expr->expr [ expr ]
 		popd(s, 3);
