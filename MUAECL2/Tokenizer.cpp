@@ -50,7 +50,7 @@ Token* Tokenizer::getToken(){
 			if ((nextChar == '-' || nextChar == '*' || nextChar == '&') && willBeNegative) {
 				op += nextChar;
 				ReadStream.get(nextChar);
-				willBeNegative = true;//似乎没用，提示一下没变，允许--A取多次负号
+				willBeNegative = true; //似乎没用，提示一下没变，允许--A取多次负号
 				return new Token_Operator(lineNo, Op::ToOperator("(" + op + ")"));
 			}
 			//&和|，因为有&&=和||=所以麻烦一些
@@ -136,13 +136,11 @@ Token* Tokenizer::getToken(){
 			//keyword后面为负号
 			willBeNegative = true;
 			//如果是build-in type
-			auto it = Op::StringToType.find(s);
-			if (it == Op::StringToType.end())
+			if (auto it = Op::StringToType.find(s); it == Op::StringToType.end())
 				return new Token_KeywordType(lineNo, it->second);
 			//如果是keyword
-			auto it2 = Op::StringToOperator.find(s);
-			if (it2 != Op::StringToOperator.end())
-				return new Token_Operator(lineNo, it2->second);
+			if (auto it = Op::StringToOperator.find(s); it != Op::StringToOperator.end())
+				return new Token_Operator(lineNo, it->second);
 			willBeNegative = false;
 			return new Token_Identifier(lineNo, s);
 		}

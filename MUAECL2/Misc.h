@@ -6,7 +6,22 @@
 #include <iterator>
 #include <memory>
 #include <exception>
+#include <optional>
 using namespace std;
+
+//error-type
+class ExceptionWithLineNo :public exception {
+public:
+	explicit ExceptionWithLineNo(int lineNo) :lineNo(lineNo) {};
+	const int lineNo;
+};
+
+class ErrDesignApp :public exception {
+public:
+	ErrDesignApp(const char* what) :s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {};
+	virtual const char* what() const throw() { return s.c_str(); }
+	const string s;
+};
 
 struct mRealType;
 class Token;
@@ -48,73 +63,15 @@ public:
 	enum class LRvalue { null, lvalue, rvalue, rliteral };
 	static const mRealType& OpTypeAllowed(TokenType, const mRealType&, const mRealType&);
 	static const Token* OpLiteralCal(TokenType, const Token*, const Token*);
+	template<typename T>
+	static const T& LiteralCal(TokenType, const T&, const optional<T>&);
 };
 
 //类型
-struct mRealType {
-	mRealType(unique_ptr<mType> type, Op::LRvalue lrvalue) :type(move(type)), lrvalue(lrvalue) {};
-	Op::LRvalue lrvalue;
-	unique_ptr<mType> type;
-	void makePointer() { type = make_unique<mTPointer>(move(type)); }
-	mType* operator->() const { return type.get(); }
-	//复制构造函数，提供深层复制
-	/*mRealType(const mRealType& p) {
-		type = p.type->clone();
-		lrvalue = p.lrvalue;
-	}
-	//复制赋值运算符，提供深层复制
-	mRealType& operator=(const mRealType& p) {
-		type = p.type->clone();
-		lrvalue = p.lrvalue;
-	}*/
-};
-/*
-struct mType {
-	virtual ~mType() {}
-	virtual mType* clone() const = 0;
-	bool operator==(mType& t2) const { return t2._typeid == _typeid; }
-	virtual int _typeid() const = 0;
-};
-
-struct mTPointer : public mType {
-	explicit mTPointer(mType* r) :reference(r), __typeid(r->_typeid() + 32) {}
-	~mTPointer() { delete reference; }
-	mType* reference;
-	int __typeid;
-	//复制构造函数，提供深层复制
-	mTPointer(const mTPointer& p) :mType(p) {
-		reference = p.clone();
-		__typeid = p.__typeid;
-	}
-	//复制赋值运算符，提供深层复制
-	mTPointer& operator=(const mTPointer& p) {
-		delete reference;
-		reference = p.clone();
-		__typeid = p.__typeid;
-	}
-	mTPointer(mTPointer&&) = default;
-	mTPointer& operator=(mTPointer&&) = default;
-	mType* clone() const override { return new mTPointer(*this); }
-	int _typeid() const override { return __typeid; }
-	mType* dereference(Op::LRvalue lrvalue) {
-		auto p = reference;
-		reference = nullptr;
-		delete this;
-		return p;
-	}
-};
-
-struct mTBasic : public mType {
-	mTBasic(Op::BuiltInType t) : t(t) {}
-	const Op::BuiltInType t;
-	mType* clone() const override { return new mTBasic(*this); }
-	int _typeid() const override { return t; }
-};*/
-
 struct mType {
 	virtual ~mType() {}
 	virtual unique_ptr<mType> clone() const = 0;
-	bool operator==(const mType& t2) const { return t2._typeid == _typeid; }
+	bool operator==(const mType& t2) const { return t2._typeid() == _typeid(); }
 	virtual int _typeid() const = 0;
 };
 
@@ -146,6 +103,24 @@ struct mTBasic : public mType {
 	const Op::BuiltInType t;
 	unique_ptr<mType> clone() const override { return make_unique<mTBasic>(*this); }
 	int _typeid() const override { return (int)t; }
+};
+
+struct mRealType {
+	mRealType(unique_ptr<mType> type, Op::LRvalue lrvalue) :type(move(type)), lrvalue(lrvalue) {};
+	Op::LRvalue lrvalue;
+	unique_ptr<mType> type;
+	void makePointer() { type = make_unique<mTPointer>(move(type)); }
+	mType* operator->() const { return type.get(); }
+	//复制构造函数，提供深层复制
+	/*mRealType(const mRealType& p) {
+	type = p.type->clone();
+	lrvalue = p.lrvalue;
+	}
+	//复制赋值运算符，提供深层复制
+	mRealType& operator=(const mRealType& p) {
+	type = p.type->clone();
+	lrvalue = p.lrvalue;
+	}*/
 };
 
 class Token {
@@ -238,20 +213,6 @@ public:
 	explicit Token_End(int lineNo) :Token(lineNo) {};
 	Op::TokenType type() override { return Op::TokenType::End; };
 	string debug_out() override { return ""; };
-};
-
-//error-type
-class ExceptionWithLineNo :public exception {
-public:
-	explicit ExceptionWithLineNo(int lineNo) :lineNo(lineNo) {};
-	const int lineNo;
-};
-
-class ErrDesignApp :public exception {
-public:
-	ErrDesignApp(const char* what) :s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {};
-	virtual const char* what() const throw() { return s.c_str(); }
-	const string s;
 };
 
 class ErrOpenedString :public ExceptionWithLineNo {

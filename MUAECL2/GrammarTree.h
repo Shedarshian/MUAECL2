@@ -13,7 +13,8 @@ using namespace std;
 //±‰¡ø
 struct mVar {
 	mVar(unique_ptr<mType> type, string id) :type(move(type)), id(id) {}
-	~mVar() {}
+	//mVar(const mVar&) = delete;
+	//mVar& operator=(const mVar& p) = delete;
 	unique_ptr<mType> type;
 	string id;
 };
@@ -72,10 +73,10 @@ public:
 	tSubVars() = default;
 	//explicit tSubVars(mVar v) { vars.push_back(move(v)); }
 	template<class... Args>
-	explicit tSubVars(Args&&... args) { vars.emplace_back(&args...); }
+	explicit tSubVars(Args&&... args) { vars.emplace_back(forward<Args>(args)...); }
 	Op::NonTerm type() override { return Op::NonTerm::subv; }
 	template<class... Args>
-	void emplaceVar(Args&&... args) { vars.emplace_back(&args...); }
+	void emplaceVar(Args&&... args) { vars.emplace_back(forward<Args>(args)...); }
 private:
 	vector<mVar> vars;
 	friend class tSub;
@@ -111,7 +112,7 @@ public:
 	explicit tNoVars(int id) :id(id) {}
 	void changeid(int id) override { this->id = id; }
 	template<class ... Types>
-	tNoVars(int id, Types ... args) :GrammarTree(id), branchs({ &args... }) {}
+	tNoVars(int id, Types& ... args) :id(id), branchs({ args... }) {}
 	Op::NonTerm type() override { return Op::ToType(id); }
 	void addTree(GrammarTree* t) override { branchs.push_back(t); }
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override {

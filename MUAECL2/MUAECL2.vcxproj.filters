@@ -33,9 +33,6 @@
     <ClInclude Include="Parser.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Exprnizer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="GrammarTree.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -56,13 +53,15 @@
     <ClCompile Include="Parser.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Exprnizer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MUAECL2.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="text1.bin">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

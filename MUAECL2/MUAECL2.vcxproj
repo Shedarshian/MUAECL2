@@ -101,6 +101,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,7 +146,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Exprnizer.h" />
     <ClInclude Include="GrammarTree.h" />
     <ClInclude Include="Misc.h">
       <FileType>CppHeader</FileType>
@@ -156,7 +156,6 @@
     <ClInclude Include="Tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Exprnizer.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="MUAECL2.cpp" />
     <ClCompile Include="Parser.cpp" />
@@ -170,6 +169,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MUAECL2.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="text1.bin" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
