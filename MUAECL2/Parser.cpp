@@ -160,8 +160,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto str = s.top()->getToken()->getId(); popd(s);
 		popd(s);
-		auto typ = move(s.top()->getType().type); popd(s);
-		return new tSubVars(move(typ), str); }
+		auto typ = s.top()->getType(); popd(s);
+		return new tSubVars(typ, str); }
 	case 16:
 	{ //subv->types id, subv
 		popd(s);
@@ -169,8 +169,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 3);
 		auto str = s.top()->getToken()->getId(); popd(s);
 		popd(s);
-		auto typ = move(s.top()->getType().type); popd(s);
-		static_cast<tSubVars*>(t)->emplaceVar(move(typ), str);
+		auto typ = s.top()->getType(); popd(s);
+		static_cast<tSubVars*>(t)->emplaceVar(typ, str);
 		return t; }
 	case 1:
 	{ //stmts->stmt stmts
@@ -201,8 +201,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		popd(s);
-		auto typ = move(s.top()->getType().type); popd(s);
-		static_cast<tDeclVars*>(t)->setDeclType(move(typ));
+		auto typ = s.top()->getType(); popd(s);
+		static_cast<tDeclVars*>(t)->setDeclType(typ);
 		return new tNoVars(3, t);
 	}
 	case 18:
@@ -244,7 +244,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	{ //types->type
 		popd(s);
 		auto type = s.top()->getToken()->getType(); popd(s);
-		return new tType(mRealType(make_unique<mTBasic>(type), Op::LRvalue::null)); }
+		return new tType(type); }
 	case 22:
 	{ //types->type (*)
 		popd(s, 3);

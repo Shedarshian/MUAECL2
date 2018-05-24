@@ -12,10 +12,8 @@ using namespace std;
 
 //变量
 struct mVar {
-	mVar(unique_ptr<mType> type, string id) :type(move(type)), id(id) {}
-	//mVar(const mVar&) = delete;
-	//mVar& operator=(const mVar& p) = delete;
-	unique_ptr<mType> type;
+	mVar(mType* type, string id) :type(type), id(id) {}
+	mType* type;
 	string id;
 };
 
@@ -33,7 +31,7 @@ public:
 	virtual void extractlabel(map<string, GrammarTree*>& labels) {};
 	//取数
 	virtual Token* getToken() { throw(ErrDesignApp("GrammarTree::getToken")); }
-	virtual mRealType& getType() { throw(ErrDesignApp("GrammarTree::getType")); }
+	virtual mType* getType() { throw(ErrDesignApp("GrammarTree::getType")); }
 };
 
 //为入栈所使用的状态标记
@@ -58,13 +56,12 @@ private:
 //types
 class tType : public GrammarTree {
 public:
-	explicit tType(mRealType t) :t(move(t)) {}
-	~tType() {}
+	explicit tType(Op::BuiltInType t) :t(Op::BuiltInTypeObj(t)) {}
 	Op::NonTerm type() override { return Op::NonTerm::types; }
-	mRealType& getType() override { return t; }
-	void makePointer() { t.makePointer(); }
+	mType* getType() override { return t; }
+	void makePointer() { t = t->address(); }
 private:
-	mRealType t;
+	mType* t;
 };
 
 //subv
@@ -91,18 +88,18 @@ public:
 	Op::NonTerm type() override { return Op::NonTerm::vdecl; }
 	void addVar(string id) { varsi.emplace_back(id, nullptr); }
 	void addVar(string id, GrammarTree* inif) { varsi.emplace_back(id, inif); }
-	void setDeclType(unique_ptr<mType> type) { this->typedecl = move(type); }
+	void setDeclType(mType* type) { this->typedecl = move(type); }
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override {
 		auto l = new list<GrammarTree*>();
 		for (auto s : varsi) {
-			v.emplace_back(typedecl->clone(), s.first);
+			v.emplace_back(typedecl, s.first);
 			if (s.second != nullptr)
 				l->push_back(s.second);
 		}
 		return l;
 	}
 private:
-	unique_ptr<mType> typedecl;
+	mType* typedecl;
 	vector<pair<string, GrammarTree*>> varsi;	//逆序储存
 };
 
