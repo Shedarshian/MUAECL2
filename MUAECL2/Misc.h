@@ -7,6 +7,7 @@
 #include <memory>
 #include <exception>
 #include <optional>
+#include <variant>
 using namespace std;
 
 //error-type
@@ -26,15 +27,16 @@ public:
 class Token;
 namespace Op {
 	template<typename T1, typename T2>
-	constexpr static const pair<T2, T1>& swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
+	constexpr static const pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
 	template<typename T1, typename T2>
-	constexpr static const map<T2, T1>& swap_map(const map<T1, T2>& m) {
+	constexpr static const map<T2, T1> swap_map(const map<T1, T2>& m) {
 		map<T2, T1> mo;
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
 	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	enum BuiltInType { type_error, Void, Int, Float, Point };
+	enum LiteralType { lInt, lFloat, lString };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
 	inline static const unordered_set<char> OperatorChar = { '+', '-', '*', '/', '%', '&', '|', '!', '^', '=', '>', '<', '.', ';', ':', '(', ')', '{', '}', ',', '[', ']' };
@@ -69,6 +71,13 @@ namespace Op {
 	private:
 		mType* ptr;
 	};
+
+	mType* mType::address() {
+		if (_address == nullptr)
+			_address = new mTypePointer(this);
+		return _address;
+	}
+
 	inline static const mTypeBasic _builtInTypeObj[5] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4) };
 	static mType* BuiltInTypeObj(BuiltInType t) { return (mType*)(_builtInTypeObj + (int)t); }
 
@@ -88,14 +97,61 @@ namespace Op {
 		if (id == 14 || id == 15) return NonTerm::inif;
 		if (id == 16 || id == 17) return NonTerm::ini;
 		if (id == 20 || id == 21) return NonTerm::exprf;
-		throw(ErrDesignApp("NonTerminator saved error."));
+		throw(ErrDesignApp("Op::ToType(int)"));
 	}
 
 	enum class LRvalue { null, lvalue, rvalue, rliteral };
-	//static const mRealType& OpTypeAllowed(TokenType, const mRealType&, const mRealType&);
-	static const Token* OpLiteralCal(TokenType, const Token*, const Token*);
-	template<typename T>
-	static const T& LiteralCal(TokenType, const T&, const optional<T>&);
+	template<typename T1, typename T2>
+	static const T2 LiteralCal(TokenType typ, const T1& t1, const optional<T1>& t2) {
+		switch (typ) {
+		case TokenType::Plus:
+			return t1 + *t2;
+		case TokenType::Minus:
+			return t1 - *t2;
+		case TokenType::Times:
+			return t1 * *t2;
+		case TokenType::Divide:
+			return t1 / *t2;
+		case TokenType::Mod:
+			return t1 % *t2;
+		case TokenType::Negative:
+			return -t1;
+		case TokenType::Not:
+			return !t1;
+		case TokenType::LogicalOr:
+			[[fallthrough]];
+		case TokenType::Or:
+			return t1 || *t2;
+		case TokenType::LogicalAnd:
+			[[fallthrough]];
+		case TokenType::And:
+			return t1 && *t2;
+		case TokenType::BitOr:
+			return t1 | *t2;
+		case TokenType::BitXor:
+			return t1 ^ *t2;
+		case TokenType::BitAnd:
+			return t1 & *t2;
+		case TokenType::EqualTo:
+			return t1 == *t2;
+		case TokenType::NotEqual:
+			return t1 != *t2;
+		case TokenType::Greater:
+			return t1 > *t2;
+		case TokenType::GreaterEqual:
+			return t1 >= *t2;
+		case TokenType::Less:
+			return t1 < *t2;
+		case TokenType::LessEqual:
+			return t1 <= *t2;
+		case TokenType::Dot:
+			throw(ErrDesignApp("LiteralCal->Dot"));
+		default:
+			throw(ErrDesignApp("LiteralCal"));
+		}
+	}
+	static const Token* OpLiteralCal(TokenType typ, const Token* tl, const Token* tr);
+	//static const mType* OpTypeAllowed(TokenType typ, const mType* tl, const mType* tr);
 };
 
 using mType = Op::mType;
@@ -105,27 +161,51 @@ public:
 	explicit Token(int lineNo) :lineNo(lineNo) {}
 	virtual ~Token() {}
 	//类型
-	virtual Op::TokenType type() = 0;
+	virtual Op::TokenType type() const = 0;
 	//检验
-	virtual bool isIdNum() { return false; }
-	virtual bool isExprFollow() { return false; }
+	//virtual const bool isIdNum() { return false; }
+	virtual bool isExprFollow() const { return false; }
+	//取行号
+	int getlineNo() const { return lineNo; }
 	//取数
-	virtual string getId() { throw(ErrDesignApp("Extract identifier error.")); }
-	virtual Op::BuiltInType getType() { throw(ErrDesignApp("Extract Built-in Type error.")); }
+	virtual const int* getInt() const { throw(ErrDesignApp("Token::getInt")); }
+	virtual const float* getFloat() const { throw(ErrDesignApp("Token::getFloat")); }
+	virtual const string* getString() const { throw(ErrDesignApp("Token::getString")); }
+	virtual string getId() const { throw(ErrDesignApp("Token::getId")); }
+	virtual Op::BuiltInType getType() const { throw(ErrDesignApp("Token::getType")); }
 	//debug输出
-	virtual string debug_out() { return to_string(lineNo); }
+	virtual string debug_out() const { return to_string(lineNo); }
 	friend ostream& operator<< (ostream& stream, Token& token);
 private:
 	const int lineNo;
 };
 
+ostream& operator<< (ostream& stream, Token& token) {
+	stream << token.debug_out();
+	return stream;
+}
+
+class Token_Literal :public Token {
+public:
+	Token_Literal(int lineNo, int val) :Token(lineNo), val(val) {};
+	Token_Literal(int lineNo, float val) :Token(lineNo), val(val) {};
+	Token_Literal(int lineNo, string val) :Token(lineNo), val(val) {};
+	Op::TokenType type() const override { return Op::TokenType::Number; }
+	const int* getInt() const override { return get_if<int>(&val); }
+	const float* getFloat() const override { return get_if<float>(&val); }
+	const string* getString() const override { return get_if<string>(&val); }
+private:
+	variant<int, float, string> val;
+};
+
 //整型常量
-class Token_Int :public Token {
+/*class Token_Int :public Token {
 public:
 	Token_Int(int lineNo, int val) :Token(lineNo), val(val) {}
-	Op::TokenType type() override { return Op::TokenType::Number; }
-	bool isIdNum() override { return true; }
-	string debug_out() override { return to_string(val); }
+	const Op::TokenType type() override { return Op::TokenType::Number; }
+	//const bool isIdNum() override { return true; }
+	const int getInt() override { return val; }
+	const string debug_out() override { return to_string(val); }
 private:
 	int val;
 };
@@ -134,9 +214,10 @@ private:
 class Token_Float :public Token {
 public:
 	Token_Float(int lineNo, float val) :Token(lineNo), val(val) {}
-	Op::TokenType type() override { return Op::TokenType::Number; }
-	bool isIdNum() override { return true; }
-	string debug_out() override { return to_string(val); }
+	const Op::TokenType type() override { return Op::TokenType::Number; }
+	//const bool isIdNum() override { return true; }
+	const float getFloat() override { return val; }
+	const string debug_out() override { return to_string(val); }
 private:
 	float val;
 };
@@ -145,20 +226,22 @@ private:
 class Token_String :public Token {
 public:
 	Token_String(int lineNo, string val) :Token(lineNo), val(val) {}
-	Op::TokenType type() override { return Op::TokenType::Number; }
-	string debug_out() override { return "\"" + val + "\""; }
+	const Op::TokenType type() override { return Op::TokenType::Number; }
+	//const bool isIdNum() override { return true; }
+	const string getString() override { return val; }
+	const string debug_out() override { return "\"" + val + "\""; }
 private:
 	string val;
-};
+};*/
 
 //标识符，包括变量函数线程以及ins
 class Token_Identifier :public Token {
 public:
 	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {}
-	Op::TokenType type() override { return Op::TokenType::Identifier; }
-	bool isIdNum() override { return true; }
-	string getId() override { return val; }
-	string debug_out() override { return val; }
+	Op::TokenType type() const override { return Op::TokenType::Identifier; }
+	//bool isIdNum() const override { return true; }
+	string getId() const override { return val; }
+	string debug_out() const override { return val; }
 private:
 	string val;
 };
@@ -167,9 +250,9 @@ private:
 class Token_Operator :public Token {
 public:
 	Token_Operator(int lineNo, Op::TokenType val) :Token(lineNo), val(val) {}
-	Op::TokenType type() override { return val; }
-	bool isExprFollow() override { return val == Op::TokenType::Colon || val == Op::TokenType::BigKet || val == Op::TokenType::Comma || val == Op::TokenType::Ket || val == Op::TokenType::Semicolon; }
-	string debug_out() override { return Op::ToString(val); }
+	Op::TokenType type() const override { return val; }
+	bool isExprFollow() const override { return val == Op::TokenType::Colon || val == Op::TokenType::BigKet || val == Op::TokenType::Comma || val == Op::TokenType::Ket || val == Op::TokenType::Semicolon; }
+	string debug_out() const override { return Op::ToString(val); }
 private:
 	Op::TokenType val;
 };
@@ -178,8 +261,8 @@ private:
 class Token_KeywordType :public Token_Operator {
 public:
 	Token_KeywordType(int lineNo, Op::BuiltInType type) :Token_Operator(lineNo, Op::TokenType::Type), val(type) {}
-	Op::BuiltInType getType() override { return val; }
-	string debug_out() override { return Op::ToString(val); }
+	Op::BuiltInType getType() const override { return val; }
+	string debug_out() const override { return Op::ToString(val); }
 private:
 	Op::BuiltInType val;
 };
@@ -188,8 +271,8 @@ private:
 class Token_End :public Token {
 public:
 	explicit Token_End(int lineNo) :Token(lineNo) {}
-	Op::TokenType type() override { return Op::TokenType::End; }
-	string debug_out() override { return ""; }
+	Op::TokenType type() const override { return Op::TokenType::End; }
+	string debug_out() const override { return ""; }
 };
 
 class ErrOpenedString :public ExceptionWithLineNo {
@@ -225,3 +308,28 @@ public:
 private:
 	string s;
 };
+
+class ErrLabelRedefined :public ExceptionWithLineNo {
+public:
+	ErrLabelRedefined(int lineNo, string label) :ExceptionWithLineNo(lineNo), id("label "s + label + " redefined."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrVarRedeclared :public ExceptionWithLineNo {
+public:
+	ErrVarRedeclared(int lineNo, string var) :ExceptionWithLineNo(lineNo), id("variable "s + var + " redeclared."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+const Token* Op::OpLiteralCal(TokenType typ, const Token* tl, const Token* tr) {
+	if (auto lstr = tl->getString(), rstr = tr->getString(); lstr && rstr) {
+		//auto str = Op::LiteralCal<string>(typ, *lstr, make_optional(*rstr));
+		if (lstr || rstr)
+			throw(ErrDesignApp("OpLiteralCal(string, other)"));
+	}
+	return nullptr;
+}

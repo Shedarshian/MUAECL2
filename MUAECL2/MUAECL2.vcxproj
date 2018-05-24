@@ -167,12 +167,6 @@
     </ClCompile>
     <ClCompile Include="Tokenizer.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="MUAECL2.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="text1.bin" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

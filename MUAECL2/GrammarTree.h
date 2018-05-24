@@ -6,6 +6,8 @@
 #include <utility>
 #include <algorithm>
 #include <memory>
+#include <tuple>
+#include <numeric>
 #include "Misc.h"
 
 using namespace std;
@@ -21,7 +23,7 @@ struct mVar {
 //语法树以终结符与非终结符为节点，以每个产生式为子类型
 class GrammarTree {
 public:
-	virtual ~GrammarTree() = 0;
+	virtual ~GrammarTree() {};
 	virtual void changeid(int id) { throw(ErrDesignApp("GrammarTree::changeid")); }
 	virtual Op::NonTerm type() { throw(ErrDesignApp("GrammarTree::type")); }
 	virtual int state() { throw(ErrDesignApp("GrammarTree::state")); }
@@ -32,6 +34,8 @@ public:
 	//取数
 	virtual Token* getToken() { throw(ErrDesignApp("GrammarTree::getToken")); }
 	virtual mType* getType() { throw(ErrDesignApp("GrammarTree::getType")); }
+	//类型检查，包括类型匹配，检查变量声明，计算goto标签等
+	virtual void TypeCheck() {}
 };
 
 //为入栈所使用的状态标记
@@ -67,7 +71,7 @@ private:
 //subv
 class tSubVars :public GrammarTree {
 public:
-	tSubVars() = default;
+	tSubVars() {};
 	//explicit tSubVars(mVar v) { vars.push_back(move(v)); }
 	template<class... Args>
 	explicit tSubVars(Args&&... args) { vars.emplace_back(forward<Args>(args)...); }
@@ -82,25 +86,31 @@ private:
 //vdecl
 class tDeclVars :public GrammarTree {
 public:
-	explicit tDeclVars(string id) :varsi({ { id, nullptr } }), typedecl(nullptr) {}
-	tDeclVars(string id, GrammarTree* inif) :varsi({ { id, inif } }), typedecl(nullptr) {}
+	explicit tDeclVars(string id, int lineNo) :varsi({ { id, lineNo, nullptr } }), typedecl(nullptr) {}
+	tDeclVars(string id, int lineNo, GrammarTree* inif) :varsi({ { id, lineNo, inif } }), typedecl(nullptr) {}
 	~tDeclVars() {}
 	Op::NonTerm type() override { return Op::NonTerm::vdecl; }
-	void addVar(string id) { varsi.emplace_back(id, nullptr); }
-	void addVar(string id, GrammarTree* inif) { varsi.emplace_back(id, inif); }
+	void addVar(string id, int lineNo) { varsi.emplace_back(id, lineNo, nullptr); }
+	void addVar(string id, int lineNo, GrammarTree* inif) { varsi.emplace_back(id, lineNo, inif); }
 	void setDeclType(mType* type) { this->typedecl = move(type); }
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override {
 		auto l = new list<GrammarTree*>();
 		for (auto s : varsi) {
-			v.emplace_back(typedecl, s.first);
-			if (s.second != nullptr)
-				l->push_back(s.second);
+			auto&[var, lineNo, tree] = s;
+			auto same = accumulate(varsi.begin(), varsi.end(), false, 
+				[&str = var](pair<string, GrammarTree*>& a, bool b) {
+					return (a.first == str) || b; });
+			if (same)
+				throw(ErrVarRedeclared(lineNo, var));
+			v.emplace_back(typedecl, var);
+			if (tree != nullptr)
+				l->push_back(tree);
 		}
 		return l;
 	}
 private:
 	mType* typedecl;
-	vector<pair<string, GrammarTree*>> varsi;	//逆序储存
+	vector<tuple<string, int, GrammarTree*>> varsi;	//逆序储存
 };
 
 //其余tree
@@ -113,9 +123,8 @@ public:
 	Op::NonTerm type() override { return Op::ToType(id); }
 	void addTree(GrammarTree* t) override { branchs.push_back(t); }
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override {
-		if (id == 3) {
+		if (id == 3)
 			return branchs[0]->extractdecl(v);
-		}
 		if (id >= 5 && id <= 7 || id == 9)
 			branchs[0]->extractdecl(v);
 		if (id == 18) {
@@ -135,13 +144,13 @@ protected:
 class tStmts :public GrammarTree {
 public:
 	Op::NonTerm type() override { return Op::NonTerm::stmts; }
-	void insertlabel(string s, GrammarTree* t) { labels.push_back(make_pair(s, t)); }
+	void insertlabel(string s, int lineNo, GrammarTree* t) { labels.push_back(make_tuple(s, lineNo, t)); }
 	void addTree(GrammarTree* t) override { branchs.push_back(t); }
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override {
 		for (auto it = branchs.begin(); it != branchs.end(); ++it) {
 			auto t = (*it)->extractdecl(v);
 			if (t != nullptr)
-				move(t->begin(), t->end(), insert_iterator<decltype(branchs)>(branchs, it));
+				move(t->begin(), t->end(), inserter(branchs, it));
 			delete *it;
 			branchs.erase(it);
 			delete t;
@@ -149,10 +158,15 @@ public:
 		return nullptr;
 	}
 	void extractlabel(map<string, GrammarTree*>& l) override {
-		move(labels.begin(), labels.end(), insert_iterator<map<string, GrammarTree*>>(l, l.begin()));
+		for (auto p : labels) {
+			auto&[label, lineNo, tree] = p;
+			auto x = l.insert(make_pair(label, tree));
+			if (!x.second)
+				throw(ErrLabelRedefined(lineNo, label));
+		}
 	}
 private:
-	vector<pair<string, GrammarTree*>> labels;
+	vector<tuple<string, int, GrammarTree*>> labels;
 	list<GrammarTree*> branchs;		//全部逆序储存，因为产生式都是右递归的
 };
 
@@ -163,7 +177,9 @@ public:
 		delete subv;
 		stmts->extractdecl(vardecl);
 		stmts->extractlabel(labels);
-		//TODO label
+	}
+	void checkVar(const mVar& var) {
+
 	}
 private:
 	const string name;

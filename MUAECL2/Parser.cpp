@@ -19,7 +19,7 @@ const map<int, map<Op::TokenType, int>*> Parser::makeAction() {
 		getline(f, s, ',');
 		if (s != "") {
 			//如果指定ptr则直接链接，跳过这行的读取
-			ptr.insert(index);
+			Parser::ptr.insert(index);
 			Action[index] = Action[stoi(s)];
 			getline(f, s);
 		}
@@ -38,9 +38,9 @@ const map<int, map<Op::TokenType, int>*> Parser::makeAction() {
 	return Action;
 }
 
-const map<int, map<Op::TokenType, int>*> Action = Parser::makeAction();
+const map<int, map<Op::TokenType, int>*> Parser::Action = Parser::makeAction();
 
-const map<Op::NonTerm, map<int, int>> Goto = {
+const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 7, 7 },{ 8, 79 },{ 9, 7 },{ 58, 60 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
 	{ NonTerm::stmts, map<int, int>({ { 7, 17 },{ 9, 49 },{ 77, 78 },{ 79, 18 } }) },
 	{ NonTerm::subs, map<int, int>({ { 0, 255 },{ 50, 51 } }) },
@@ -186,8 +186,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto t2 = s.top(); t->addTree(t2); s.pop();
 		popd(s, 3);
-		static_cast<tStmts*>(t)->insertlabel(
-			s.top()->getToken()->getId(), t2); popd(s);
+		auto tok = s.top()->getToken();
+		static_cast<tStmts*>(t)->insertlabel(tok->getId(), tok->getlineNo(), t2); popd(s);
 		return t; }
 	case 3: //stmts->\e
 		return new tStmts();
@@ -254,8 +254,9 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 32:
 	{ //vdecl->id
 		popd(s);
-		auto str = s.top()->getToken()->getId(); s.pop();
-		return new tDeclVars(str); }
+		auto tok = s.top()->getToken();
+		auto str = tok->getId(); auto lineNo = tok->getlineNo(); s.pop();
+		return new tDeclVars(str, lineNo); }
 	case 33:
 	{ //vdecl->id = inif
 		popd(s);
@@ -263,16 +264,18 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto tok = s.top(); s.pop();
 		popd(s);
-		auto t2 = s.top(); auto str = t2->getToken()->getId(); s.pop();
+		auto t2 = s.top();
+		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
 		auto ta = new tNoVars(26, t1, tok, t2);
-		return new tDeclVars(str, ta); }
+		return new tDeclVars(str, lineNo, ta); }
 	case 34:
 	{ //vdecl->id , vdecl
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
-		auto str = s.top()->getToken()->getId(); s.pop();
-		static_cast<tDeclVars*>(t)->addVar(str);
+		auto tok = s.top()->getToken();
+		auto str = tok->getId(); auto lineNo = tok->getlineNo(); s.pop();
+		static_cast<tDeclVars*>(t)->addVar(str, lineNo);
 		return t; }
 	case 35:
 	{ //vdecl->id = inif , vdecl
@@ -283,9 +286,10 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto tok = s.top(); s.pop();
 		popd(s);
-		auto t2 = s.top(); auto str = t2->getToken()->getId(); s.pop();
+		auto t2 = s.top();
+		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
 		auto ta = new tNoVars(26, t1, tok, t2);
-		static_cast<tDeclVars*>(t)->addVar(str, ta);
+		static_cast<tDeclVars*>(t)->addVar(str, lineNo, ta);
 		return t; }
 	case 29: //inia->expr
 		[[fallthrough]];

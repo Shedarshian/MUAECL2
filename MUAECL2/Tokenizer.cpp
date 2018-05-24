@@ -124,7 +124,7 @@ Token* Tokenizer::getToken(){
 				ReadStream.get(nextChar);
 			}
 			ReadStream.get(nextChar);
-			return new Token_String(lineNo, s);
+			return new Token_Literal(lineNo, s);
 		}
 		//±êÊ¶·û
 		if (nextChar >= 'a' && nextChar <= 'z' || nextChar >= 'A' && nextChar <= 'Z' || nextChar == '_') {
@@ -159,7 +159,7 @@ Token* Tokenizer::getToken(){
 						else
 							break;
 					}
-					return new Token_Int(lineNo, stoi(s, 0, 16));
+					return new Token_Literal(lineNo, stoi(s, 0, 16));
 				}
 				else
 					s = '0';
@@ -185,9 +185,9 @@ Token* Tokenizer::getToken(){
 					break;
 			}
 			if (!dotted)
-				return new Token_Int(lineNo, stoi(s));
+				return new Token_Literal(lineNo, stoi(s));
 			else
-				return new Token_Float(lineNo, stof(s));
+				return new Token_Literal(lineNo, stof(s));
 		}
 		throw(ErrUnknownCharacter(lineNo));
 	}
