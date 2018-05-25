@@ -35,7 +35,7 @@ namespace Op {
 		return mo;
 	}
 	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
-	enum BuiltInType { type_error, Void, Int, Float, Point };
+	enum BuiltInType { type_error, Void, Int, Float, Point, inilist };
 	enum LiteralType { lInt, lFloat, lString };
 	//·ÇÖÕ½á·û
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
@@ -51,6 +51,7 @@ namespace Op {
 		virtual ~mType() {}
 		virtual mType* address();
 		virtual mType* dereference() = 0;
+		virtual string ToString() = 0;
 	protected:
 		mType* _address;
 	};
@@ -59,7 +60,9 @@ namespace Op {
 	public:
 		mTypeBasic(BuiltInType t) :t(t) {}
 		mTypeBasic(int t) :t((BuiltInType)t) {}
-		mType* dereference() override { throw(ErrDesignApp("mTypeBasic::dereference")); }
+		mType* dereference() override { return nullptr; }
+		BuiltInType get() { return t; }
+		inline string ToString() override;
 	private:
 		BuiltInType t;
 	};
@@ -68,6 +71,7 @@ namespace Op {
 	public:
 		mTypePointer(mType* t) :ptr(t) {}
 		mType* dereference() override { return ptr; }
+		inline string ToString() override { return ptr->ToString() + '*'; }
 	private:
 		mType* ptr;
 	};
@@ -78,18 +82,20 @@ namespace Op {
 		return _address;
 	}
 
-	inline static const mTypeBasic _builtInTypeObj[5] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4) };
+	inline static const mTypeBasic _builtInTypeObj[6] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4), mTypeBasic(5) };
 	static mType* BuiltInTypeObj(BuiltInType t) { return (mType*)(_builtInTypeObj + (int)t); }
 
 	inline static const map<TokenType, string> OperatorToString = { { TT::Plus, "+" }, { TT::Minus, "-" }, { TT::Times, "*" }, { TT::Divide, "/" }, { TT::Mod, "%" }, { TT::EqualTo, "==" }, { TT::NotEqual, "!=" }, { TT::Less, "<" }, { TT::LessEqual, "<=" }, { TT::Greater, ">" }, { TT::GreaterEqual, ">=" }, { TT::Not, "!" }, { TT::LogicalOr, "||" }, { TT::LogicalAnd, "&&" }, { TT::BitOr, "|" }, { TT::BitAnd, "&" }, { TT::BitXor, "^" }, { TT::Negative, "(-)" }, { TT::Deref, "(*)" }, { TT::Address, "(&)" }, { TT::Dot, "." }, { TT::And, "and" }, { TT::Or, "or" }, { TT::Equal, "=" }, { TT::PlusEqual, "+=" }, { TT::MinusEqual, "-=" }, { TT::TimesEqual, "*=" }, { TT::DividesEqual, "/=" }, { TT::ModEqual, "%=" }, { TT::LogicalOrEqual, "||=" }, { TT::LogicalAndEqual, "&&=" }, { TT::BitOrEqual, "|=" }, { TT::BitAndEqual, "&=" }, { TT::BitXorEqual, "^=" }, { TT::If, "if" }, { TT::Else, "else" }, { TT::For, "for" }, { TT::While, "while" }, { TT::Break, "break" }, { TT::Continue, "continue" }, { TT::Goto, "goto" }, { TT::Sub, "sub" }, { TT::Semicolon, ";" }, { TT::Colon, ":" }, { TT::Bra, "(" }, { TT::Ket, ")" }, { TT::MidBra, "[" }, { TT::MidKet, "]" }, { TT::BigBra, "{" }, { TT::BigKet, "}" }, { TT::Comma, "," } };
 	inline static const map<string, TokenType> StringToOperator = swap_map(OperatorToString);
-	inline static const map<string, BuiltInType> StringToType = { { "type_error", type_error }, { "void", Void }, { "int", Int }, { "float", Float }, { "point", Point } };
+	inline static const map<string, BuiltInType> StringToType = { { "type_error", type_error }, { "void", Void }, { "int", Int }, { "float", Float }, { "point", Point }, { "initializer_list", inilist } };
 	inline static const map<BuiltInType, string> TypeToString = swap_map(StringToType);
 
 	inline static string ToString(TokenType op) { return OperatorToString.find(op)->second; }
 	inline static TokenType ToOperator(string s) { return StringToOperator.find(s)->second; }
 	inline static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
 	inline static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
+	inline static string ToString(mType* type) { return type->ToString(); }
+	string mTypeBasic::ToString() { return Op::ToString(t); }
 	static NonTerm ToType(int id) {
 		if (id >= 2 && id <= 11) return NonTerm::stmt;
 		if (id >= 22 && id <= 28) return NonTerm::expr;
@@ -324,6 +330,45 @@ public:
 private:
 	string id;
 };
+
+class ErrFuncRedeclared :public ExceptionWithLineNo {
+public:
+	ErrFuncRedeclared(int lineNo, string var) :ExceptionWithLineNo(lineNo), id("function "s + var + " redeclared."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrBreakWithoutWhile :public ExceptionWithLineNo {
+public:
+	ErrBreakWithoutWhile(int lineNo, string _break) :ExceptionWithLineNo(lineNo), id(_break + " can only be used in while or for block."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrTypeChangeLoss :public ExceptionWithLineNo {
+public:
+	ErrTypeChangeLoss(int lineNo, mType* type, mType* expectType) :ExceptionWithLineNo(lineNo),
+		id("error implicit conversing type "s + type->ToString() + " to type "s + expectType->ToString() + ". maybe missing explicit conversing."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrDiscardValue :public ExceptionWithLineNo {
+public:
+	ErrDiscardValue(int lineNo) :ExceptionWithLineNo(lineNo) {};
+	virtual const char* what() const throw() { return "discarded value unallowed. If pushing into stack, please use ins_44 and ins_45."; }
+};
+
+/*class ErrVarNotFound :public ExceptionWithLineNo {
+public:
+	ErrVarNotFound(int lineNo, string var) :ExceptionWithLineNo(lineNo), id("variable "s + var + " not found."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};*/
 
 const Token* Op::OpLiteralCal(TokenType typ, const Token* tl, const Token* tr) {
 	if (auto lstr = tl->getString(), rstr = tr->getString(); lstr && rstr) {

@@ -26,9 +26,9 @@ R35		vdecl->id = inif , vdecl
 R36	id19	insv->exprf
 R37		insv->exprf , insv
 R38	id19	insv->\e
-R24	id14c	inif->ini
+R24	id14	inif->ini
 R25	id15	inif->ini : ini : ini : ini
-R26	id16c	ini->expr
+R26	id16	ini->expr
 R27	id17c	ini->{ inia }
 R28		inia->expr , inia
 R29	id12	inia->expr

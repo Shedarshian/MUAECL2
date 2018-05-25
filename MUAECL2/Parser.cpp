@@ -120,7 +120,7 @@ GrammarTree* Parser::analyse() {
 
 void Parser::TypeCheck() {
 	try {
-
+		saveTree->TypeCheck(nullptr, nullptr);
 	}
 	catch (...) {
 		//析构
@@ -135,11 +135,9 @@ void Parser::TypeCheck() {
 //依据产生式id号由stack构造tree
 GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	switch (id) {
-	case 12:
-	//subs->\e
+	case 12: //subs->\e
 		return new tRoot();
-	case 13:
-	{ //subs->sub id ( subv ) { stmts } subs
+	case 13: { //subs->sub id ( subv ) { stmts } subs
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
@@ -147,40 +145,38 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 5);
 		auto subv = s.top(); s.pop();
 		popd(s, 3);
-		auto str = s.top()->getToken()->getId(); popd(s);
+		auto tok = s.top()->getToken();
+		auto str = tok->getId(); auto lineNo = tok->getlineNo(); popd(s);
 		popd(s, 2);
-		static_cast<tRoot*>(t)->addSub(new tSub(str, static_cast<tSubVars*>(subv), stmts));
+		static_cast<tRoot*>(t)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts));
 		//构造函数中提取所有label与var，存到sub里
 		return t; }
-	case 14:
-	//subv->\e
+	case 14: //subv->\e
 		return new tSubVars();
-	case 15:
-	{ //subv->types id
+	case 15: { //subv->types id
 		popd(s);
 		auto str = s.top()->getToken()->getId(); popd(s);
 		popd(s);
 		auto typ = s.top()->getType(); popd(s);
 		return new tSubVars(typ, str); }
-	case 16:
-	{ //subv->types id, subv
+	case 16: { //subv->types id, subv
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
-		auto str = s.top()->getToken()->getId(); popd(s);
+		auto tok = s.top()->getToken();
+		auto str = tok->getId(); auto lineNo = tok->getlineNo(); popd(s);
 		popd(s);
 		auto typ = s.top()->getType(); popd(s);
-		static_cast<tSubVars*>(t)->emplaceVar(typ, str);
+		static_cast<tSubVars*>(t)->emplaceVar(typ, str, lineNo);
+		//查重在此发生
 		return t; }
-	case 1:
-	{ //stmts->stmt stmts
+	case 1: { //stmts->stmt stmts
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s);
 		t->addTree(s.top()); s.pop();
 		return t; }
-	case 2:
-	{ //stmts->id : stmt stmts
+	case 2: { //stmts->id : stmt stmts
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s);
@@ -191,22 +187,18 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		return t; }
 	case 3: //stmts->\e
 		return new tStmts();
-	case 4:
-	{ //stmt->expr ;
+	case 4: { //stmt->expr ;
 		popd(s, 3);
-		auto t = new tNoVars(2, s.top()); s.pop();
+		auto t = new tNoVars(2, s.top()->getLineNo(), s.top()); s.pop();
 		return t; }
-	case 5:
-	{ //stmt->types vdecl ;
+	case 5: { //stmt->types vdecl ;
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		popd(s);
 		auto typ = s.top()->getType(); popd(s);
 		static_cast<tDeclVars*>(t)->setDeclType(typ);
-		return new tNoVars(3, t);
-	}
-	case 18:
-	{ //stmt->if ( expr ) stmt else stmt
+		return new tNoVars(3, -1, t); }
+	case 18: { //stmt->if ( expr ) stmt else stmt
 		popd(s);
 		auto t1 = s.top(); s.pop();
 		popd(s, 3);
@@ -214,51 +206,48 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 3);
 		auto t3 = s.top(); s.pop();
 		popd(s, 4);
-		return new tNoVars(4, t1, t2, t3); }
+		return new tNoVars(4, -1, t1, t2, t3); }
 	case 7: //stmt->if ( expr ) stmt
 		[[fallthrough]];
 	case 8: //stmt->while ( expr ) stmt
 		[[fallthrough]];
-	case 9:
-	{ //stmt->for ( exprf ) stmt
+	case 9: { //stmt->for ( exprf ) stmt
 		popd(s);
 		auto t1 = s.top(); s.pop();
 		popd(s, 3);
 		auto t2 = s.top(); s.pop();
 		popd(s, 4);
-		return new tNoVars(id - 2, t1, t2); }
+		return new tNoVars(id - 2, -1, t1, t2); }
 	case 10: //stmt->goto id ;
+		//[0]还存指向的label对应的stmt
 		[[fallthrough]];
-	case 11:
-	{ //stmt->{ stmts }
+	case 11: { //stmt->{ stmts }
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		popd(s, 2);
-		return new tNoVars(id - 2, t); }
-	case 19: //stmt->break;
+		return new tNoVars(id - 2, -1, t); }
+	case 19: //stmt->break ;
 		[[fallthrough]];
-	case 20: //stmt->continue;
-		popd(s, 4);
-		return new tNoVars(id - 9);
-	case 21:
-	{ //types->type
+	case 20: { //stmt->continue ;
+		//[0]存指向的for块
+		popd(s, 3);
+		auto lineNo = s.top()->getLineNo(); popd(s);
+		return new tNoVars(id - 9, lineNo); }
+	case 21: { //types->type
 		popd(s);
 		auto type = s.top()->getToken()->getType(); popd(s);
 		return new tType(type); }
-	case 22:
-	{ //types->type (*)
+	case 22: { //types->type (*)
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		static_cast<tType*>(t)->makePointer();
 		return t; }
-	case 32:
-	{ //vdecl->id
+	case 32: { //vdecl->id
 		popd(s);
 		auto tok = s.top()->getToken();
 		auto str = tok->getId(); auto lineNo = tok->getlineNo(); s.pop();
 		return new tDeclVars(str, lineNo); }
-	case 33:
-	{ //vdecl->id = inif
+	case 33: { //vdecl->id = inif
 		popd(s);
 		auto t1 = s.top(); s.pop();
 		popd(s);
@@ -266,10 +255,9 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto t2 = s.top();
 		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
-		auto ta = new tNoVars(26, t1, tok, t2);
+		auto ta = new tNoVars(26, t1->getLineNo(), t1, tok, t2);
 		return new tDeclVars(str, lineNo, ta); }
-	case 34:
-	{ //vdecl->id , vdecl
+	case 34: { //vdecl->id , vdecl
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
@@ -277,8 +265,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		auto str = tok->getId(); auto lineNo = tok->getlineNo(); s.pop();
 		static_cast<tDeclVars*>(t)->addVar(str, lineNo);
 		return t; }
-	case 35:
-	{ //vdecl->id = inif , vdecl
+	case 35: { //vdecl->id = inif , vdecl
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
@@ -288,7 +275,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto t2 = s.top();
 		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
-		auto ta = new tNoVars(26, t1, tok, t2);
+		auto ta = new tNoVars(26, t1->getLineNo(), t1, tok, t2);
 		static_cast<tDeclVars*>(t)->addVar(str, lineNo, ta);
 		return t; }
 	case 29: //inia->expr
@@ -297,47 +284,39 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		[[fallthrough]];
 	case 39: //expr->id
 		[[fallthrough]];
-	case 40:
-	{ //expr->num
+	case 40: { //expr->num
 		popd(s);
-		auto t = new tNoVars(id - 17, s.top()); s.pop();
+		auto t = new tNoVars(id - 17, s.top()->getLineNo(), s.top()); s.pop();
 		return t; }
 	case 28: //inia->expr , inia
 		[[fallthrough]];
-	case 37:
-	{ //insv->exprf , insv
+	case 37: { //insv->exprf , insv
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
 		t->addTree(s.top()); s.pop();
 		return t; }
-	case 38:
-	//insv->\e
-		return new tNoVars(19);
+	case 38: //insv->\e
+		return new tNoVars(19, -1);
 	case 24: //inif->ini
 		[[fallthrough]];
 	case 26: //ini->expr
 		[[fallthrough]];
-	case 30:
-	{ //exprf->expr
+	case 30: { //exprf->expr
 		popd(s);
 		auto t = s.top(); s.pop();
-		t->changeid(id - 10);
-		return t; }
-	case 25:
-	//inif->ini:ini:ini:ini
+		return new tNoVars(id - 10, t->getLineNo(), t); }
+	case 25: //inif->ini:ini:ini:ini
 		[[fallthrough]];
-	case 31:
-	{ //exprf->expr:expr:expr:expr
+	case 31: { //exprf->expr:expr:expr:expr
 		GrammarTree* t[4];
 		for (int i = 0; i < 4; i++) {
 			popd(s, i ? 2 : 1);
 			t[i] = s.top(); s.pop();
 			popd(s);
 		}
-		return new tNoVars(id - 10, t[0], t[1], t[2], t[3]); }
-	case 27:
-	{ //ini->{ inia }
+		return new tNoVars(id - 10, t[0]->getLineNo(), t[0], t[1], t[2], t[3]); }
+	case 27: { //ini->{ inia }
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		popd(s, 2);
@@ -381,17 +360,15 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		[[fallthrough]];
 	case 61: //expr->expr . expr
 		[[fallthrough]];
-	case 67:
-	{ //expr->expr as_op exprf
+	case 67: { //expr->expr as_op exprf
 		popd(s);
 		auto t1 = s.top(); s.pop();
 		popd(s);
 		auto tok = s.top(); s.pop();
 		popd(s);
 		auto t2 = s.top(); s.pop();
-		return new tNoVars(26, t1, tok, t2); }
-	case 62:
-	{ //expr->( expr )
+		return new tNoVars(26, t1->getLineNo(), t1, tok, t2); }
+	case 62: { //expr->( expr )
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		popd(s, 2);
@@ -402,30 +379,30 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		[[fallthrough]];
 	case 64: //expr->(*) expr
 		[[fallthrough]];
-	case 65:
-	{ //expr->(&) expr
+	case 65: { //expr->(&) expr
 		popd(s);
 		auto t1 = s.top(); s.pop();
 		popd(s);
 		auto tok = s.top(); s.pop();
-		return new tNoVars(25, t1, tok); }
+		return new tNoVars(25, t1->getLineNo(), t1, tok); }
 	case 63: //expr->id ( insv )
 		[[fallthrough]];
-	case 66:
-	{ //expr->expr [ expr ]
-		popd(s, 3);
+	case 66: { //expr->expr [ expr ]
+		popd(s);
+		//存结尾右括号的行号
+		auto lineNo = s.top()->getLineNo();
+		popd(s, 2);
 		auto t1 = s.top(); s.pop();
 		popd(s, 3);
 		auto t2 = s.top(); s.pop();
-		return new tNoVars(id - (63 - 24) , t1, t2); }
-	case 68:
-	{ //expr->( types ) expr
+		return new tNoVars(id - (63 - 24), lineNo, t1, t2); }
+	case 68: { //expr->( types ) expr
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
 		auto t2 = s.top(); s.pop();
 		popd(s, 2);
-		return new tNoVars(28, t, t2); }
+		return new tNoVars(28, t->getLineNo(), t, t2); }
 	default:
 		return nullptr;
 	}
