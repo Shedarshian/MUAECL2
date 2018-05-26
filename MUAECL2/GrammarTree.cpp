@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "GrammarTree.h"
+
 using namespace std;
 
 void GrammarTree::changeid(int id) { throw(ErrDesignApp("GrammarTree::changeid")); }
@@ -11,16 +12,16 @@ void GrammarTree::extractlabel(map<string, GrammarTree*>& labels) {};
 Token* GrammarTree::getToken() { throw(ErrDesignApp("GrammarTree::getToken")); }
 mType* GrammarTree::getType() { throw(ErrDesignApp("GrammarTree::getType")); }
 int GrammarTree::getLineNo() { throw(ErrDesignApp("GrammarTree::getLineNo")); }
-mType* GrammarTree::TypeCheck(tSub* sub, GrammarTree* whileBlock) { throw(ErrDesignApp("GrammarTree::TypeCheck")); }
+mVType GrammarTree::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) { throw(ErrDesignApp("GrammarTree::TypeCheck")); }
 
-explicit tState::tState(int state) :_state(state) {}
+tState::tState(int state) :_state(state) {}
 int tState::state() { return _state; }
 
-explicit tTerminator::tTerminator(Token* t) :t(t) {}
+tTerminator::tTerminator(Token* t) :t(t) {}
 tTerminator::~tTerminator() { delete t; }
 Token* tTerminator::getToken() { return t; }
 
-explicit tType::tType(Op::BuiltInType t) :t(Op::BuiltInTypeObj(t)) {}
+tType::tType(Op::BuiltInType t) :t(Op::BuiltInTypeObj(t)) {}
 Op::NonTerm tType::type() { return Op::NonTerm::types; }
 mType* tType::getType() { return t; }
 void tType::makePointer() { t = t->address(); }
@@ -29,7 +30,7 @@ tSubVars::tSubVars(mType* type, string id) { vars.emplace_back(type, id); }
 
 void tSubVars::emplaceVar(mType* type, string id, int lineNo) {
 	auto same = accumulate(vars.begin(), vars.end(), false,
-		[&str = id](mVar& a, bool b) {
+		[&str = id](bool b, mVar& a) {
 			return (a.id == str) || b; });
 	if (same)
 		throw(ErrVarRedeclared(lineNo, id));
@@ -52,8 +53,8 @@ list<GrammarTree*>* tDeclVars::extractdecl(vector<mVar>& v) {
 		for (auto s : varsi) {
 			auto&[var, lineNo, tree] = s;
 			auto same = accumulate(varsi.begin(), varsi.end(), false,
-				[&str = var](pair<string, GrammarTree*>& a, bool b) {
-				return (a.first == str) || b; });
+				[&str = var](bool b, tuple<string, int, GrammarTree*>& a) {
+				return (get<0>(a) == str) || b; });
 			if (same)
 				throw(ErrVarRedeclared(lineNo, var));
 			v.emplace_back(typedecl, var);
@@ -79,8 +80,6 @@ tNoVars::~tNoVars() {
 
 tNoVars::tNoVars(int id, int lineNo) :id(id), lineNo(lineNo) {}
 void tNoVars::changeid(int id) { this->id = id; }
-template<class ... Types>
-tNoVars::tNoVars(int id, int lineNo, Types& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
 Op::NonTerm tNoVars::type() { return Op::ToType(id); }
 void tNoVars::addTree(GrammarTree* t) { branchs.push_back(t); }
 
@@ -99,89 +98,108 @@ list<GrammarTree*>* tNoVars::extractdecl(vector<mVar>& v) {
 	return nullptr;
 }
 
-mType* tNoVars::TypeCheck(tSub* sub, GrammarTree* whileBlock) {
+mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	switch (id) {
 	case 2:	//stmt->expr ;
-		if (branchs[0]->TypeCheck(sub, whileBlock) != TYPE(Void))
+		//需要可转成void右值，不允许弃值表达式。由于没有可以隐式转成void右值的实际表达式故不添加隐式转换节点
+		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
+		if (_type > VTYPE(Void, r))
 			throw(ErrDiscardValue(branchs[0]->getLineNo()));
-		return nullptr;
+		//不需要左值到右值转换
+		//_type.valuetype = Op::LRvalue::rvalue;
+		break;
 	case 3: //stmt->types vdecl ;
 		throw(ErrDesignApp("GrammarTree::TypeCheck.3"));
-	case 4:	//stmt->if ( expr ) stmt else stmt
-		if (auto type = branchs[2]->TypeCheck(sub, whileBlock); type != TYPE(Int))
-			throw ErrTypeChangeLoss(branchs[2]->getLineNo(), type, TYPE(Int));
-		branchs[1]->TypeCheck(sub, whileBlock);
-		return branchs[0]->TypeCheck(sub, whileBlock);
+	case 4: { //stmt->if ( expr ) stmt else stmt
+		auto typ = branchs[2]->TypeCheck(sub, subs, whileBlock);
+		if (typ > VTYPE(Int, r))
+			throw ErrTypeChangeLoss(branchs[2]->getLineNo(), typ.type, TYPE(Int));
+		branchs[1]->TypeCheck(sub, subs, whileBlock);
+		branchs[0]->TypeCheck(sub, subs, whileBlock);
+		break;
+	}
 	case 5:	//stmt->if ( expr ) stmt
 		[[fallthrough]];
 	case 6:	//stmt->while ( expr ) stmt
 		[[fallthrough]];
 	case 7:	//stmt->for ( exprf ) stmt
-		if (auto type = branchs[1]->TypeCheck(sub, whileBlock); type != TYPE(Int))
-			throw ErrTypeChangeLoss(branchs[1]->getLineNo(), type, TYPE(Int));
-		return branchs[0]->TypeCheck(sub, whileBlock);
+		auto typ = branchs[1]->TypeCheck(sub, subs, whileBlock);
+		if (typ > VTYPE(Int, r))
+			throw ErrTypeChangeLoss(branchs[1]->getLineNo(), typ.type, TYPE(Int));
+		branchs[0]->TypeCheck(sub, subs, whileBlock);
+		break;
 	case 8: { //stmt->goto id ;
 		auto str = branchs[0]->getToken()->getString();
 		auto ptr = sub->checkLabel(*str);
 		delete branchs[0];
 		branchs[0] = ptr;
-		return nullptr;
+		break;
 	}
 	case 9: //stmt->{ stmts }
-		return branchs[0]->TypeCheck(sub, whileBlock);
+		return branchs[0]->TypeCheck(sub, subs, whileBlock);
 	case 10: //stmt->break ;
-			 //如果没有while/for块则抛出异常
+		//如果没有while/for块则抛出异常
 		if (whileBlock == nullptr)
 			throw(ErrBreakWithoutWhile(lineNo, "break"));
 		branchs.push_back(whileBlock);
-		return nullptr;
+		break;
 	case 11: //stmt->continue ;
 		if (whileBlock == nullptr)
 			throw(ErrBreakWithoutWhile(lineNo, "continue"));
 		branchs.push_back(whileBlock);
-		return nullptr;
+		break;
 	case 12: //inia = vector<expr>
 		throw(ErrDesignApp("GrammarTree::TypeCheck.12"));
 	case 17: { //ini->{ inia } inia = vector<expr>
-			   //类型检查时直接由id = inif访问ini内部寻找???
+		//类型检查时直接由id = inif访问ini内部寻找???
 
-		return _type;
+		break;
 	}
 	case 19: { //insv = vector<exprf>
-			   //类型检查时直接由id(insv)访问insv内部寻找
+		//类型检查时直接由id(insv)访问insv内部寻找
 		for (auto i : branchs)
-			i->TypeCheck(sub, whileBlock);
-		return nullptr;
+			i->TypeCheck(sub, subs, whileBlock);
+		break;
 	}
 	case 14: //inif->ini
 		[[fallthrough]];
 	case 16: //inif->expr
 		[[fallthrough]];
 	case 20: //exprf->expr
-		_type = branchs[0]->TypeCheck(sub, whileBlock);
-		return _type;
+		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
+		break;
 	case 15: { //inif->ini : ini : ini : ini
 
+		break;
 	}
 	case 21: { //exprf->expr : expr : expr : expr
 
-		return _type;
+		break;
 	}
 	case 22: { //expr->id
-
-		return _type;
+		auto tok = branchs[0]->getToken();
+		auto var = sub->checkVar(tok->getId());
+		if (var == nullptr)
+			throw(ErrVarNotFound(tok->getlineNo(), tok->getId()));
+		_type = mVType{ var->type, Op::LRvalue::lvalue };
+		break;
 	}
 	case 23: { //expr->num
-
-		return _type;
+		if (branchs[0]->getToken()->getInt() != nullptr)
+			_type = mVType{ Op::BuiltInTypeObj(Op::BuiltInType::Int), Op::LRvalue::rvalue, true };
+		else if (branchs[0]->getToken()->getFloat() != nullptr)
+			_type = mVType{ Op::BuiltInTypeObj(Op::BuiltInType::Float), Op::LRvalue::rvalue, true };
+		else if (branchs[0]->getToken()->getString() != nullptr)
+			_type = mVType{ Op::BuiltInTypeObj(Op::BuiltInType::String), Op::LRvalue::rvalue, true };
+		break;
 	}
 	case 24: { //expr->id ( insv )
-			   //要访问insv内部
-		return _type;
+		//要访问insv内部
+		break;
 	}
 	case 25: { //expr->Unary_op expr
 
-		return _type;
+		break;
 	}
 	case 26: { //expr->expr Binary_op expr/exprf/inif
 		switch (branchs[1]->getToken()->type()) {
@@ -249,28 +267,29 @@ mType* tNoVars::TypeCheck(tSub* sub, GrammarTree* whileBlock) {
 		default:
 			throw(ErrDesignApp("GrammarTree::TypeCheck.26"));
 		}
-		return _type;
+		break;
 	}
 	case 27: { //expr->expr [ expr ]
 
-		return _type;
+		break;
 	}
 	case 28: { //expr->( types ) expr
 
-			   /*mType* ExpectType(mType* expecttype, tSub* sub, GrammarTree* whileBlock) {
-			   TypeCheck(sub, whileBlock);
-			   if (_type != expecttype) {
-			   //显式转换，int->float与float->int与ptr->ptr
-			   if (_type == Op::BuiltInTypeObj(Op::BuiltInType::Int) && _type == Op::BuiltInTypeObj(Op::BuiltInType::Float)) {
+		/*mType* ExpectType(mType* expecttype, tSub* sub, GrammarTree* whileBlock) {
+			TypeCheck(sub, whileBlock);
+			if (_type != expecttype) {
+				//显式转换，int->float与float->int与ptr->ptr
+				if (_type == Op::BuiltInTypeObj(Op::BuiltInType::Int) && _type == Op::BuiltInTypeObj(Op::BuiltInType::Float)) {
 
-			   }
-			   }
-			   }*/
-		return _type;
+				}
+			}
+		}*/
+		break;
 	}
 	default:
 		throw(ErrDesignApp("GrammarTree::TypeCheck.unknown"));
 	}
+	return _type;
 }
 
 void tNoVars::extractlabel(map<string, GrammarTree*>& labels) {
@@ -295,10 +314,10 @@ list<GrammarTree*>* tStmts::extractdecl(vector<mVar>& v) {
 	return nullptr;
 }
 
-mType* tStmts::TypeCheck(tSub* sub, GrammarTree* whileBlock) {
+mVType tStmts::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	for (auto i : branchs)
-		i->TypeCheck(sub, whileBlock);
-	return nullptr;
+		i->TypeCheck(sub, subs, whileBlock);
+	return mVType();
 }
 
 void tStmts::extractlabel(map<string, GrammarTree*>& l) {
@@ -317,12 +336,11 @@ tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(s
 	typeReturn = Op::BuiltInTypeObj(Op::BuiltInType::Void);		//返回值为void
 	stmts->extractlabel(labels);
 }
-
 tSub::~tSub() { delete stmts; }
 
-mType* tSub::TypeCheck(tSub* sub, GrammarTree* whileBlock) {
-	stmts->TypeCheck(this, nullptr);
-	return nullptr;
+mVType tSub::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
+	stmts->TypeCheck(this, subs, nullptr);
+	return mVType();
 }
 
 void tSub::insertDecl(map<string, vector<mType*>>& m) const {
@@ -331,20 +349,19 @@ void tSub::insertDecl(map<string, vector<mType*>>& m) const {
 		throw(ErrFuncRedeclared(lineNo, name));
 }
 
-mVar* tSub::checkVar(string id) {
+mVar* tSub::checkVar(const string& id) {
 	auto itpara = find_if(vardecl.begin(), vardecl.end(), [&id](const mVar& a) { return a.id == id; });
 	if (itpara == vardecl.end())
 		return nullptr;
 	return &(*itpara);
 }
 
-GrammarTree* tSub::checkLabel(string id) {
+GrammarTree* tSub::checkLabel(const string& id) {
 	auto it = labels.find(id);
 	if (it == labels.end())
 		return nullptr;
 	return it->second;
 }
-
 int tSub::getLineNo() { return lineNo; }
 
 tRoot::~tRoot() { for (auto i : subs) delete i; }
@@ -355,8 +372,8 @@ void tRoot::addSub(tSub* s) {
 	s->insertDecl(subdecl);
 }
 
-mType* tRoot::TypeCheck(tSub* sub, GrammarTree* whileBlock) {
-	for (auto i : subs)
-		i->TypeCheck(nullptr, nullptr);
-	return nullptr;
+mVType tRoot::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
+	for (auto i : this->subs)
+		i->TypeCheck(nullptr, this, nullptr);
+	return mVType();
 }

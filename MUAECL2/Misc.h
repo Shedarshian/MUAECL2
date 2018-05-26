@@ -8,6 +8,8 @@
 #include <exception>
 #include <optional>
 #include <variant>
+#define TYPE(name) Op::BuiltInTypeObj(Op::BuiltInType::name)
+#define VTYPE(name, lr, ...) Op::mVType{ TYPE(name), Op::LRvalue::lr##value, ##__VA_ARGS__ }
 using namespace std;
 
 class Token;
@@ -21,8 +23,8 @@ namespace Op {
 		return mo;
 	}
 	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
-	enum BuiltInType { type_error, Void, Int, Float, Point, inilist };
-	enum LiteralType { lInt, lFloat, lString };
+	enum class BuiltInType { type_error, Void, Int, Float, String, Point, inilist };
+	//enum LiteralType { lInt, lFloat, lString };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
 	static const unordered_set<char> OperatorChar;
@@ -35,6 +37,7 @@ namespace Op {
 		virtual mType* address();
 		virtual mType* dereference() = 0;
 		virtual string ToString() = 0;
+		virtual bool isPointer() { return false; }
 	protected:
 		mType* _address;
 	};
@@ -45,36 +48,57 @@ namespace Op {
 		mTypeBasic(int t);
 		mType* dereference() override;
 		BuiltInType get();
-		inline string ToString() override;
+		string ToString() override;
 	private:
 		BuiltInType t;
 	};
+	/*
+	class mTypeLiteral :public mType {
+	public:
+		mTypeLiteral(LiteralType t);
+		mType* address() override;
+		mType* dereference() override;
+		LiteralType get();
+		string ToString() override;
+	private:
+		LiteralType t;
+	};*/
 
 	class mTypePointer :public mType {
 	public:
 		mTypePointer(mType* t);
 		mType* dereference() override;
-		inline string ToString() override;
+		string ToString() override;
+		bool isPointer() override { return true; }
 	private:
 		mType* ptr;
 	};
 
-	inline static const mTypeBasic _builtInTypeObj[6] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4), mTypeBasic(5) };
+	inline static const mTypeBasic _builtInTypeObj[7] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4), mTypeBasic(5), mTypeBasic(6) };
 	inline static mType* BuiltInTypeObj(BuiltInType t) { return (mType*)(_builtInTypeObj + (int)t); }
 
-	static const map<TokenType, string> OperatorToString;
-	static const map<string, TokenType> StringToOperator;
-	static const map<string, BuiltInType> StringToType;
-	static const map<BuiltInType, string> TypeToString;
+	const map<TokenType, string> OperatorToString;
+	const map<string, TokenType> StringToOperator;
+	const map<string, BuiltInType> StringToType;
+	const map<BuiltInType, string> TypeToString;
 
-	static string ToString(TokenType op);
-	static TokenType ToOperator(string s);
-	static string ToString(BuiltInType op);
-	static BuiltInType ToType(string s);
-	static string ToString(mType* type);
-	static NonTerm ToType(int id);
+	string ToString(TokenType op);
+	TokenType ToOperator(string s);
+	string ToString(BuiltInType op);
+	BuiltInType ToType(string s);
+	string ToString(mType* type);
+	NonTerm ToType(int id);
 
-	enum LRvalue { nullvalue, lvalue, rvalue, rliteral };
+	enum LRvalue { lvalue, rvalue };
+	struct mVType {
+		mVType() = default;
+		mType* type;
+		LRvalue valuetype;
+		bool isLiteral;
+		mType* operator->() const { return type; }
+		mType* operator->() { return type; }
+	};
+	
 	/*template<typename T1, typename T2>
 	static const T2 LiteralCal(TokenType typ, const T1& t1, const optional<T1>& t2) {
 		switch (typ) {
@@ -128,6 +152,14 @@ namespace Op {
 	//static const mType* OpTypeAllowed(TokenType typ, const mType* tl, const mType* tr);*/
 };
 
+//C++20 operator<=>......?
+bool operator==(const Op::mVType& t1, const Op::mVType& t2);		//类型与值类型相同，只考虑类型相同时直接比较type元素
+inline bool operator!=(const Op::mVType& t1, const Op::mVType& t2) { return !(t1 == t2); }
+bool operator<=(const Op::mVType& t1, const Op::mVType& t2);		//小于等于为可否隐式转换+左值右值转换
+inline bool operator<(const Op::mVType& t1, const Op::mVType& t2) { return t1 <= t2 && t1 != t2; }
+inline bool operator>(const Op::mVType& t1, const Op::mVType& t2) { return !(t1 <= t2); }
+inline bool operator>=(const Op::mVType& t1, const Op::mVType& t2) { return !(t1 < t2); }
+
 class Token {
 public:
 	explicit Token(int lineNo);
@@ -135,27 +167,22 @@ public:
 	//类型
 	virtual Op::TokenType type() const = 0;
 	//检验
-	//virtual const bool isIdNum() { return false; }
-	virtual bool isExprFollow() const { return false; }
+	//virtual const bool isIdNum();
+	virtual bool isExprFollow() const;
 	//取行号
-	int getlineNo() const { return lineNo; }
+	int getlineNo() const;
 	//取数
-	virtual const int* getInt() const { throw(ErrDesignApp("Token::getInt")); }
-	virtual const float* getFloat() const { throw(ErrDesignApp("Token::getFloat")); }
-	virtual const string* getString() const { throw(ErrDesignApp("Token::getString")); }
-	virtual string getId() const { throw(ErrDesignApp("Token::getId")); }
-	virtual Op::BuiltInType getType() const { throw(ErrDesignApp("Token::getType")); }
+	virtual const int* getInt() const;
+	virtual const float* getFloat() const;
+	virtual const string* getString() const;
+	virtual string getId() const;
+	virtual Op::BuiltInType getType() const;
 	//debug输出
-	virtual string debug_out() const { return to_string(lineNo); }
+	virtual string debug_out() const;
 	friend ostream& operator<< (ostream& stream, Token& token);
 private:
 	const int lineNo;
 };
-
-ostream& operator<< (ostream& stream, Token& token) {
-	stream << token.debug_out();
-	return stream;
-}
 
 class Token_Literal :public Token {
 public:
@@ -250,14 +277,14 @@ public:
 //error-type
 class ExceptionWithLineNo :public exception {
 public:
-	explicit ExceptionWithLineNo(int lineNo);
+	explicit ExceptionWithLineNo(int lineNo) : lineNo(lineNo) {}
 	const int lineNo;
 };
 
 class ErrDesignApp :public exception {
 public:
-	ErrDesignApp(const char* what);
-	virtual const char* what() const throw();
+	ErrDesignApp(const char* what) : s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {}
+	virtual const char* what() const throw() { return s.c_str(); }
 private:
 	const string s;
 };
@@ -330,7 +357,7 @@ private:
 
 class ErrTypeChangeLoss :public ExceptionWithLineNo {
 public:
-	ErrTypeChangeLoss(int lineNo, mType* type, mType* expectType) :ExceptionWithLineNo(lineNo),
+	ErrTypeChangeLoss(int lineNo, Op::mType* type, Op::mType* expectType) :ExceptionWithLineNo(lineNo),
 		id("error implicit conversing type "s + type->ToString() + " to type "s + expectType->ToString() + ". maybe missing explicit conversing."s) {}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
@@ -343,10 +370,10 @@ public:
 	virtual const char* what() const throw() { return "discarded value unallowed. If pushing into stack, please use ins_44 and ins_45."; }
 };
 
-/*class ErrVarNotFound :public ExceptionWithLineNo {
+class ErrVarNotFound :public ExceptionWithLineNo {
 public:
 	ErrVarNotFound(int lineNo, string var) :ExceptionWithLineNo(lineNo), id("variable "s + var + " not found."s) {}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
 	string id;
-};*/
+};

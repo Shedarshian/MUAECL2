@@ -14,7 +14,7 @@ public:
 	~Parser();
 	static const map<int, map<Op::TokenType, int>*> makeAction();
 	static void clear();
-	GrammarTree* analyse();
+	tRoot* analyse();
 	void TypeCheck();
 private:
 	static GrammarTree* mergeTree(int id, stack<GrammarTree*>& s);
@@ -26,6 +26,6 @@ private:
 	static int gotostat(int s, Op::NonTerm t);
 	Tokenizer &tokenizer;
 	stack<GrammarTree*> s;
-	GrammarTree* saveTree;
+	tRoot* saveTree;
 };
 

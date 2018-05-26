@@ -9,10 +9,10 @@
 #include <tuple>
 #include <numeric>
 #include "Misc.h"
-#define TYPE(name) Op::BuiltInTypeObj(Op::BuiltInType::name)
 
 using namespace std;
 using Op::mType;
+using Op::mVType;
 
 //变量
 struct mVar {
@@ -22,6 +22,7 @@ struct mVar {
 };
 
 class tSub;
+class tRoot;
 //语法树节点类型
 //语法树以终结符与非终结符为节点，以每个产生式为子类型
 class GrammarTree {
@@ -39,7 +40,7 @@ public:
 	virtual mType* getType();
 	virtual int getLineNo();
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
-	virtual mType* TypeCheck(tSub* sub, GrammarTree* whileBlock);
+	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 };
 
 //为入栈所使用的状态标记
@@ -107,19 +108,20 @@ public:
 	tNoVars(int id, int lineNo);
 	void changeid(int id) override;
 	template<class ... Types>
-	tNoVars(int id, int lineNo, Types& ... args);
+	tNoVars(int id, int lineNo, Types& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
 	Op::NonTerm type() override;
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
-	mType* TypeCheck(tSub* sub, GrammarTree* whileBlock) override;
+	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& labels) override;
-	int getLineNo() override { return lineNo; }
+	int getLineNo() override;
 protected:
 	int id;
 	int lineNo;
-	mType* _type;
+	mVType _type;
 	vector<GrammarTree*> branchs;	//全部逆序储存，因为产生式都是右递归的
 };
+//template tNoVars::tNoVars<GrammarTree*>();
 
 //stmts，因为要储存map<label, stmt*>
 class tStmts :public GrammarTree {
@@ -129,7 +131,7 @@ public:
 	void insertlabel(string s, int lineNo, GrammarTree* t);
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
-	mType* TypeCheck(tSub* sub, GrammarTree* whileBlock) override;
+	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& l) override;
 private:
 	vector<tuple<string, int, GrammarTree*>> labels;
@@ -141,10 +143,10 @@ class tSub : public GrammarTree {
 public:
 	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts);
 	~tSub();
-	mType* TypeCheck(tSub* sub, GrammarTree* whileBlock) override;
+	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void insertDecl(map<string, vector<mType*>>& m) const;
-	mVar* checkVar(string id);
-	GrammarTree* checkLabel(string id);
+	mVar* checkVar(const string& id);
+	GrammarTree* checkLabel(const string& id);
 	int getLineNo() override;
 private:
 	const string name;
@@ -162,7 +164,7 @@ public:
 	~tRoot();
 	Op::NonTerm type() override;
 	void addSub(tSub* s);
-	mType* TypeCheck(tSub* sub, GrammarTree* whileBlock) override;
+	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 private:
 	map<string, vector<mType*>> subdecl;
 	vector<tSub*> subs;

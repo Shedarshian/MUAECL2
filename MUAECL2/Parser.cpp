@@ -79,7 +79,7 @@ void Parser::clear() {
 		}
 }
 
-GrammarTree* Parser::analyse() {
+tRoot* Parser::analyse() {
 	try {
 		s.push(new tState(0));
 		while (1) {
@@ -106,7 +106,7 @@ GrammarTree* Parser::analyse() {
 				s.push(new tState(gotostat(state, t->type())));
 			}
 		}
-		saveTree = s.top();
+		saveTree = static_cast<tRoot*>(s.top());
 		return saveTree;
 	}
 	catch (...) {
@@ -120,7 +120,7 @@ GrammarTree* Parser::analyse() {
 
 void Parser::TypeCheck() {
 	try {
-		saveTree->TypeCheck(nullptr, nullptr);
+		saveTree->TypeCheck(nullptr, nullptr, nullptr);
 	}
 	catch (...) {
 		//Îö¹¹
