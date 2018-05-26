@@ -156,6 +156,7 @@
     <ClInclude Include="Tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GrammarTree.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="MUAECL2.cpp" />
     <ClCompile Include="Parser.cpp" />

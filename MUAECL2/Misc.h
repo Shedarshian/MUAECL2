@@ -10,26 +10,12 @@
 #include <variant>
 using namespace std;
 
-//error-type
-class ExceptionWithLineNo :public exception {
-public:
-	explicit ExceptionWithLineNo(int lineNo) :lineNo(lineNo) {}
-	const int lineNo;
-};
-
-class ErrDesignApp :public exception {
-public:
-	ErrDesignApp(const char* what) :s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {}
-	virtual const char* what() const throw() { return s.c_str(); }
-	const string s;
-};
-
 class Token;
 namespace Op {
 	template<typename T1, typename T2>
-	constexpr static const pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
+	inline constexpr static const pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
 	template<typename T1, typename T2>
-	constexpr static const map<T2, T1> swap_map(const map<T1, T2>& m) {
+	inline constexpr static const map<T2, T1> swap_map(const map<T1, T2>& m) {
 		map<T2, T1> mo;
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
@@ -39,16 +25,13 @@ namespace Op {
 	enum LiteralType { lInt, lFloat, lString };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
-	inline static const unordered_set<char> OperatorChar = { '+', '-', '*', '/', '%', '&', '|', '!', '^', '=', '>', '<', '.', ';', ':', '(', ')', '{', '}', ',', '[', ']' };
-
-	using TT = Op::TokenType;
-	using BT = Op::BuiltInType;
+	static const unordered_set<char> OperatorChar;
 
 	//类型
 	class mType {
 	public:
-		mType() :_address(nullptr) {}
-		virtual ~mType() {}
+		mType() = default;
+		virtual ~mType() = default;
 		virtual mType* address();
 		virtual mType* dereference() = 0;
 		virtual string ToString() = 0;
@@ -58,10 +41,10 @@ namespace Op {
 
 	class mTypeBasic :public mType {
 	public:
-		mTypeBasic(BuiltInType t) :t(t) {}
-		mTypeBasic(int t) :t((BuiltInType)t) {}
-		mType* dereference() override { return nullptr; }
-		BuiltInType get() { return t; }
+		mTypeBasic(BuiltInType t);
+		mTypeBasic(int t);
+		mType* dereference() override;
+		BuiltInType get();
 		inline string ToString() override;
 	private:
 		BuiltInType t;
@@ -69,45 +52,30 @@ namespace Op {
 
 	class mTypePointer :public mType {
 	public:
-		mTypePointer(mType* t) :ptr(t) {}
-		mType* dereference() override { return ptr; }
-		inline string ToString() override { return ptr->ToString() + '*'; }
+		mTypePointer(mType* t);
+		mType* dereference() override;
+		inline string ToString() override;
 	private:
 		mType* ptr;
 	};
 
-	mType* mType::address() {
-		if (_address == nullptr)
-			_address = new mTypePointer(this);
-		return _address;
-	}
-
 	inline static const mTypeBasic _builtInTypeObj[6] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4), mTypeBasic(5) };
-	static mType* BuiltInTypeObj(BuiltInType t) { return (mType*)(_builtInTypeObj + (int)t); }
+	inline static mType* BuiltInTypeObj(BuiltInType t) { return (mType*)(_builtInTypeObj + (int)t); }
 
-	inline static const map<TokenType, string> OperatorToString = { { TT::Plus, "+" }, { TT::Minus, "-" }, { TT::Times, "*" }, { TT::Divide, "/" }, { TT::Mod, "%" }, { TT::EqualTo, "==" }, { TT::NotEqual, "!=" }, { TT::Less, "<" }, { TT::LessEqual, "<=" }, { TT::Greater, ">" }, { TT::GreaterEqual, ">=" }, { TT::Not, "!" }, { TT::LogicalOr, "||" }, { TT::LogicalAnd, "&&" }, { TT::BitOr, "|" }, { TT::BitAnd, "&" }, { TT::BitXor, "^" }, { TT::Negative, "(-)" }, { TT::Deref, "(*)" }, { TT::Address, "(&)" }, { TT::Dot, "." }, { TT::And, "and" }, { TT::Or, "or" }, { TT::Equal, "=" }, { TT::PlusEqual, "+=" }, { TT::MinusEqual, "-=" }, { TT::TimesEqual, "*=" }, { TT::DividesEqual, "/=" }, { TT::ModEqual, "%=" }, { TT::LogicalOrEqual, "||=" }, { TT::LogicalAndEqual, "&&=" }, { TT::BitOrEqual, "|=" }, { TT::BitAndEqual, "&=" }, { TT::BitXorEqual, "^=" }, { TT::If, "if" }, { TT::Else, "else" }, { TT::For, "for" }, { TT::While, "while" }, { TT::Break, "break" }, { TT::Continue, "continue" }, { TT::Goto, "goto" }, { TT::Sub, "sub" }, { TT::Semicolon, ";" }, { TT::Colon, ":" }, { TT::Bra, "(" }, { TT::Ket, ")" }, { TT::MidBra, "[" }, { TT::MidKet, "]" }, { TT::BigBra, "{" }, { TT::BigKet, "}" }, { TT::Comma, "," } };
-	inline static const map<string, TokenType> StringToOperator = swap_map(OperatorToString);
-	inline static const map<string, BuiltInType> StringToType = { { "type_error", type_error }, { "void", Void }, { "int", Int }, { "float", Float }, { "point", Point }, { "initializer_list", inilist } };
-	inline static const map<BuiltInType, string> TypeToString = swap_map(StringToType);
+	static const map<TokenType, string> OperatorToString;
+	static const map<string, TokenType> StringToOperator;
+	static const map<string, BuiltInType> StringToType;
+	static const map<BuiltInType, string> TypeToString;
 
-	inline static string ToString(TokenType op) { return OperatorToString.find(op)->second; }
-	inline static TokenType ToOperator(string s) { return StringToOperator.find(s)->second; }
-	inline static string ToString(BuiltInType op) { return TypeToString.find(op)->second; }
-	inline static BuiltInType ToType(string s) { return StringToType.find(s)->second; }
-	inline static string ToString(mType* type) { return type->ToString(); }
-	string mTypeBasic::ToString() { return Op::ToString(t); }
-	static NonTerm ToType(int id) {
-		if (id >= 2 && id <= 11) return NonTerm::stmt;
-		if (id >= 22 && id <= 28) return NonTerm::expr;
-		if (id == 12) return NonTerm::inia;
-		if (id == 14 || id == 15) return NonTerm::inif;
-		if (id == 16 || id == 17) return NonTerm::ini;
-		if (id == 20 || id == 21) return NonTerm::exprf;
-		throw(ErrDesignApp("Op::ToType(int)"));
-	}
+	static string ToString(TokenType op);
+	static TokenType ToOperator(string s);
+	static string ToString(BuiltInType op);
+	static BuiltInType ToType(string s);
+	static string ToString(mType* type);
+	static NonTerm ToType(int id);
 
-	enum class LRvalue { null, lvalue, rvalue, rliteral };
-	template<typename T1, typename T2>
+	enum LRvalue { nullvalue, lvalue, rvalue, rliteral };
+	/*template<typename T1, typename T2>
 	static const T2 LiteralCal(TokenType typ, const T1& t1, const optional<T1>& t2) {
 		switch (typ) {
 		case TokenType::Plus:
@@ -157,15 +125,13 @@ namespace Op {
 		}
 	}
 	static const Token* OpLiteralCal(TokenType typ, const Token* tl, const Token* tr);
-	//static const mType* OpTypeAllowed(TokenType typ, const mType* tl, const mType* tr);
+	//static const mType* OpTypeAllowed(TokenType typ, const mType* tl, const mType* tr);*/
 };
-
-using mType = Op::mType;
 
 class Token {
 public:
-	explicit Token(int lineNo) :lineNo(lineNo) {}
-	virtual ~Token() {}
+	explicit Token(int lineNo);
+	virtual ~Token() = default;
 	//类型
 	virtual Op::TokenType type() const = 0;
 	//检验
@@ -193,13 +159,13 @@ ostream& operator<< (ostream& stream, Token& token) {
 
 class Token_Literal :public Token {
 public:
-	Token_Literal(int lineNo, int val) :Token(lineNo), val(val) {};
-	Token_Literal(int lineNo, float val) :Token(lineNo), val(val) {};
-	Token_Literal(int lineNo, string val) :Token(lineNo), val(val) {};
-	Op::TokenType type() const override { return Op::TokenType::Number; }
-	const int* getInt() const override { return get_if<int>(&val); }
-	const float* getFloat() const override { return get_if<float>(&val); }
-	const string* getString() const override { return get_if<string>(&val); }
+	Token_Literal(int lineNo, int val);
+	Token_Literal(int lineNo, float val);
+	Token_Literal(int lineNo, string val);
+	Op::TokenType type() const override;
+	const int* getInt() const override;
+	const float* getFloat() const override;
+	const string* getString() const override;
 private:
 	variant<int, float, string> val;
 };
@@ -243,11 +209,11 @@ private:
 //标识符，包括变量函数线程以及ins
 class Token_Identifier :public Token {
 public:
-	Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {}
-	Op::TokenType type() const override { return Op::TokenType::Identifier; }
-	//bool isIdNum() const override { return true; }
-	string getId() const override { return val; }
-	string debug_out() const override { return val; }
+	Token_Identifier(int lineNo, string val);
+	Op::TokenType type() const override;
+	//bool isIdNum() const override;
+	string getId() const override;
+	string debug_out() const override;
 private:
 	string val;
 };
@@ -255,10 +221,10 @@ private:
 //关键字,运算符,赋值运算符,逗号分号冒号大小括号
 class Token_Operator :public Token {
 public:
-	Token_Operator(int lineNo, Op::TokenType val) :Token(lineNo), val(val) {}
-	Op::TokenType type() const override { return val; }
-	bool isExprFollow() const override { return val == Op::TokenType::Colon || val == Op::TokenType::BigKet || val == Op::TokenType::Comma || val == Op::TokenType::Ket || val == Op::TokenType::Semicolon; }
-	string debug_out() const override { return Op::ToString(val); }
+	Token_Operator(int lineNo, Op::TokenType val);
+	Op::TokenType type() const override;
+	bool isExprFollow() const override;
+	string debug_out() const override;
 private:
 	Op::TokenType val;
 };
@@ -266,9 +232,9 @@ private:
 //内建类型
 class Token_KeywordType :public Token_Operator {
 public:
-	Token_KeywordType(int lineNo, Op::BuiltInType type) :Token_Operator(lineNo, Op::TokenType::Type), val(type) {}
-	Op::BuiltInType getType() const override { return val; }
-	string debug_out() const override { return Op::ToString(val); }
+	Token_KeywordType(int lineNo, Op::BuiltInType type);
+	Op::BuiltInType getType() const override;
+	string debug_out() const override;
 private:
 	Op::BuiltInType val;
 };
@@ -276,9 +242,24 @@ private:
 //文档结束
 class Token_End :public Token {
 public:
-	explicit Token_End(int lineNo) :Token(lineNo) {}
-	Op::TokenType type() const override { return Op::TokenType::End; }
-	string debug_out() const override { return ""; }
+	explicit Token_End(int lineNo);
+	Op::TokenType type() const override;
+	string debug_out() const override;
+};
+
+//error-type
+class ExceptionWithLineNo :public exception {
+public:
+	explicit ExceptionWithLineNo(int lineNo);
+	const int lineNo;
+};
+
+class ErrDesignApp :public exception {
+public:
+	ErrDesignApp(const char* what);
+	virtual const char* what() const throw();
+private:
+	const string s;
 };
 
 class ErrOpenedString :public ExceptionWithLineNo {
@@ -369,12 +350,3 @@ public:
 private:
 	string id;
 };*/
-
-const Token* Op::OpLiteralCal(TokenType typ, const Token* tl, const Token* tr) {
-	if (auto lstr = tl->getString(), rstr = tr->getString(); lstr && rstr) {
-		//auto str = Op::LiteralCal<string>(typ, *lstr, make_optional(*rstr));
-		if (lstr || rstr)
-			throw(ErrDesignApp("OpLiteralCal(string, other)"));
-	}
-	return nullptr;
-}
