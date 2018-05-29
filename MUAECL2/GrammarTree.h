@@ -66,6 +66,7 @@ private:
 class tType : public GrammarTree {
 public:
 	explicit tType(Op::BuiltInType t);
+	explicit tType(mType* t);
 	Op::NonTerm type() override;
 	mType* getType() override;
 	void makePointer();
@@ -108,20 +109,22 @@ public:
 	tNoVars(int id, int lineNo);
 	void changeid(int id) override;
 	template<class ... Types>
-	tNoVars(int id, int lineNo, Types& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
+	tNoVars(int id, int lineNo, Types&& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
 	Op::NonTerm type() override;
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& labels) override;
 	int getLineNo() override;
-protected:
+	GrammarTree* typeChange(int rank);		//依据rank值对Token*操作
+private:
 	int id;
 	int lineNo;
 	mVType _type;
+	int opID;						//重载后的运算符id
 	vector<GrammarTree*> branchs;	//全部逆序储存，因为产生式都是右递归的
+	void LiteralCal();	//字面量计算优化
 };
-//template tNoVars::tNoVars<GrammarTree*>();
 
 //stmts，因为要储存map<label, stmt*>
 class tStmts :public GrammarTree {

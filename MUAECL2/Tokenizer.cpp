@@ -36,7 +36,7 @@ Token* Tokenizer::getToken(){
 		if (nextChar == EOF)
 			return new Token_End(lineNo);
 		//若在运算符+misc char集中
-		if (Op::OperatorChar.find(nextChar) != Op::OperatorChar.end()) {
+		if (Op::Ch::OperatorChar.find(nextChar) != Op::Ch::OperatorChar.end()) {
 			//是运算符
 			string op = "";
 			//没有组合的运算符，如点，或者将来有的一些运算符
@@ -44,14 +44,14 @@ Token* Tokenizer::getToken(){
 				willBeNegative = true;
 				op += nextChar;
 				ReadStream.get(nextChar);
-				return new Token_Operator(lineNo, Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
 			//减号负号，解引用符乘号，取地址符按位与，或任何既是前缀一元运算符也是二元运算符的运算符
 			if ((nextChar == '-' || nextChar == '*' || nextChar == '&') && willBeNegative) {
 				op += nextChar;
 				ReadStream.get(nextChar);
 				willBeNegative = true; //似乎没用，提示一下没变，允许--A取多次负号
-				return new Token_Operator(lineNo, Op::ToOperator("(" + op + ")"));
+				return new Token_Operator(lineNo, Op::Ch::ToOperator("(" + op + ")"));
 			}
 			//&和|，因为有&&=和||=所以麻烦一些
 			if (nextChar == '&' || nextChar == '|') {
@@ -66,9 +66,9 @@ Token* Tokenizer::getToken(){
 				if (nextChar == '=') {
 					op += nextChar;
 					ReadStream.get(nextChar);
-					return new Token_Operator(lineNo, Op::ToOperator(op));
+					return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 				}
-				return new Token_Operator(lineNo, Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
 			//除号
 			if (nextChar == '/') {
@@ -95,9 +95,9 @@ Token* Tokenizer::getToken(){
 				if (nextChar == '=') {
 					op += nextChar;
 					ReadStream.get(nextChar);
-					return new Token_Operator(lineNo, Op::ToOperator(op));
+					return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 				}
-				return new Token_Operator(lineNo, Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
 			//+-*/%^<>!=
 			willBeNegative = (nextChar != ')');
@@ -106,9 +106,9 @@ Token* Tokenizer::getToken(){
 			if (nextChar == '=') {
 				op += nextChar;
 				ReadStream.get(nextChar);
-				return new Token_Operator(lineNo, Op::ToOperator(op));
+				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
-			return new Token_Operator(lineNo, Op::ToOperator(op));
+			return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 		}
 		//字符串
 		if (nextChar == '"') {
@@ -136,10 +136,10 @@ Token* Tokenizer::getToken(){
 			//keyword后面为负号
 			willBeNegative = true;
 			//如果是build-in type
-			if (auto it = Op::StringToType.find(s); it == Op::StringToType.end())
+			if (auto it = Op::Ch::StringToType.find(s); it == Op::Ch::StringToType.end())
 				return new Token_KeywordType(lineNo, it->second);
 			//如果是keyword
-			if (auto it = Op::StringToOperator.find(s); it != Op::StringToOperator.end())
+			if (auto it = Op::Ch::StringToOperator.find(s); it != Op::Ch::StringToOperator.end())
 				return new Token_Operator(lineNo, it->second);
 			willBeNegative = false;
 			return new Token_Identifier(lineNo, s);

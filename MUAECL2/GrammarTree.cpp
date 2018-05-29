@@ -22,6 +22,7 @@ tTerminator::~tTerminator() { delete t; }
 Token* tTerminator::getToken() { return t; }
 
 tType::tType(Op::BuiltInType t) :t(Op::BuiltInTypeObj(t)) {}
+tType::tType(mType* t) : t(t) {}
 Op::NonTerm tType::type() { return Op::NonTerm::types; }
 mType* tType::getType() { return t; }
 void tType::makePointer() { t = t->address(); }
@@ -80,7 +81,7 @@ tNoVars::~tNoVars() {
 
 tNoVars::tNoVars(int id, int lineNo) :id(id), lineNo(lineNo) {}
 void tNoVars::changeid(int id) { this->id = id; }
-Op::NonTerm tNoVars::type() { return Op::ToType(id); }
+Op::NonTerm tNoVars::type() { return Op::Ch::ToType(id); }
 void tNoVars::addTree(GrammarTree* t) { branchs.push_back(t); }
 
 list<GrammarTree*>* tNoVars::extractdecl(vector<mVar>& v) {
@@ -195,77 +196,49 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	}
 	case 24: { //expr->id ( insv )
 		//要访问insv内部
-		break;
-	}
-	case 25: { //expr->Unary_op expr
 
 		break;
 	}
+	case 25: //expr->Unary_op expr
+		[[fallthrough]];
 	case 26: { //expr->expr Binary_op expr/exprf/inif
-		switch (branchs[1]->getToken()->type()) {
-		case Op::LogicalOr:
-			break;
-		case Op::LogicalAnd:
-			break;
-		case Op::Or:
-			break;
-		case Op::And:
-			break;
-		case Op::BitOr:
-			break;
-		case Op::BitXor:
-			break;
-		case Op::BitAnd:
-			break;
-		case Op::EqualTo:
-			break;
-		case Op::NotEqual:
-			break;
-		case Op::Greater:
-			break;
-		case Op::GreaterEqual:
-			break;
-		case Op::Less:
-			break;
-		case Op::LessEqual:
-			break;
-		case Op::Plus:
-			break;
-		case Op::Minus:
-			break;
-		case Op::Times:
-			break;
-		case Op::Divide:
-			break;
-		case Op::Mod:
-			break;
-		case Op::Dot:
-			break;
-			//现在不展开赋值运算符
-		case Op::Equal:
-			//inif?
-		case Op::PlusEqual:
-			[[fallthrough]];
-		case Op::MinusEqual:
-			[[fallthrough]];
-		case Op::TimesEqual:
-			[[fallthrough]];
-		case Op::DividesEqual:
-			[[fallthrough]];
-		case Op::ModEqual:
-			[[fallthrough]];
-		case Op::LogicalOrEqual:
-			[[fallthrough]];
-		case Op::LogicalAndEqual:
-			[[fallthrough]];
-		case Op::BitOrEqual:
-			[[fallthrough]];
-		case Op::BitAndEqual:
-			[[fallthrough]];
-		case Op::BitXorEqual:
-			break;
-		default:
-			throw(ErrDesignApp("GrammarTree::TypeCheck.26"));
+		auto ltype = branchs[0]->TypeCheck(sub, subs, whileBlock);
+		decltype(ltype) rtype;
+		auto ltypeList = mVType::canChangeTo(ltype);
+		decltype(ltypeList) rtypeList = decltype(ltypeList){ make_pair(rtype, 0) };
+		bool isLiteral = ltype.isLiteral;
+		//如果是一元运算符，则rtype为初始对象，rtypeList为只有一个对象的列表
+		if (branchs.size() == 3) {
+			rtype = branchs[2]->TypeCheck(sub, subs, whileBlock);
+			isLiteral = isLiteral && rtype.isLiteral;
+			rtypeList = mVType::canChangeTo(rtype);
+		}
+		auto typ = branchs[1]->getToken()->type();
+		auto typeAllowed = mVType::typeChange.find(typ)->second;
+		int minID = INT_MAX;
+		int lrank, rrank;
+		for(auto &i : ltypeList)
+			for (auto &j : rtypeList) {
+				auto _return = typeAllowed(i.first, j.first);
+				//若不含值则说明不允许此类型对。并选取rank之和最小
+				if (_return.has_value() && minID < i.second + j.second) {
+					auto&[opID, retType] = _return.value();
+					_type = retType; this->opID = opID;
+					lrank = i.second; rrank = j.second;
+				}
+			}
+		//无法应用运算符到此类型操作数
+		if (minID == INT_MAX)
+			throw(ErrTypeOperate(lineNo, ltype, rtype, branchs[1]->getToken()->debug_out()));
+		//处理字面量计算优化，需要排除字面量指针的情况（在里面处理）
+		if (isLiteral) {
+			LiteralCal();
+		}
+		else {
+			//依据rank值确定做了些什么变换
+			branchs[0] = static_cast<tNoVars*>(branchs[0])->typeChange(lrank);
+			if (branchs.size() != 3)
+				branchs[2] = static_cast<tNoVars*>(branchs[2])->typeChange(rrank);
 		}
 		break;
 	}
@@ -275,15 +248,6 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	}
 	case 28: { //expr->( types ) expr
 
-		/*mType* ExpectType(mType* expecttype, tSub* sub, GrammarTree* whileBlock) {
-			TypeCheck(sub, whileBlock);
-			if (_type != expecttype) {
-				//显式转换，int->float与float->int与ptr->ptr
-				if (_type == Op::BuiltInTypeObj(Op::BuiltInType::Int) && _type == Op::BuiltInTypeObj(Op::BuiltInType::Float)) {
-
-				}
-			}
-		}*/
 		break;
 	}
 	default:
@@ -296,6 +260,143 @@ void tNoVars::extractlabel(map<string, GrammarTree*>& labels) {
 	if (id == 9) branchs[0]->extractlabel(labels);
 }
 int tNoVars::getLineNo() { return lineNo; }
+
+GrammarTree* tNoVars::typeChange(int rank) {
+	if (rank % 3 == mVType::LTOR) {
+		//左值到右值直接赋值进去
+		_type.valuetype = Op::LRvalue::rvalue;
+		rank -= mVType::LTOR;
+	}
+	if (rank == mVType::ITOF)
+		//整数转浮点
+		return new tNoVars(28, -1, this, new tType(Op::BuiltInType::Float));
+	else if (rank == mVType::ITOVP)
+		return new tNoVars(28, -1, this, new tType(TYPE(Void)->address()));
+	else if (rank == mVType::PTOVP)
+		return new tNoVars(28, -1, this, new tType(TYPE(Void)->address()));
+	return this;
+}
+
+void tNoVars::LiteralCal() {
+#define OFFSET 128
+#define GET(tree, type) branchs[tree]->getToken()->get##type()
+#define TERM(number) new tTerminator(new Token_Literal(branchs[0]->getLineNo(), number))
+	GrammarTree* tree;
+	int oldid = id;
+	id = 28;			//不把自己改成expr->num的情况请修改回去
+	using Op::TokenType;
+	switch (opID) {
+	case TokenType::Plus:
+		*GET(0, Int) += *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::Plus + OFFSET:
+		*GET(0, Float) += *GET(2, Float);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::Plus + 2 * OFFSET:
+		throw(ErrDesignApp("Point literal + Point literal"));
+	case TokenType::Minus:
+		id = 28;
+		*GET(0, Int) -= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::Times:
+		id = 28;
+		*GET(0, Int) *= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::Divide:
+		*GET(0, Int) /= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::Mod:
+		*GET(0, Int) %= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::Negative:
+		*GET(0, Int) = -*GET(0, Int);
+		delete branchs[1];
+		branchs.pop_back();
+		return;
+	case TokenType::Not:
+		*GET(0, Int) = !*GET(0, Int);
+		delete branchs[1];
+		branchs.pop_back();
+		return;
+	case TokenType::BitOr:
+		[[fallthrough]];
+	case TokenType::LogicalOr:
+		[[fallthrough]];
+	case TokenType::Or:
+		*GET(0, Int) |= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::BitAnd:
+		[[fallthrough]];
+	case TokenType::LogicalAnd:
+		[[fallthrough]];
+	case TokenType::And:
+		*GET(0, Int) &= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::BitXor:
+		*GET(0, Int) ^= *GET(2, Int);
+		delete branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		return;
+	case TokenType::EqualTo:
+		tree = TERM(*GET(0, Int) == *GET(2, Int));
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree;
+		return;
+	case TokenType::NotEqual:
+		tree = TERM(*GET(0, Int) != *GET(2, Int));
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree;
+		return;
+	case TokenType::Greater:
+		tree = TERM(*GET(0, Int) > *GET(2, Int));
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree;
+		return;
+	case TokenType::GreaterEqual:
+		tree = TERM(*GET(0, Int) >= *GET(2, Int));
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree;
+		return;
+	case TokenType::Less:
+		tree =TERM(*GET(0, Int) < *GET(2, Int));
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree;
+		return;
+	case TokenType::LessEqual:
+		tree = TERM(*GET(0, Int) <= *GET(2, Int));
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree;
+		return;
+	case TokenType::Dot:
+		throw(ErrDesignApp("LiteralCal->Dot"));
+	default:
+		throw(ErrDesignApp("LiteralCal"));
+	}
+#undef OFFSET
+#undef GET
+}
 
 tStmts::~tStmts() { for (auto i : branchs) delete i; }
 Op::NonTerm tStmts::type() { return Op::NonTerm::stmts; }
