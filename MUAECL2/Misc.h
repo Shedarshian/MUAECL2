@@ -26,7 +26,6 @@ namespace Op {
 	}
 	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	enum class BuiltInType { type_error, Void, Int, Float, String, Point, inilist };
-	//enum LiteralType { lInt, lFloat, lString };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
 
@@ -105,63 +104,18 @@ namespace Op {
 		string debug_out() {
 			return (isLiteral ? "literal "s : ""s) + (valuetype == rvalue ? "right value "s : "left value "s) + type->ToString();
 		}
+		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
 		enum { LTOR = 1, ITOF = 9, PTOVP = 27, ITOVP = 81 };
+		//保存运算符->左操作数要求+右操作数要求+返回类型+重载运算符ID
+		static const multimap<TokenType, tuple<function<bool(mVType&, mVType&)>*, function<bool(mVType&, mVType&)>*, function<mVType(mVType&, mVType&)>*, int>> typeChange;
 		//保存运算符->(允许的类型对->返回类型+重载运算符ID)
-		static const map<TokenType, function<optional<pair<int, mVType>>(mVType, mVType)>> typeChange;
+		//static const map<TokenType, function<optional<pair<int, mVType>>(mVType, mVType)>> typeChange;
 		//隐式类型转换，返回可转换到的类型以及转换的rank值（今后如果需要则rank值需转换成可供比较的自创对象，保存做了什么类型变换）
 		static vector<pair<mVType, int>> canChangeTo(mVType typ);
 	};
-	
-	/*template<typename T1, typename T2>
-	T2 LiteralCal(TokenType typ, const T1& t1, const optional<T1>& t2) {
-		switch (typ) {
-		case TokenType::Plus:
-			return t1 + *t2;
-		case TokenType::Minus:
-			return t1 - *t2;
-		case TokenType::Times:
-			return t1 * *t2;
-		case TokenType::Divide:
-			return t1 / *t2;
-		case TokenType::Mod:
-			return t1 % *t2;
-		case TokenType::Negative:
-			return -t1;
-		case TokenType::Not:
-			return !t1;
-		case TokenType::LogicalOr:
-			[[fallthrough]];
-		case TokenType::Or:
-			return t1 || *t2;
-		case TokenType::LogicalAnd:
-			[[fallthrough]];
-		case TokenType::And:
-			return t1 && *t2;
-		case TokenType::BitOr:
-			return t1 | *t2;
-		case TokenType::BitXor:
-			return t1 ^ *t2;
-		case TokenType::BitAnd:
-			return t1 & *t2;
-		case TokenType::EqualTo:
-			return t1 == *t2;
-		case TokenType::NotEqual:
-			return t1 != *t2;
-		case TokenType::Greater:
-			return t1 > *t2;
-		case TokenType::GreaterEqual:
-			return t1 >= *t2;
-		case TokenType::Less:
-			return t1 < *t2;
-		case TokenType::LessEqual:
-			return t1 <= *t2;
-		case TokenType::Dot:
-			throw(ErrDesignApp("LiteralCal->Dot"));
-		default:
-			throw(ErrDesignApp("LiteralCal"));
-		}
-	}*/
 };
+
+//bool operator==(const Op::mVType& tl, const Op::mVType& tr) { return tl.type == tr.type&& tl.valuetype == tr.valuetype&& tl.isLiteral == tr.isLiteral; }
 
 class Token {
 public:
@@ -358,14 +312,14 @@ private:
 	string id;
 };
 
-/*class ErrTypeChangeLoss :public ExceptionWithLineNo {
+class ErrTypeChangeLoss :public ExceptionWithLineNo {
 public:
-	ErrTypeChangeLoss(int lineNo, Op::mType* type, Op::mType* expectType) :ExceptionWithLineNo(lineNo),
-		id("error implicit conversing type "s + type->ToString() + " to type "s + expectType->ToString() + ". maybe missing explicit conversing."s) {}
+	ErrTypeChangeLoss(int lineNo, Op::mVType type, Op::mVType expectType) :ExceptionWithLineNo(lineNo),
+		id("error implicit conversing type "s + type.debug_out() + " to type "s + expectType.debug_out() + ". maybe missing explicit conversing."s) {}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
 	string id;
-};*/
+};
 
 class ErrDiscardValue :public ExceptionWithLineNo {
 public:

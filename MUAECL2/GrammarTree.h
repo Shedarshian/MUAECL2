@@ -41,6 +41,8 @@ public:
 	virtual int getLineNo();
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
+	//依据rank值对Token*操作
+	virtual GrammarTree* typeChange(int rank);
 };
 
 //为入栈所使用的状态标记
@@ -58,6 +60,7 @@ public:
 	explicit tTerminator(Token* t);
 	~tTerminator();
 	Token* getToken() override;
+	GrammarTree* typeChange(int rank) override;
 private:
 	Token* t;
 };
@@ -110,13 +113,15 @@ public:
 	void changeid(int id) override;
 	template<class ... Types>
 	tNoVars(int id, int lineNo, Types&& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
+	template<class ... Types>
+	tNoVars(mVType type, int id, int lineNo, Types&& ... args) : _type(type), id(id), lineNo(lineNo), branchs({ args... }) {}
 	Op::NonTerm type() override;
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& labels) override;
 	int getLineNo() override;
-	GrammarTree* typeChange(int rank);		//依据rank值对Token*操作
+	GrammarTree* typeChange(int rank) override;
 private:
 	int id;
 	int lineNo;
