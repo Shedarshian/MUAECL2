@@ -10,7 +10,7 @@ void GrammarTree::addTree(GrammarTree* t) { throw(ErrDesignApp("GrammarTree::add
 list<GrammarTree*>* GrammarTree::extractdecl(vector<mVar>& v) { return nullptr; }
 void GrammarTree::extractlabel(map<string, GrammarTree*>& labels) {};
 Token* GrammarTree::getToken() { throw(ErrDesignApp("GrammarTree::getToken")); }
-mType* GrammarTree::getType() { throw(ErrDesignApp("GrammarTree::getType")); }
+mType GrammarTree::getType() { throw(ErrDesignApp("GrammarTree::getType")); }
 int GrammarTree::getLineNo() { throw(ErrDesignApp("GrammarTree::getLineNo")); }
 mVType GrammarTree::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) { throw(ErrDesignApp("GrammarTree::TypeCheck")); }
 GrammarTree* GrammarTree::typeChange(int rank) { throw(ErrDesignApp("GrammarTree::typeChange")); }
@@ -30,24 +30,16 @@ GrammarTree* tTerminator::typeChange(int rank) {
 		t = tok;
 		return this;
 	}
-	else if (rank == mVType::ITOVP) {
-		return new tNoVars(mVType{ TYPE(Void)->address(), Op::LRvalue::rvalue, true }, 28, -1, this, new tType(TYPE(Void)->address()));
-	}
-	else if (rank == mVType::PTOVP) {
-		return new tNoVars(mVType{ TYPE(Void)->address(), Op::LRvalue::rvalue, true }, 28, -1, this, new tType(TYPE(Void)->address()));
-	}
 	return this;
 }
 
-tType::tType(Op::BuiltInType t) :t(Op::BuiltInTypeObj(t)) {}
-tType::tType(mType* t) : t(t) {}
+tType::tType(mType t) : t(t) {}
 Op::NonTerm tType::type() { return Op::NonTerm::types; }
-mType* tType::getType() { return t; }
-void tType::makePointer() { t = t->address(); }
+mType tType::getType() { return t; }
 
-tSubVars::tSubVars(mType* type, string id) { vars.emplace_back(type, id); }
+tSubVars::tSubVars(mType type, string id) { vars.emplace_back(type, id); }
 
-void tSubVars::emplaceVar(mType* type, string id, int lineNo) {
+void tSubVars::emplaceVar(mType type, string id, int lineNo) {
 	auto same = accumulate(vars.begin(), vars.end(), false,
 		[&str = id](bool b, mVar& a) {
 			return (a.id == str) || b; });
@@ -58,13 +50,13 @@ void tSubVars::emplaceVar(mType* type, string id, int lineNo) {
 
 Op::NonTerm tSubVars::type() { return Op::NonTerm::subv; }
 
-tDeclVars::tDeclVars(string id, int lineNo) :varsi({ { id, lineNo, nullptr } }), typedecl(nullptr) {}
-tDeclVars::tDeclVars(string id, int lineNo, GrammarTree* inif) :varsi({ { id, lineNo, inif } }), typedecl(nullptr) {}
+tDeclVars::tDeclVars(string id, int lineNo) :varsi({ { id, lineNo, nullptr } }), typedecl(mType::type_error) {}
+tDeclVars::tDeclVars(string id, int lineNo, GrammarTree* inif) :varsi({ { id, lineNo, inif } }), typedecl(mType::type_error) {}
 tDeclVars::~tDeclVars() { for (auto i : varsi) delete get<2>(i); }
 Op::NonTerm tDeclVars::type() { return Op::NonTerm::vdecl; }
 void tDeclVars::addVar(string id, int lineNo) { varsi.emplace_back(id, lineNo, nullptr); }
 void tDeclVars::addVar(string id, int lineNo, GrammarTree* inif) { varsi.emplace_back(id, lineNo, inif); }
-void tDeclVars::setDeclType(mType* type) { this->typedecl = type; }
+void tDeclVars::setDeclType(mType type) { this->typedecl = type; }
 
 list<GrammarTree*>* tDeclVars::extractdecl(vector<mVar>& v) {
 	auto l = new list<GrammarTree*>();
@@ -122,12 +114,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 2: { //stmt->expr ;
 		//需要可转成void右值非字面量，不允许弃值表达式。由于没有可以隐式转成void右值的实际表达式故不添加隐式转换节点
 		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
-		auto typeList = mVType::canChangeTo(_type);
-		bool b = false;
-		for (auto i : typeList)
-			if (b = (i.first == VTYPE(Void, r, false)))
-				break;
-		if (!b)
+		if (!mVType::canChangeTo(_type, VTYPE(Void, r)))
 			throw(ErrTypeChangeLoss(branchs[2]->getLineNo(), _type, VTYPE(Void, r, false)));
 		//不需要左值到右值转换
 		//_type.valuetype = Op::LRvalue::rvalue;
@@ -136,15 +123,10 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		throw(ErrDesignApp("GrammarTree::TypeCheck.3"));
 	case 4: { //stmt->if ( expr ) stmt else stmt
 		_type = branchs[2]->TypeCheck(sub, subs, whileBlock);
-		auto typeList = mVType::canChangeTo(_type);
-		bool b = false;
-		for (auto i : typeList)
-			if (b = (i.first == VTYPE(Int, r))) {
-				branchs[2] = branchs[2]->typeChange(i.second);
-				break;
-			}
-		if (!b)
+		if (int rank = mVType::canChangeTo(_type, VTYPE(Int, r)); rank < 0)
 			throw(ErrTypeChangeLoss(branchs[2]->getLineNo(), _type, VTYPE(Int, r)));
+		else
+			branchs[2] = branchs[2]->typeChange(rank);
 		branchs[1]->TypeCheck(sub, subs, whileBlock);
 		branchs[0]->TypeCheck(sub, subs, whileBlock);
 		break;
@@ -155,16 +137,10 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		[[fallthrough]];
 	case 7: { //stmt->for ( exprf ) stmt
 		_type = branchs[1]->TypeCheck(sub, subs, whileBlock);
-		auto typeList = mVType::canChangeTo(_type);
-		bool b = false;
-		bool b = false;
-		for (auto i : typeList)
-			if (b = (i.first == VTYPE(Int, r))) {
-				branchs[1] = branchs[1]->typeChange(i.second);
-				break;
-			}
-		if (!b)
-			throw ErrTypeChangeLoss(branchs[1]->getLineNo(), _type, VTYPE(Int, r));
+		if (int rank = mVType::canChangeTo(_type, VTYPE(Int, r)); rank < 0)
+			throw(ErrTypeChangeLoss(branchs[1]->getLineNo(), _type, VTYPE(Int, r)));
+		else
+			branchs[1] = branchs[1]->typeChange(rank);
 		branchs[0]->TypeCheck(sub, subs, whileBlock);
 		break; }
 	case 8: { //stmt->goto id ;
@@ -225,11 +201,11 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	}
 	case 23: { //expr->num
 		if (branchs[0]->getToken()->getInt() != nullptr)
-			_type = mVType{ Op::BuiltInTypeObj(Op::BuiltInType::Int), Op::LRvalue::rvalue, true };
+			_type = VTYPE(Int, r, true);
 		else if (branchs[0]->getToken()->getFloat() != nullptr)
-			_type = mVType{ Op::BuiltInTypeObj(Op::BuiltInType::Float), Op::LRvalue::rvalue, true };
+			_type = VTYPE(Float, r, true);
 		else if (branchs[0]->getToken()->getString() != nullptr)
-			_type = mVType{ Op::BuiltInTypeObj(Op::BuiltInType::String), Op::LRvalue::rvalue, true };
+			_type = VTYPE(String, r, true);
 		break;
 	}
 	case 24: { //expr->id ( insv )
@@ -242,37 +218,26 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 26: { //expr->expr Binary_op expr/exprf/inif
 		auto ltype = branchs[0]->TypeCheck(sub, subs, whileBlock);
 		decltype(ltype) rtype;
-		auto ltypeList = mVType::canChangeTo(ltype);
-		decltype(ltypeList) rtypeList = decltype(ltypeList){ make_pair(rtype, 0) };
 		bool isLiteral = ltype.isLiteral;
 		//如果是一元运算符，则rtype为初始对象，rtypeList为只有一个对象的列表
 		if (branchs.size() == 3) {
 			rtype = branchs[2]->TypeCheck(sub, subs, whileBlock);
 			isLiteral = isLiteral && rtype.isLiteral;
-			rtypeList = mVType::canChangeTo(rtype);
+			//rtypeList = mVType::canChangeTo(rtype);
 		}
 		auto typ = branchs[1]->getToken()->type();
 		auto[low, up] = mVType::typeChange.equal_range(typ);
 		int minID = INT_MAX;
 		int lrank, rrank;
 		for (; low != up; ++low) {
-			pair<mVType, int> lchgtype = { mVType(), INT_MAX }, rchgtype = { mVType(), INT_MAX };
 			auto &[first, second, type, opID] = low->second;
-			for (auto &i : ltypeList)
-				if (first(i.first, rchgtype.first) && lchgtype.second < i.second)
-					lchgtype = i;
-			if (lchgtype.second == INT_MAX)
-				continue;
-			for (auto &j : rtypeList)
-				if (second(j.first, lchgtype.first) && rchgtype.second < j.second)
-					rchgtype = j;
-			if (rchgtype.second == INT_MAX)
-				continue;
-			if (minID < lchgtype.second + rchgtype.second) {
-				minID = lchgtype.second + rchgtype.second;
-				_type = type(lchgtype.first, rchgtype.first); this->opID = opID;
-				lrank = lchgtype.second; rrank = rchgtype.second;
-			}
+			if (int Lrank = mVType::canChangeTo(ltype, first); Lrank >= 0)
+				if (int Rrank = mVType::canChangeTo(rtype, second); Rrank >= 0)
+					if (minID < Lrank + Rrank) {
+						minID = Lrank + Rrank;
+						_type = type; this->opID = opID;
+						lrank = Lrank; rrank = Rrank;
+					}
 		}
 		//无法应用运算符到此类型操作数
 		if (minID == INT_MAX)
@@ -282,23 +247,9 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		if (branchs.size() == 3)
 			branchs[2] = branchs[2]->typeChange(rrank);
 		//处理字面量计算优化，需要排除字面量指针的情况（在里面处理）
-		//需排除如void* literal dereference, void literal be assigned等等一系列情况 TODO
 		if (isLiteral)
 			LiteralCal();
 		break;
-		/*auto typeAllowed = mVType::typeChange.find(typ)->second;
-		int minID = INT_MAX;
-		int lrank, rrank;
-		for(auto &i : ltypeList)
-			for (auto &j : rtypeList) {
-				auto _return = typeAllowed(i.first, j.first);
-				//若不含值则说明不允许此类型对。并选取rank之和最小
-				if (_return.has_value() && minID < i.second + j.second) {
-					auto&[opID, retType] = _return.value();
-					_type = retType; this->opID = opID;
-					lrank = i.second; rrank = j.second;
-				}
-			}*/
 	}
 	case 27: { //expr->expr [ expr ]
 		//TODO
@@ -327,13 +278,7 @@ GrammarTree* tNoVars::typeChange(int rank) {
 	}
 	if (rank == mVType::ITOF) {
 		//整数转浮点
-		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tType(Op::BuiltInType::Float));
-	}
-	else if (rank == mVType::ITOVP) {
-		return new tNoVars(mVType{ TYPE(Void)->address(), Op::LRvalue::rvalue, _type.isLiteral }, 28, -1, this, new tType(TYPE(Void)->address()));
-	}
-	else if (rank == mVType::PTOVP) {
-		return new tNoVars(mVType{ TYPE(Void)->address(), Op::LRvalue::rvalue, _type.isLiteral }, 28, -1, this, new tType(TYPE(Void)->address()));
+		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tType(Op::mType::Float));
 	}
 	return this;
 }
@@ -364,12 +309,6 @@ void tNoVars::LiteralCal() {
 		*GET(0, String) += *GET(2, String);
 		change = 2;
 		break;
-	case TokenType::Plus + 4 * OFFSET:
-		//T* & int = T*
-		[[fallthrough]];
-	case TokenType::Plus + 5 * OFFSET:
-		//int & T* = T*
-		break;
 	case TokenType::Minus:
 		//int & int = int
 		*GET(0, Int) -= *GET(2, Int);
@@ -383,9 +322,6 @@ void tNoVars::LiteralCal() {
 	case TokenType::Minus + 2 * OFFSET:
 		//point & point = point
 		throw(ErrDesignApp("Point literal - Point literal"));
-	case TokenType::Minus + 4 * OFFSET:
-		//T* & int = T*
-		[[fallthrough]];
 	case TokenType::Times:
 		//int & int = int
 		*GET(0, Int) *= *GET(2, Int);
@@ -609,7 +545,7 @@ tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(s
 	transform(subv->vars.begin(), subv->vars.end(), varpara.begin(), [](const mVar& t) {return t.type; });
 	delete subv;
 	stmts->extractdecl(vardecl);
-	typeReturn = Op::BuiltInTypeObj(Op::BuiltInType::Void);		//返回值为void
+	typeReturn = Op::mType::Void;		//返回值为void
 	stmts->extractlabel(labels);
 }
 tSub::~tSub() { delete stmts; }
@@ -619,7 +555,7 @@ mVType tSub::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	return mVType();
 }
 
-void tSub::insertDecl(map<string, vector<mType*>>& m) const {
+void tSub::insertDecl(map<string, vector<mType>>& m) const {
 	auto it = m.insert(make_pair(name, varpara));
 	if (!it.second)
 		throw(ErrFuncRedeclared(lineNo, name));

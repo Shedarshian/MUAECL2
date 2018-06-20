@@ -9,7 +9,7 @@
 #include <optional>
 #include <variant>
 #include <functional>
-#define TYPE(name) Op::BuiltInTypeObj(Op::BuiltInType::name)
+#define TYPE(name) Op::mType::name
 #define VTYPE(name, lr, ...) Op::mVType{ TYPE(name), Op::LRvalue::lr##value, ##__VA_ARGS__ }
 using namespace std;
 
@@ -25,93 +25,40 @@ namespace Op {
 		return mo;
 	}
 	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
-	enum class BuiltInType { type_error, Void, Int, Float, String, Point, inilist };
+	enum class mType { type_error, Void, Int, Float, String, Point, inilist };
 	//非终结符
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, types };
-
-	//类型
-	class mType {
-	public:
-		mType() = default;
-		virtual ~mType() = default;
-		virtual mType* address();
-		virtual mType* dereference() = 0;
-		virtual string ToString() = 0;
-		virtual bool isPointer() const { return false; }
-	protected:
-		mType* _address;
-	};
-
-	class mTypeBasic :public mType {
-	public:
-		mTypeBasic(BuiltInType t);
-		mTypeBasic(int t);
-		mType* dereference() override;
-		BuiltInType get();
-		string ToString() override;
-	private:
-		BuiltInType t;
-	};
-	/*
-	class mTypeLiteral :public mType {
-	public:
-		mTypeLiteral(LiteralType t);
-		mType* address() override;
-		mType* dereference() override;
-		LiteralType get();
-		string ToString() override;
-	private:
-		LiteralType t;
-	};*/
-
-	class mTypePointer :public mType {
-	public:
-		mTypePointer(mType* t);
-		mType* dereference() override;
-		string ToString() override;
-		bool isPointer() const override { return true; }
-	private:
-		mType* ptr;
-	};
-
-	inline static const mTypeBasic _builtInTypeObj[7] = { mTypeBasic(0), mTypeBasic(1), mTypeBasic(2), mTypeBasic(3), mTypeBasic(4), mTypeBasic(5), mTypeBasic(6) };
-	inline static mType* BuiltInTypeObj(BuiltInType t) { return (mType*)(_builtInTypeObj + (int)t); }
-
+	
 	class Ch {
 	public:
 		static const unordered_set<char> OperatorChar;
 		static const map<TokenType, string> OperatorToString;
 		static const map<string, TokenType> StringToOperator;
-		static const map<string, BuiltInType> StringToType;
-		static const map<BuiltInType, string> TypeToString;
+		static const map<string, mType> StringToType;
+		static const map<mType, string> TypeToString;
 
 		static string ToString(TokenType op);
 		static TokenType ToOperator(string s);
-		static string ToString(BuiltInType op);
-		static BuiltInType ToType(string s);
-		static string ToString(mType* type);
+		static string ToString(mType op);
+		static mType ToType(string s);
 		static NonTerm ToType(int id);
 	};
 
 	enum LRvalue { lvalue, rvalue };
 	struct mVType {
 		mVType() = default;
-		mType* type;
+		mType type;
 		LRvalue valuetype;
 		bool isLiteral;
-		mType* operator->() const { return type; }
-		mType* operator->() { return type; }
 		string debug_out() {
-			return (isLiteral ? "literal "s : ""s) + (valuetype == rvalue ? "right value "s : "left value "s) + type->ToString();
+			return (isLiteral ? "literal "s : ""s) + (valuetype == rvalue ? "right value "s : "left value "s) + Ch::ToString(type);
 		}
 		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
-		enum { LTOR = 1, ITOF = 9, PTOVP = 27, ITOVP = 81 };
+		enum { LTOR = 1, ITOF = 3 };
 		//保存运算符->左操作数要求+右操作数要求+返回类型+重载运算符ID
-		static const multimap<TokenType, tuple<function<bool(mVType&, mVType&)>*, function<bool(mVType&, mVType&)>*, function<mVType(mVType&, mVType&)>*, int>> typeChange;
-		//保存运算符->(允许的类型对->返回类型+重载运算符ID)
-		//static const map<TokenType, function<optional<pair<int, mVType>>(mVType, mVType)>> typeChange;
+		static const multimap<TokenType, tuple<mVType, mVType, mVType, int>> typeChange;
 		//隐式类型转换，返回可转换到的类型以及转换的rank值（今后如果需要则rank值需转换成可供比较的自创对象，保存做了什么类型变换）
-		static vector<pair<mVType, int>> canChangeTo(mVType typ);
+		static int canChangeTo(mVType typ, mVType typto);
 	};
 };
 
@@ -133,7 +80,7 @@ public:
 	virtual float* getFloat();
 	virtual string* getString();
 	virtual string getId() const;
-	virtual Op::BuiltInType getType() const;
+	virtual Op::mType getType() const;
 	//debug输出
 	virtual string debug_out() const;
 	friend ostream& operator<< (ostream& stream, Token& token);
@@ -216,11 +163,11 @@ private:
 //内建类型
 class Token_KeywordType :public Token_Operator {
 public:
-	Token_KeywordType(int lineNo, Op::BuiltInType type);
-	Op::BuiltInType getType() const override;
+	Token_KeywordType(int lineNo, Op::mType type);
+	Op::mType getType() const override;
 	string debug_out() const override;
 private:
-	Op::BuiltInType val;
+	Op::mType val;
 };
 
 //文档结束

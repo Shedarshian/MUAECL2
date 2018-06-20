@@ -16,8 +16,8 @@ using Op::mVType;
 
 //变量
 struct mVar {
-	mVar(mType* type, string id) :type(type), id(id) {}
-	mType* type;
+	mVar(mType type, string id) :type(type), id(id) {}
+	mType type;
 	string id;
 };
 
@@ -37,7 +37,7 @@ public:
 	virtual void extractlabel(map<string, GrammarTree*>& labels);
 	//取数
 	virtual Token* getToken();
-	virtual mType* getType();
+	virtual mType getType();
 	virtual int getLineNo();
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
@@ -68,21 +68,19 @@ private:
 //types
 class tType : public GrammarTree {
 public:
-	explicit tType(Op::BuiltInType t);
-	explicit tType(mType* t);
+	explicit tType(mType t);
 	Op::NonTerm type() override;
-	mType* getType() override;
-	void makePointer();
+	mType getType() override;
 private:
-	mType* t;
+	mType t;
 };
 
 //subv
 class tSubVars :public GrammarTree {
 public:
 	tSubVars() = default;
-	tSubVars(mType* type, string id);
-	void emplaceVar(mType* type, string id, int lineNo);
+	tSubVars(mType type, string id);
+	void emplaceVar(mType type, string id, int lineNo);
 	Op::NonTerm type() override;
 private:
 	vector<mVar> vars;
@@ -98,10 +96,10 @@ public:
 	Op::NonTerm type() override;
 	void addVar(string id, int lineNo);
 	void addVar(string id, int lineNo, GrammarTree* inif);
-	void setDeclType(mType* type);
+	void setDeclType(mType type);
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 private:
-	mType* typedecl;
+	mType typedecl;
 	vector<tuple<string, int, GrammarTree*>> varsi;	//逆序储存
 };
 
@@ -152,15 +150,15 @@ public:
 	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts);
 	~tSub();
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	void insertDecl(map<string, vector<mType*>>& m) const;
+	void insertDecl(map<string, vector<mType>>& m) const;
 	mVar* checkVar(const string& id);
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() override;
 private:
 	const string name;
 	int lineNo;
-	vector<mType*> varpara;				//全部逆序储存
-	mType* typeReturn;					//目前版本均为void，以后可能扩展至含返回值的函数
+	vector<mType> varpara;				//全部逆序储存
+	mType typeReturn;					//目前版本均为void，以后可能扩展至含返回值的函数
 	vector<mVar> vardecl;				//全部逆序储存
 	map<string, GrammarTree*> labels;
 	GrammarTree* stmts;
@@ -174,6 +172,6 @@ public:
 	void addSub(tSub* s);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 private:
-	map<string, vector<mType*>> subdecl;
+	map<string, vector<mType>> subdecl;
 	vector<tSub*> subs;
 };
