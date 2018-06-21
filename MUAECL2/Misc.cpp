@@ -141,6 +141,14 @@ Op::TokenType Token_Literal::type() const { return Op::TokenType::Number; }
 int* Token_Literal::getInt() { return get_if<int>(&val); }
 float* Token_Literal::getFloat() { return get_if<float>(&val); }
 string* Token_Literal::getString() { return get_if<string>(&val); }
+string Token_Literal::debug_out() const {
+	if (auto i = get_if<int>(&val))
+		return to_string(*i);
+	else if (auto f = get_if<float>(&val))
+		return to_string(*f);
+	else
+		return *get_if<string>(&val);
+}
 
 Token_Identifier::Token_Identifier(int lineNo, string val) :Token(lineNo), val(val) {}
 Op::TokenType Token_Identifier::type() const { return Op::TokenType::Identifier; }

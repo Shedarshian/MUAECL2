@@ -7,37 +7,7 @@ using namespace std;
 using Term = Op::TokenType;
 using NonTerm = Op::NonTerm;
 
-const map<int, map<Op::TokenType, int>*> Parser::makeAction() {
-	ifstream f("Action.csv");
-	map<int, map<Op::TokenType, int>*> Action;
-	string s;
-	getline(f, s);
-	while (f.good()) {
-		getline(f, s, ',');
-		int index = stoi(s);
-		getline(f, s, ',');
-		if (s != "") {
-			//如果指定ptr则直接链接，跳过这行的读取
-			Parser::ptr.insert(index);
-			Action[index] = Action[stoi(s)];
-			getline(f, s);
-		}
-		else {
-			//否则按顺序读取并塞入map中
-			auto m = new map<Op::TokenType, int>();
-			for (int i = 0; i <= (int)Term::End; i++) {
-				getline(f, s, ',');
-				(*m)[(Term)i] = stoi(s);
-			}
-			Action[index] = m;
-			//抛弃剩下的占位
-			getline(f, s);
-		}
-	}
-	return Action;
-}
-
-const map<int, map<Op::TokenType, int>*> Parser::Action = Parser::makeAction();
+map<int, map<Op::TokenType, int>*> Parser::Action = map<int, map<Op::TokenType, int>*>();
 
 const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 7, 7 },{ 8, 79 },{ 9, 7 },{ 58, 60 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
@@ -53,6 +23,8 @@ const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::expr, map<int, int>({ { 3, 13 },{ 4, 14 },{ 5, 15 },{ 7, 87 },{ 8, 87 },{ 9, 87 },{ 10, 15 },{ 20, 22 },{ 23, 24 },{ 28, 19 },{ 30, 19 },{ 32, 19 },{ 36, 37 },{ 38, 39 },{ 40, 41 },{ 43, 15 },{ 53, 19 },{ 58, 87 },{ 70, 87 },{ 77, 87 },{ 82, 88 },{ 83, 89 },{ 84, 92 },{ 85, 90 },{ 86, 91 },{ 101, 131 },{ 102, 132 },{ 103, 133 },{ 104, 134 },{ 105, 135 },{ 106, 136 },{ 107, 137 },{ 108, 138 },{ 109, 139 },{ 110, 140 },{ 111, 141 },{ 112, 142 },{ 113, 143 },{ 114, 144 },{ 115, 145 },{ 116, 146 },{ 117, 147 },{ 118, 148 },{ 119, 149 },{ 120, 150 },{ 121, 15 } }) },
 	{ NonTerm::types, map<int, int>({ { 9, 2 },{ 61, 62 },{ 64, 62 },{ 84, 151 } }) }
 };
+
+set<int> Parser::ptr = set<int>();
 
 template<typename _Ty, typename _Container>
 void popd(stack<_Ty, _Container> s, int n = 1) {
@@ -70,12 +42,44 @@ Parser::~Parser() {
 	delete saveTree;
 }
 
+void Parser::initialize() {
+	ifstream f("Action.csv");
+	string s;
+	getline(f, s);
+	while (f.good()) {
+		getline(f, s, ',');
+		if (s == "NonTerm")
+			break;
+		int index = stoi(s);
+		getline(f, s, ',');
+		if (s != "") {
+			//如果指定ptr则直接链接，跳过这行的读取
+			ptr.insert(index);
+			Action[index] = Action[stoi(s)];
+			getline(f, s);
+		}
+		else {
+			//否则按顺序读取并塞入map中
+			auto m = new map<Op::TokenType, int>();
+			for (int i = 0; i <= (int)Term::End; i++) {
+				getline(f, s, ',');
+				(*m)[(Term)i] = stoi(s);
+			}
+			Action[index] = m;
+			//抛弃剩下的占位
+			getline(f, s);
+		}
+	}
+}
+
 void Parser::clear() {
 	for (auto i : Action)
 		if (ptr.find(i.first) == ptr.end()) {
 			delete i.second;
 			i.second = nullptr;
 		}
+		else
+			i.second = nullptr;
 }
 
 tRoot* Parser::analyse() {

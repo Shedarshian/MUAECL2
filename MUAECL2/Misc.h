@@ -63,8 +63,6 @@ namespace Op {
 	};
 };
 
-//bool operator==(const Op::mVType& tl, const Op::mVType& tr) { return tl.type == tr.type&& tl.valuetype == tr.valuetype&& tl.isLiteral == tr.isLiteral; }
-
 class Token {
 public:
 	explicit Token(int lineNo);
@@ -98,6 +96,7 @@ public:
 	int* getInt() override;
 	float* getFloat() override;
 	string* getString() override;
+	string debug_out() const override;
 private:
 	variant<int, float, string> val;
 };
