@@ -7,7 +7,9 @@ Tokenizer::Tokenizer(istream& ReadStream) :ReadStream(ReadStream), lineNo(1) {
 	ReadStream.get(nextChar);
 }
 
-Tokenizer::~Tokenizer() {}
+Tokenizer::~Tokenizer() {
+	delete bufferToken;
+}
 
 [[deprecated]] Tokenizer& operator>> (Tokenizer& t, Token*& token) {
 	token = t.popToken();

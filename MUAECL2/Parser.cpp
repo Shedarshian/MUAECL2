@@ -8,7 +8,6 @@ using Term = Op::TokenType;
 using NonTerm = Op::NonTerm;
 
 const map<int, map<Op::TokenType, int>*> Parser::makeAction() {
-//	char sAction[] = ;
 	ifstream f("Action.csv");
 	map<int, map<Op::TokenType, int>*> Action;
 	string s;
@@ -87,6 +86,7 @@ tRoot* Parser::analyse() {
 			int n = action(s.top()->state(), t->type());
 			if (n < 0) {
 				//Error
+				throw(ErrParsing(t->getlineNo(), n, t->debug_out()));
 			}
 			else if (n == 0) {
 				//接受
@@ -100,10 +100,10 @@ tRoot* Parser::analyse() {
 			}
 			else {
 				//按产生式n-1000规约
-				auto t = mergeTree(n - 1000, s);
+				auto tree = mergeTree(n - 1000, s);
 				int state = s.top()->state();
-				s.push(t);
-				s.push(new tState(gotostat(state, t->type())));
+				s.push(tree);
+				s.push(new tState(gotostat(state, tree->type())));
 			}
 		}
 		saveTree = static_cast<tRoot*>(s.top());
@@ -240,7 +240,9 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 22: { //types->type (*)
 		popd(s, 3);
 		auto t = s.top(); s.pop();
-		static_cast<tType*>(t)->makePointer();
+		//TODO del
+		throw(1);
+		//static_cast<tType*>(t)->makePointer();
 		return t; }
 	case 32: { //vdecl->id
 		popd(s);

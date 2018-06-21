@@ -11,6 +11,7 @@
 #include <functional>
 #define TYPE(name) Op::mType::name
 #define VTYPE(name, lr, ...) Op::mVType{ TYPE(name), Op::LRvalue::lr##value, ##__VA_ARGS__ }
+#define OFFSET 128
 using namespace std;
 
 class Token;
@@ -54,11 +55,11 @@ namespace Op {
 			return (isLiteral ? "literal "s : ""s) + (valuetype == rvalue ? "right value "s : "left value "s) + Ch::ToString(type);
 		}
 		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
-		enum { LTOR = 1, ITOF = 3 };
+		enum { LTOR = 1, ITOF = 5 };
 		//保存运算符->左操作数要求+右操作数要求+返回类型+重载运算符ID
 		static const multimap<TokenType, tuple<mVType, mVType, mVType, int>> typeChange;
 		//隐式类型转换，返回可转换到的类型以及转换的rank值（今后如果需要则rank值需转换成可供比较的自创对象，保存做了什么类型变换）
-		static int canChangeTo(mVType typ, mVType typto);
+		static int canChangeTo(const mVType& typ, const mVType& typto);
 	};
 };
 
@@ -282,10 +283,69 @@ private:
 	string id;
 };
 
+class ErrFuncNotFound :public ExceptionWithLineNo {
+public:
+	ErrFuncNotFound(int lineNo, string var) :ExceptionWithLineNo(lineNo), id("function "s + var + " not found."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrFuncPara :public ExceptionWithLineNo {
+public:
+	ErrFuncPara(int lineNo, string var) :ExceptionWithLineNo(lineNo), id("function "s + var + " using wrong parameters."s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
 class ErrTypeOperate :public ExceptionWithLineNo {
 public:
 	ErrTypeOperate(int lineNo, Op::mVType ltype, Op::mVType rtype, string token) :ExceptionWithLineNo(lineNo),
 		id("can't use " + token + " on type " + ltype.debug_out() + " and " + rtype.debug_out() + " .") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrParsing :public ExceptionWithLineNo {
+public:
+	ErrParsing(int lineNo, int ErrNo, string tokenName) :ExceptionWithLineNo(lineNo) {
+		switch (ErrNo) {
+		case -1: id = "Unexpected " + tokenName + ", expect sub declare."; break;
+		case -2: id = "Unexpected " + tokenName + ", expect parameter list."; break;
+		case -3: id = "Missing type specifier."; break;
+		case -4: id = "Missing parameter name."; break;
+		case -5: id = "Unexpected " + tokenName + ", unclosed braket."; break;
+		case -6: id = "Unexpected " + tokenName + ", expect code block begin."; break;
+		case -7: id = "Missing label name."; break;
+		case -8: id = "Blank statement not allowed."; break;
+		case -10: id = "Unclosed big braket."; break;
+		case -11: id = "Unexpected " + tokenName + ", probably missing identifier."; break;
+		case -12: id = "Nesting sub declare not allowed."; break;
+		case -13: id = "Floating else without if."; break;
+		case -14: id = "Missing Operator."; break;
+		case -16: id = "Please don't use keyword " + tokenName + "."; break;
+		case -17: id = "Unexpected " + tokenName + ", we don't know what you want to do."; break;
+		case -18: id = "Missing semicolon."; break;
+		case -19: id = "Redundant " + tokenName + "."; break;
+		case -20: id = "Label at block's end not allowed."; break;
+		case -21: id = "Can't declare non-variable."; break;
+		case -22: id = "Unbalanced braket."; break;
+		case -24: id = "Missing comma."; break;
+		case -25: id = "Missing assignment sign."; break;
+		case -26: id = "Can't use " + tokenName + " for variable initialize."; break;
+		case -27: id = "Can't declare array! (At least for this version of MUAECL)."; break;
+		case -28: id = "Can't use difficulty switch inside if or while."; break;
+		case -29: id = "Unexpected " + tokenName + ", expect code block end."; break;
+		case -30: id = "Unexpected " + tokenName + " in initializer list."; break;
+		case -31: id = "Unexpected " + tokenName + ", expect initializer list end."; break;
+		case -32: id = "Difficulty switch need to have four expression."; break;
+		case -33: id = "Unexpected " + tokenName + ", expect left braket."; break;
+		case -34: id = "Unexpected " + tokenName + ", expect file end."; break;
+		default: break;
+		}
+	}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
 	string id;

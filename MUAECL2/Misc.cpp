@@ -27,200 +27,7 @@ NonTerm Op::Ch::ToType(int id) {
 	throw(ErrDesignApp("Op::ToType(int)"));
 }
 
-//using ftt = function<bool(mVType&, mVType&)>;
-//using fttt = function<mVType(mVType&, mVType&)>;
-/*const map<TokenType, function<opp(mVType, mVType)>> makeTypeChange() {
-	#define OFFSET 128
-	using namespace std::placeholders;
-	map<TokenType, function<opp(mVType, mVType)>> t;
-	for (auto tt : { Op::LogicalOr, Op::LogicalAnd, Op::Or, Op::And, Op::BitOr, Op::BitXor, Op::BitAnd, Op::Mod }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != rvalue || tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type && tl.type == TYPE(Int))
-				//int & int = int, id+0
-				return make_optional(make_pair((int)tt, VTYPE(Int, r)));
-			return opp{};
-		};
-	}
-	for (auto tt : { Op::EqualTo, Op::NotEqual, Op::Greater, Op::GreaterEqual, Op::Less, Op::LessEqual }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != rvalue || tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type) {
-				if (tl.type == TYPE(Int))
-					//int & int = int, id+0
-					return make_optional(make_pair((int)tt, VTYPE(Int, r)));
-				else if (tl.type == TYPE(Float))
-					//float & float = int, id+OFFSET
-					return make_optional(make_pair((int)tt + OFFSET, VTYPE(Int, r)));
-				else if (tl.type == TYPE(Point))
-					//point & point = int, id+2*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 2, VTYPE(Int, r)));
-				else if (tl.type == TYPE(String))
-					//string & string = int, id+3*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 3, VTYPE(Int, r)));
-				else if (tl->VTYPE(Pointer, r)())
-					//T* & T* = int, id+4*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 4, VTYPE(Int, r)));
-			}
-			return opp{};
-		};
-	}
-	for (auto tt : { Op::Plus, Op::Minus }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != rvalue || tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type) {
-				if (tl.type == TYPE(Int))
-					//int & int = int, id+0
-					return make_optional(make_pair((int)tt, VTYPE(Int, r)));
-				else if (tl.type == TYPE(Float))
-					//float & float = float, id+OFFSET
-					return make_optional(make_pair((int)tt + OFFSET, VTYPE(Float, r)));
-				else if (tl.type == TYPE(Point))
-					//point & point = point, id+2*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 2, VTYPE(Point, r)));
-				else if (tt == Op::Plus && tl.type == TYPE(String))
-					//string & string = string, id+3*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 3, VTYPE(String, r)));
-			}
-			else if (tl->VTYPE(Pointer, r)() && tr.type == TYPE(Int)) {
-				//T* & int = T*, id+4*OFFSET
-				return make_optional(make_pair((int)tt + OFFSET * 4, mVType{ tl.type, rvalue }));
-			}
-			else if (tt == Op::Plus && tr->VTYPE(Pointer, r)() && tl.type == TYPE(Int)) {
-				//int & T* = T*, id+5*OFFSET
-				return make_optional(make_pair((int)tt + OFFSET * 5, mVType{ tr.type, rvalue }));
-			}
-			return opp{};
-		};
-	}
-	for (auto tt : { Op::Times, Op::Divide }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != rvalue || tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type) {
-				if (tl.type == TYPE(Int))
-					//int & int = int, id+0
-					return make_optional(make_pair((int)tt, VTYPE(Int, r)));
-				else if (tl.type == TYPE(Float))
-					//float & float = float, id+OFFSET
-					return make_optional(make_pair((int)tt + OFFSET, VTYPE(Float, r)));
-			}
-			else if (tl.type == TYPE(Point) && tr.type == TYPE(Float)) {
-				//point & float = point, id+2*OFFSET
-				return make_optional(make_pair((int)tt + OFFSET * 2, VTYPE(Point, r)));
-			}
-			else if (tr.type == TYPE(Point) && tl.type == TYPE(Int)) {
-				//float & point = point, id+3*OFFSET
-				return make_optional(make_pair((int)tt + OFFSET * 3, VTYPE(Point, r)));
-			}
-			return opp{};
-		};
-	}
-	for (auto tt : { Op::Negative, Op::Not }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != rvalue)
-				return opp{};
-			if (tl.type == TYPE(Int))
-				//int = int, id+0
-				return make_optional(make_pair((int)tt, VTYPE(Int, r)));
-			else if (tl.type == TYPE(Float))
-				//float = float, id+OFFSET
-				return make_optional(make_pair((int)tt + OFFSET, VTYPE(Float, r)));
-			else if (tt == Op::Negative && tl.type == TYPE(Point))
-				//point = point, id+OFFSET*2
-				return make_optional(make_pair((int)tt + OFFSET * 2, VTYPE(Point, r)));
-			return opp{};
-		};
-	}
-	t[Op::Deref] = [tt = Op::Deref](mVType tl, mVType tr) {
-		if (tl.valuetype != rvalue)
-			return opp{};
-		if (tl->VTYPE(Pointer, r)())
-			//T* = T, id+0
-			return make_optional(make_pair((int)tt, mVType{ tl->dereference(), lvalue }));
-		return opp{};
-	};
-	t[Op::Address] = [tt = Op::Address](mVType tl, mVType tr){
-		if (tl.valuetype == lvalue)
-			//T = T*, id+0
-			return make_optional(make_pair((int)tt, mVType{ tl->address(), rvalue }));
-		return opp{};
-	};
-	t[Op::Dot] = [tt = Op::Dot](mVType tl, mVType tr){
-		//TODO
-		return opp{};
-	};
-	t[Op::Equal] = [tt = Op::Equal](mVType tl, mVType tr){
-		if (tl.valuetype != lvalue || tr.valuetype != rvalue)
-			return opp{};
-		if (tl.type == tr.type)
-			return make_optional(make_pair((int)tt, VTYPE(Void, r)));
-		else if (tl.type == TYPE(Point) && tr.type == TYPE(inilist))
-			return make_optional(make_pair((int)tt + OFFSET, VTYPE(Void, r)));
-		else if (tl.type == TYPE(Void) && tl.Literal)
-			return make_optional(make_pair((int)tt + 2 * OFFSET, VTYPE(Void, r)));
-		return opp{};
-	};
-	for (auto tt : { Op::PlusEqual, Op::MinusEqual }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != lvalue && tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type) {
-				if (tl.type == TYPE(Int))
-					//int = int, id+0
-					return make_optional(make_pair((int)tt, VTYPE(Void, r)));
-				else if (tl.type == TYPE(Float))
-					//float = float, id+OFFSET
-					return make_optional(make_pair((int)tt + OFFSET, VTYPE(Void, r)));
-				else if (tl.type == TYPE(Point))
-					//point = point, id+2*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 2, VTYPE(Void, r)));
-				else if (tt == Op::PlusEqual && tl.type == TYPE(String))
-					//string = string, id+3*OFFSET
-					return make_optional(make_pair((int)tt + OFFSET * 3, VTYPE(Void, r)));
-			}
-			else if (tl->VTYPE(Pointer, r)() && tr.type == TYPE(Int))
-				//T* = int, id+4*OFFSET
-				return make_optional(make_pair((int)tt + OFFSET * 4, VTYPE(Void, r)));
-			return opp{};
-		};
-	}
-	for (auto tt : { Op::TimesEqual, Op::DividesEqual }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != lvalue && tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type) {
-				if (tl.type == TYPE(Int))
-					//int = int, id+0
-					return make_optional(make_pair((int)tt, VTYPE(Void, r)));
-				else if (tl.type == TYPE(Float))
-					//float = float, id+OFFSET
-					return make_optional(make_pair((int)tt + OFFSET, VTYPE(Void, r)));
-			}
-			else if (tl.type == TYPE(Point) && tr.type == TYPE(Float))
-				//point = float, id+2*OFFSET
-				return make_optional(make_pair((int)tt + OFFSET * 2, VTYPE(Void, r)));
-			return opp{};
-		};
-	}
-	for (auto tt : { Op::ModEqual, Op::LogicalOrEqual, Op::LogicalAndEqual, Op::BitOrEqual, Op::BitAndEqual, Op::BitXorEqual }) {
-		t[tt] = [tt](mVType tl, mVType tr) {
-			if (tl.valuetype != lvalue || tr.valuetype != rvalue)
-				return opp{};
-			if (tr.type == tl.type && tl.type == TYPE(Int))
-				//int & int = int, id+0
-				return make_optional(make_pair((int)tt, VTYPE(Void, r)));
-			return opp{};
-		};
-	}
-	return t;
-	#undef OFFSET
-}*/
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
-	#define OFFSET 128
 	multimap<TokenType, tuple<mVType, mVType, mVType, int>> t;
 	for (auto tt : { Op::LogicalOr, Op::LogicalAnd, Op::Or, Op::And, Op::BitOr, Op::BitXor, Op::BitAnd, Op::Mod }) {
 		//int & int = int, id+0
@@ -236,7 +43,7 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		//string & string = int, id+3*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(String, r), VTYPE(String, r), VTYPE(Int, r), (int)tt + OFFSET * 3));
 	}
-	for (auto tt : { Op::Plus, Op::Minus }) {
+	for (auto tt : { Op::Plus, Op::Minus, Op::Colon }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
 		//float & float = float, id+OFFSET
@@ -245,6 +52,9 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		t.emplace(tt, make_tuple(VTYPE(Point, r), VTYPE(Point, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
 		//string & string = string, id+3*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(String, r), VTYPE(String, r), VTYPE(String, r), (int)tt + OFFSET * 3));
+		//inilist & inilist = inilist, id+4*OFFSET
+		if (tt == Op::Colon)
+			t.emplace(tt, make_tuple(VTYPE(inilist, r), VTYPE(inilist, r), VTYPE(inilist, r), (int)tt + OFFSET * 3));
 	}
 	for (auto tt : { Op::Times, Op::Divide }) {
 		//int & int = int, id+0
@@ -259,18 +69,17 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 	}
 	for (auto tt : { Op::Negative, Op::Not }) {
 		//int = int, id+0
-		t.emplace(tt, make_tuple(VTYPE(Int, r), nullptr, VTYPE(Int, r), (int)tt));
+		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(type_error, r), VTYPE(Int, r), (int)tt));
 		//float = float, id+OFFSET
-		t.emplace(tt, make_tuple(VTYPE(Float, r), nullptr, VTYPE(Float, r), (int)tt + OFFSET));
+		t.emplace(tt, make_tuple(VTYPE(Float, r), VTYPE(type_error, r), VTYPE(Float, r), (int)tt + OFFSET));
 		//point = point, id+OFFSET*2
-		t.emplace(tt, make_tuple(VTYPE(Point, r), nullptr, VTYPE(Point, r), (int)tt + OFFSET * 2));
+		t.emplace(tt, make_tuple(VTYPE(Point, r), VTYPE(type_error, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
 	}
 	//int = void l, id+0
-	t.emplace(Op::Deref, make_tuple(VTYPE(Int, r), nullptr, VTYPE(Void, l), (int)Op::Deref));
+	t.emplace(Op::Deref, make_tuple(VTYPE(Int, r), VTYPE(type_error, r), VTYPE(Void, l), (int)Op::Deref));
 	//address, no
+	//midbra, no
 	//dot, TODO
-
-
 	for (auto tt : { Op::Equal, Op::PlusEqual, Op::MinusEqual }) {
 		//int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Void, r), (int)tt));
@@ -280,7 +89,7 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Point, r), VTYPE(Void, r), (int)tt + OFFSET * 2));
 		//string = string, id+3*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(String, l), VTYPE(String, r), VTYPE(Void, r), (int)tt + OFFSET * 3));
-		//point = inilist, id+4*OFFSET
+		//point = inilist, id+4*OFFSET, 是否需要特殊检查？
 		if (tt == Op::Equal)
 			t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(inilist, r), VTYPE(Void, r), (int)tt + OFFSET * 4));
 	}
@@ -297,11 +106,10 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Void, r), (int)tt));
 	}
 	return t;
-	#undef OFFSET
 }
-
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> Op::mVType::typeChange = makeTypeChange();
-int Op::mVType::canChangeTo(mVType typ, mVType typto){
+
+int Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	int rank = 0;
 	//左值到右值转换
 	if (typ.valuetype == typto.valuetype || (typ.valuetype == Op::lvalue && (rank += LTOR)))

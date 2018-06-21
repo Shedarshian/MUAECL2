@@ -908,6 +908,38 @@ Grammar error
 
 
 
+case -1: id = "Unexpected " + tokenName + ", expect sub declare."; break;
+case -2: id = "Unexpected " + tokenName + ", expect parameter list."; break;
+case -3: id = "Missing type specifier."; break;
+case -4: id = "Missing parameter name."; break;
+case -5: id = "Unexpected " + tokenName + ", unclosed braket."; break;
+case -6: id = "Unexpected " + tokenName + ", expect code block begin."; break;
+case -7: id = "Missing label name."; break;
+case -8: id = "Blank statement not allowed."; break;
+case -10: id = "Unclosed big braket."; break;
+case -11: id = "Unexpected " + tokenName + ", probably missing identifier."; break;
+case -12: id = "Nesting sub declare not allowed."; break;
+case -13: id = "Floating else without if."; break;
+case -14: id = "Missing Operator."; break;
+case -16: id = "Please don't use keyword " + tokenName + "."; break;
+case -17: id = "Unexpected " + tokenName + ", we don't know what you want to do."; break;
+case -18: id = "Missing semicolon."; break;
+case -19: id = "Redundant " + tokenName + "."; break;
+case -20: id = "Label at block's end not allowed."; break;
+case -21: id = "Can't declare non-variable."; break;
+case -22: id = "Unbalanced braket."; break;
+case -24: id = "Missing comma."; break;
+case -25: id = "Missing assignment sign."; break;
+case -26: id = "Can't use " + tokenName + " for variable initialize."; break;
+case -27: id = "Can't declare array! (At least for this version of MUAECL)."; break;
+case -28: id = "Can't use difficulty switch inside if or while."; break;
+case -29: id = "Unexpected " + tokenName + ", expect code block end."; break;
+case -30: id = "Unexpected " + tokenName + " in initializer list."; break;
+case -31: id = "Unexpected " + tokenName + ", expect initializer list end."; break;
+case -32: id = "Difficulty switch need to have four expression."; break;
+case -33: id = "Unexpected " + tokenName + ", expect left braket."; break;
+case -34: id = "Unexpected " + tokenName + ", expect file end."; break;
+
 
 
 

@@ -126,7 +126,8 @@ private:
 	mVType _type;
 	int opID;						//重载后的运算符id
 	vector<GrammarTree*> branchs;	//全部逆序储存，因为产生式都是右递归的
-	void LiteralCal();	//字面量计算优化
+	void LiteralCal();				//字面量计算优化
+	void exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 };
 
 //stmts，因为要储存map<label, stmt*>
@@ -150,7 +151,7 @@ public:
 	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts);
 	~tSub();
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	void insertDecl(map<string, vector<mType>>& m) const;
+	void insertDecl(map<string, pair<mType, vector<mType>>>& m) const;
 	mVar* checkVar(const string& id);
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() override;
@@ -170,8 +171,9 @@ public:
 	~tRoot();
 	Op::NonTerm type() override;
 	void addSub(tSub* s);
+	pair<mType, vector<mType>>* checkSub(const string& id);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 private:
-	map<string, vector<mType>> subdecl;
+	map<string, pair<mType, vector<mType>>> subdecl;
 	vector<tSub*> subs;
 };
