@@ -2,13 +2,13 @@ R0		E->subs
 R12		subs->\e
 R13		subs->sub id ( subv ) { stmts } subs
 R14		subv->\e
-R15		subv->types id
-R16		subv->types id , subv
+R15		subv->type id
+R16		subv->type id , subv
 R1		stmts->stmt stmts
 R2		stmts->id : stmt stmts
 R3		stmts->\e
 R4	id2	stmt->expr ;
-R5	id3	stmt->types vdecl ;
+R5	id3	stmt->type vdecl ;
 R7	id5	stmt->if ( expr ) stmt
 R18	id4	stmt->if ( expr ) stmt else stmt
 R8	id6	stmt->while ( expr ) stmt
@@ -17,8 +17,6 @@ R10	id8	stmt->goto id ;
 R11	id9	stmt->{ stmts }
 R19	id10	stmt->break ;
 R20	id11	stmt->continue ;
-R21		types->type
-R22		types->types (*)
 R32		vdecl->id
 R33		vdecl->id = inif
 R34		vdecl->id , vdecl
@@ -63,7 +61,7 @@ R64	id25	expr->(*) expr
 R65	id25	expr->(&) expr
 R66	id27	expr->expr [ expr ]
 R67	id26	expr->expr as_op exprf
-R68	id28	expr->( types ) expr
+R68	id28	expr->( type ) expr
 
 FOLLOW
 E	$
@@ -79,7 +77,6 @@ exprf	) , ;
 expr	) : , ; } op2 [ ] = as_op
 vdecl	;
 insv	)
-types	(*) id )
 
 
 FIRST
@@ -95,7 +92,7 @@ exprf	expr
 vdecl	id
 insv	\e expr
 
-24 65 66 67 128 129 130
+24 52 65 66 67 72 128 129 130 151
 
 
 I255:
@@ -112,7 +109,7 @@ stmts->\.stmt stmts
 stmts->\.id : stmt stmts
 stmts->\.
 stmt->\.expr ;
-stmt->\.types vdecl ;
+stmt->\.type vdecl ;
 stmt->\.if ( expr ) stmt
 stmt->\.if ( expr ) stmt else stmt
 stmt->\.while ( expr ) stmt
@@ -150,11 +147,9 @@ expr->\.(*) expr
 expr->\.(&) expr
 expr->\.expr [ expr ]
 expr->\.expr as_op exprf
-types->\.type
-types->\.types (*)
 I9---id----------->I1
   ---num---------->I44
-  ---type--------->I151
+  ---type--------->I2
   ---if(---------->I3(I98)
   ---while(------->I4(I99)
   ---for(--------->I5(I100)
@@ -170,7 +165,6 @@ I9---id----------->I1
   ---stmt--------->I7
   ---stmts-------->I49
   ---expr--------->I87
-  ---types-------->I2
 I1:
 stmts->id\.: stmt stmts
 expr->id\.
@@ -178,15 +172,13 @@ expr->id\.( insv )
 I1---:------------>I8
   ---(------------>I10
 I2:
-stmt->types\.vdecl ;
+stmt->type\.vdecl ;
 vdecl->\.id
 vdecl->\.id = inif
 vdecl->\.id , vdecl
 vdecl->\.id = inif , vdecl
-types->types\.(*)
 I2---id----------->I11
   ---vdecl-------->I12
-  ---(*)---------->I72
 I3:
 stmt->if (\.expr ) stmt
 stmt->if (\.expr ) stmt else stmt
@@ -272,7 +264,7 @@ I59---id------------>I11
 I48:
 vdecl->id , vdecl\.
 I12:
-stmt->types vdecl\.;
+stmt->type vdecl\.;
 I12---;------------->I57
 I13:
 stmt->if ( expr\.) stmt
@@ -326,7 +318,7 @@ inia->\.expr , inia
 inia->\.expr
 \.expr
 I23---same---I3
-   ---expr----------->I24
+   ---expr----------->I22
    ---inia----------->I25
 I25:
 inia->expr , inia\.
@@ -433,8 +425,6 @@ I50---sub id (-->I61(I34 I35)
    ---subs------>I51
 I51:
 subs->sub id ( subv ) { stmts } subs\.
-I52:
-types->type\.
 I53:
 vdecl->id =\.inif
 vdecl->id =\.inif , vdecl
@@ -463,7 +453,7 @@ I54---id-------->I11
 I55:
 vdecl->id = inif , vdecl\.
 I57:
-stmt->types vdecl ;\.
+stmt->type vdecl ;\.
 I58:
 stmt->if ( expr )\.stmt
 stmt->if ( expr )\.stmt else stmt
@@ -479,35 +469,27 @@ I60---else------->I70
 I61:
 subs->sub id (\.subv ) { stmts } subs
 subv->\.
-subv->\.types id
-subv->\.types id , subv
-types->\.type
-types->\.types (*)
-I61---types------>I62
+subv->\.type id
+subv->\.type id , subv
+I61---type------->I62
    ---subv------->I69
-   ---type------->I52
 I62:
-subv->types\.id
-subv->types\.id , subv
-types->types\.(*)
+subv->type\.id
+subv->type\.id , subv
 I62---id--------->I63
-   ---(*)-------->I72
 I63:
-subv->types id\.
-subv->types id\., subv
+subv->type id\.
+subv->type id\., subv
 I63---,---------->I64
 I64:
-subv->types id ,\.subv
+subv->type id ,\.subv
 subv->\.
-subv->\.types id
-subv->\.types id , subv
-types->\.type
-types->\.types (*)
-I64---types------>I62
-   ---type------->I52
+subv->\.type id
+subv->\.type id , subv
+I64---type------->I62
    ---subv------->I68
 I68:
-subv->types id , subv\.
+subv->type id , subv\.
 I69:
 subs->sub id ( subv\.) { stmts } subs
 I69---) {-------->I9(I56)
@@ -520,8 +502,6 @@ I70---same---I8
    ---stmt--------->I71
 I71:
 stmt->if ( expr ) stmt else stmt\.
-I72:
-types->types (*)\.
 I73:
 stmt->while ( expr )\.stmt
 \.stmt
@@ -563,14 +543,11 @@ I83---same---I82
    ---expr--------->I89
 I84:
 expr->(\.expr )
-expr->(\.types ) expr
+expr->(\.type ) expr
 \.expr
-types->\.type
-types->\.types (*)
 I84---same---I82
    ---expr--------->I92
-   ---type--------->I52
-   ---types-------->I151
+   ---type--------->I151
 I85:
 expr->(*)\.expr
 \.expr
@@ -852,19 +829,18 @@ expr\.
 I150---op---I87
     ---]-------->I123
 I151:
-expr->( types\.) expr
-types->types\.(*)
+expr->( type\.) expr
 I151---)-------->I152
-    ---(*)------>I72
 I152:
-expr->( types )\.expr
+expr->( type )\.expr
 \.expr
 I152---same---I82
     ---expr----->I153
 I153:
-expr->( types ) expr\.
+expr->( type ) expr\.
 expr\.
 I153---op---I87
+
 
 
 

@@ -10,7 +10,7 @@ using namespace std;
 
 class Parser {
 public:
-	Parser(Tokenizer &tokenizer);
+	Parser(Tokenizer &tokenizer, bool debug);
 	~Parser();
 	static void initialize();
 	static void clear();
@@ -27,5 +27,6 @@ private:
 	Tokenizer &tokenizer;
 	stack<GrammarTree*> s;
 	tRoot* saveTree;
+	bool debug;
 };
 

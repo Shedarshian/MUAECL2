@@ -1,7 +1,7 @@
 sub A(int a, string b){
 	//zhushi
 	/*zhushi*/
-biaoqian:
+/*biaoqian:
 	int d;
 	float f=1;
 	point p1,p2={1,2},p3={1,2}:{3,4}:{5,6}:{7,8};
@@ -12,7 +12,7 @@ biaoqian:
 	goto biaoqian;
 }
 
-sub B(){
+sub B(){*/
 	int d=1:2:3:4;
 	if(d)
 		for(8:10:15:0x20){

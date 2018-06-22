@@ -61,19 +61,20 @@ public:
 	~tTerminator();
 	Token* getToken() override;
 	GrammarTree* typeChange(int rank) override;
+	int getLineNo() override;
 private:
 	Token* t;
 };
 
 //types
-class tType : public GrammarTree {
+/*class tType : public GrammarTree {
 public:
 	explicit tType(mType t);
 	Op::NonTerm type() override;
 	mType getType() override;
 private:
 	mType t;
-};
+};*/
 
 //subv
 class tSubVars :public GrammarTree {

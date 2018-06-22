@@ -17,13 +17,9 @@ int main(int argc, char* argv[])
 		ifstream in(argv[1]);
 		//ifstream in("D:\\A.Ñ§Ï°¡¾Learning¡¿\\A2.Mathematics\\VC\\C++workspace\\MUAECL2\\in.txt");
 		Tokenizer tokenizer(in);
-		Token* t = nullptr;
-		do {
-			if (t != nullptr)
-				delete t;
-			t = tokenizer.popToken();
-			cout << t->debug_out() << " " << tokenizer.debug_lineNo() << endl;
-		} while (t->type() != Op::TokenType::End);
+		Parser parser(tokenizer, true);
+		tRoot* tree = parser.analyse();
+
 	}
 	catch (ExceptionWithLineNo &e) {
 		cerr << e.lineNo << " " << e.what() << endl;

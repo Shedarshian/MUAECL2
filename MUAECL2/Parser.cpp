@@ -7,33 +7,32 @@ using namespace std;
 using Term = Op::TokenType;
 using NonTerm = Op::NonTerm;
 
-map<int, map<Op::TokenType, int>*> Parser::Action = map<int, map<Op::TokenType, int>*>();
+map<int, map<Op::TokenType, int>*> Parser::Action;
 
 const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 7, 7 },{ 8, 79 },{ 9, 7 },{ 58, 60 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
 	{ NonTerm::stmts, map<int, int>({ { 7, 17 },{ 9, 49 },{ 77, 78 },{ 79, 18 } }) },
 	{ NonTerm::subs, map<int, int>({ { 0, 255 },{ 50, 51 } }) },
-	{ NonTerm::subv, map<int, int>({ { 61, 69 } }) },
+	{ NonTerm::subv, map<int, int>({ { 61, 69 }, { 64, 68 } }) },
 	{ NonTerm::vdecl, map<int, int>({ { 2, 12 },{ 54, 55 },{ 59, 48 } }) },
 	{ NonTerm::insv, map<int, int>({ { 10, 46 },{ 43, 45 } }) },
 	{ NonTerm::ini, map<int, int>({ { 28, 29 },{ 30, 31 },{ 32, 33 },{ 53, 21 } }) },
 	{ NonTerm::inif, map<int, int>({ { 53, 80 } }) },
 	{ NonTerm::inia, map<int, int>({ { 20, 26 },{ 23, 25 } }) },
 	{ NonTerm::exprf, map<int, int>({ { 5, 16 },{ 10, 42 },{ 43, 42 },{ 121, 122 } }) },
-	{ NonTerm::expr, map<int, int>({ { 3, 13 },{ 4, 14 },{ 5, 15 },{ 7, 87 },{ 8, 87 },{ 9, 87 },{ 10, 15 },{ 20, 22 },{ 23, 24 },{ 28, 19 },{ 30, 19 },{ 32, 19 },{ 36, 37 },{ 38, 39 },{ 40, 41 },{ 43, 15 },{ 53, 19 },{ 58, 87 },{ 70, 87 },{ 77, 87 },{ 82, 88 },{ 83, 89 },{ 84, 92 },{ 85, 90 },{ 86, 91 },{ 101, 131 },{ 102, 132 },{ 103, 133 },{ 104, 134 },{ 105, 135 },{ 106, 136 },{ 107, 137 },{ 108, 138 },{ 109, 139 },{ 110, 140 },{ 111, 141 },{ 112, 142 },{ 113, 143 },{ 114, 144 },{ 115, 145 },{ 116, 146 },{ 117, 147 },{ 118, 148 },{ 119, 149 },{ 120, 150 },{ 121, 15 } }) },
-	{ NonTerm::types, map<int, int>({ { 9, 2 },{ 61, 62 },{ 64, 62 },{ 84, 151 } }) }
+	{ NonTerm::expr, map<int, int>({ { 3, 13 },{ 4, 14 },{ 5, 15 },{ 7, 87 },{ 8, 87 },{ 9, 87 },{ 10, 15 },{ 20, 22 },{ 23, 22 },{ 28, 19 },{ 30, 19 },{ 32, 19 },{ 36, 37 },{ 38, 39 },{ 40, 41 },{ 43, 15 },{ 53, 19 },{ 58, 87 },{ 70, 87 },{ 77, 87 },{ 82, 88 },{ 83, 89 },{ 84, 92 },{ 85, 90 },{ 86, 91 },{ 101, 131 },{ 102, 132 },{ 103, 133 },{ 104, 134 },{ 105, 135 },{ 106, 136 },{ 107, 137 },{ 108, 138 },{ 109, 139 },{ 110, 140 },{ 111, 141 },{ 112, 142 },{ 113, 143 },{ 114, 144 },{ 115, 145 },{ 116, 146 },{ 117, 147 },{ 118, 148 },{ 119, 149 },{ 120, 150 },{ 121, 15 } }) }
 };
 
-set<int> Parser::ptr = set<int>();
+set<int> Parser::ptr;
 
 template<typename _Ty, typename _Container>
-void popd(stack<_Ty, _Container> s, int n = 1) {
+void popd(stack<_Ty, _Container> &s, int n = 1) {
 	for (int i = 0; i < n; i++) {
 		delete s.top(); s.pop();
 	}
 }
 
-Parser::Parser(Tokenizer &tokenizer) :tokenizer(tokenizer), saveTree(nullptr) {}
+Parser::Parser(Tokenizer &tokenizer, bool debug) :tokenizer(tokenizer), saveTree(nullptr), debug(debug) {}
 
 Parser::~Parser() {
 	while (!s.empty()) {
@@ -98,19 +97,23 @@ tRoot* Parser::analyse() {
 			}
 			else if (n < 1000) {
 				//移动状态n进栈
+				if (debug) clog << "Token " << t->debug_out() << " Push " << n << " to stack" << endl;
 				s.push(new tTerminator(t));
 				s.push(new tState(n));
 				tokenizer.popToken();
 			}
 			else {
 				//按产生式n-1000规约
+				if (debug) clog << "Reading token " << t->debug_out() << " return state " << n - 1000 << endl;
 				auto tree = mergeTree(n - 1000, s);
 				int state = s.top()->state();
 				s.push(tree);
 				s.push(new tState(gotostat(state, tree->type())));
 			}
 		}
-		saveTree = static_cast<tRoot*>(s.top());
+		popd(s);
+		saveTree = static_cast<tRoot*>(s.top()); s.pop();
+		popd(s);
 		return saveTree;
 	}
 	catch (...) {
@@ -157,20 +160,20 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		return t; }
 	case 14: //subv->\e
 		return new tSubVars();
-	case 15: { //subv->types id
+	case 15: { //subv->type id
 		popd(s);
 		auto str = s.top()->getToken()->getId(); popd(s);
 		popd(s);
-		auto typ = s.top()->getType(); popd(s);
+		auto typ = s.top()->getToken()->getType(); popd(s);
 		return new tSubVars(typ, str); }
-	case 16: { //subv->types id, subv
+	case 16: { //subv->type id, subv
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
 		auto tok = s.top()->getToken();
 		auto str = tok->getId(); auto lineNo = tok->getlineNo(); popd(s);
 		popd(s);
-		auto typ = s.top()->getType(); popd(s);
+		auto typ = s.top()->getToken()->getType(); popd(s);
 		static_cast<tSubVars*>(t)->emplaceVar(typ, str, lineNo);
 		//查重在此发生
 		return t; }
@@ -195,11 +198,11 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 3);
 		auto t = new tNoVars(2, s.top()->getLineNo(), s.top()); s.pop();
 		return t; }
-	case 5: { //stmt->types vdecl ;
+	case 5: { //stmt->type vdecl ;
 		popd(s, 3);
 		auto t = s.top(); s.pop();
 		popd(s);
-		auto typ = s.top()->getType(); popd(s);
+		auto typ = s.top()->getToken()->getType(); popd(s);
 		static_cast<tDeclVars*>(t)->setDeclType(typ);
 		return new tNoVars(3, -1, t); }
 	case 18: { //stmt->if ( expr ) stmt else stmt
@@ -237,17 +240,6 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 3);
 		auto lineNo = s.top()->getLineNo(); popd(s);
 		return new tNoVars(id - 9, lineNo); }
-	case 21: { //types->type
-		popd(s);
-		auto type = s.top()->getToken()->getType(); popd(s);
-		return new tType(type); }
-	case 22: { //types->type (*)
-		popd(s, 3);
-		auto t = s.top(); s.pop();
-		//TODO del
-		throw(1);
-		//static_cast<tType*>(t)->makePointer();
-		return t; }
 	case 32: { //vdecl->id
 		popd(s);
 		auto tok = s.top()->getToken();
@@ -317,9 +309,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 31: { //exprf->expr:expr:expr:expr
 		GrammarTree* t[4];
 		for (int i = 0; i < 4; i++) {
-			popd(s, i ? 2 : 1);
+			popd(s, i ? 3 : 1);
 			t[i] = s.top(); s.pop();
-			popd(s);
 		}
 		return new tNoVars(id - 10, t[0]->getLineNo(), t[0], t[1], t[2], t[3]); }
 	case 27: { //ini->{ inia }
@@ -402,7 +393,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s, 3);
 		auto t2 = s.top(); s.pop();
 		return new tNoVars(id - (63 - 24), lineNo, t1, t2); }
-	case 68: { //expr->( types ) expr
+	case 68: { //expr->( type ) expr
 		popd(s);
 		auto t = s.top(); s.pop();
 		popd(s, 3);
@@ -418,7 +409,7 @@ int Parser::action(int s, Op::TokenType t) {
 	auto m = Action.find(s)->second;
 	auto it = m->find(t);
 	if (it == m->end())
-		throw("");//TODO
+		throw(ErrDesignApp(("Parser::action("s + to_string(s) + ", "s + Op::Ch::ToString(t)).c_str()));//TODO
 	return it->second;
 }
 

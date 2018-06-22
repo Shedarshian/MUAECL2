@@ -21,6 +21,7 @@ int tState::state() { return _state; }
 tTerminator::tTerminator(Token* t) :t(t) {}
 tTerminator::~tTerminator() { delete t; }
 Token* tTerminator::getToken() { return t; }
+int tTerminator::getLineNo() { return t->getlineNo(); }
 GrammarTree* tTerminator::typeChange(int rank) {
 	//一定是右值
 	if (rank == mVType::ITOF) {
@@ -33,9 +34,9 @@ GrammarTree* tTerminator::typeChange(int rank) {
 	return this;
 }
 
-tType::tType(mType t) : t(t) {}
+/*tType::tType(mType t) : t(t) {}
 Op::NonTerm tType::type() { return Op::NonTerm::types; }
-mType tType::getType() { return t; }
+mType tType::getType() { return t; }*/
 
 tSubVars::tSubVars(mType type, string id) { vars.emplace_back(type, id); }
 
@@ -257,7 +258,7 @@ GrammarTree* tNoVars::typeChange(int rank) {
 	}
 	if (rank == mVType::ITOF) {
 		//整数转浮点
-		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tType(Op::mType::Float));
+		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tTerminator(new Token_KeywordType(-1, Op::mType::Float)));
 	}
 	return this;
 }
@@ -575,7 +576,7 @@ void tStmts::extractlabel(map<string, GrammarTree*>& l) {
 }
 
 tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(stmts), vardecl(subv->vars), name(name), lineNo(lineNo) {
-	transform(subv->vars.begin(), subv->vars.end(), varpara.begin(), [](const mVar& t) {return t.type; });
+	transform(subv->vars.begin(), subv->vars.end(), inserter(varpara, varpara.end()), [](const mVar& t) { return t.type; });
 	delete subv;
 	stmts->extractdecl(vardecl);
 	typeReturn = Op::mType::Void;		//返回值为void
