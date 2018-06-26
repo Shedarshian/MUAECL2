@@ -6,7 +6,7 @@
 using namespace std;
 
 // Append size bytes of data from src to dst, and increase dst by size.
-#define APPEND_DATA(dst, src, size) (reinterpret_cast<char*>(memcpy((reinterpret_cast<char*>(dst) += (size)) - (size), (src), (size))))
+#define APPEND_DATA(dst, src, size) (reinterpret_cast<char*>(memcpy((*reinterpret_cast<char**>(&dst) += (size)) - (size), (src), (size))))
 // Append some null bytes to align ptr and size to 4 bytes boundary.
 #define ALIGN4_DATA(ptr, size_buf, size) if ((size) % 4) { uint32_t _dummy = 0; if ((ptr) && (size_buf) >= (size) + 4 - ((size) % 4)) APPEND_DATA((ptr), &_dummy, 4 - ((size) % 4)); (size) +=  4 - ((size) % 4); }
 
@@ -47,7 +47,8 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	ALIGN4_DATA(ptr, size_buf, size);
 
 	if (ptr && size_buf >= size) {
-		raw_ecl_file_hdr.include_offset = size;
+		if (size > UINT32_MAX) throw(exception("Output file too large."));
+		raw_ecl_file_hdr.include_offset = size & ~(uint32_t)0;
 	}
 	size_t size_raw_includes = this->make_raw_includes(nullptr, 0);
 	size += size_raw_includes;
@@ -56,7 +57,8 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	}
 	ALIGN4_DATA(ptr, size_buf, size);
 	if (ptr && size_buf >= size) {
-		raw_ecl_file_hdr.include_length = size - raw_ecl_file_hdr.include_offset;
+		if (size - raw_ecl_file_hdr.include_offset > UINT16_MAX) throw(exception("Too many includes."));
+		raw_ecl_file_hdr.include_length = (size - raw_ecl_file_hdr.include_offset) & ~(uint16_t)0;
 	}
 
 	vector<fSub> vec_sub(this->root.subs);
@@ -67,7 +69,8 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	);
 
 	if (ptr && size_buf >= size) {
-		raw_ecl_file_hdr.sub_count = vec_sub.size();
+		if (vec_sub.size() > UINT32_MAX) throw(exception("Too many subroutines."));
+		raw_ecl_file_hdr.sub_count = vec_sub.size() & ~(uint32_t)0;
 		memcpy(ptr_raw_ecl_file_hdr, &raw_ecl_file_hdr, sizeof(raw_ecl_file_hdr));
 	}
 
@@ -77,7 +80,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 		ptr_raw_ecl_sub_offsets = reinterpret_cast<uint32_t*>((ptr += vec_sub.size() * sizeof(uint32_t)) - vec_sub.size() * sizeof(uint32_t));
 	}
 
-	for (fSub val_sub : vec_sub) {
+	for (auto val_sub : vec_sub) {
 		size += val_sub.name.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_sub.name.c_str(), val_sub.name.size() + 1);
@@ -85,7 +88,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	}
 	ALIGN4_DATA(ptr, size_buf, size);
 
-	for (fSub val_sub : vec_sub) {
+	for (auto val_sub : vec_sub) {
 		*(ptr_raw_ecl_sub_offsets++) = size;
 		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub);
 		size += size_raw_sub;
@@ -109,10 +112,10 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	size += sizeof(anim_hdr);
 	if (ptr && size_buf >= size) {
 		if (vec_anim.size() > UINT32_MAX) throw(exception("Too many ANIM includes."));
-		anim_hdr.count = vec_anim.size() & (~(uint32_t)0);
+		anim_hdr.count = vec_anim.size() & ~(uint32_t)0;
 		APPEND_DATA(ptr, &anim_hdr, sizeof(anim_hdr));
 	}
-	for (string val_anim : vec_anim) {
+	for (auto val_anim : vec_anim) {
 		size += val_anim.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_anim.c_str(), val_anim.size() + 1);
@@ -130,10 +133,10 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	size += sizeof(ecli_hdr);
 	if (ptr && size_buf >= size) {
 		if (vec_ecli.size() > UINT32_MAX) throw(exception("Too many ECLI includes."));
-		ecli_hdr.count = vec_ecli.size() & (~(uint32_t)0);
+		ecli_hdr.count = vec_ecli.size() & ~(uint32_t)0;
 		APPEND_DATA(ptr, &ecli_hdr, sizeof(ecli_hdr));
 	}
-	for (string val_ecli : vec_ecli) {
+	for (auto val_ecli : vec_ecli) {
 		size += val_ecli.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_ecli.c_str(), val_ecli.size() + 1);
@@ -160,5 +163,29 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		//raw_ecl_sub_hdr.data_offset;
 		ptr_raw_ecl_sub_hdr = APPEND_DATA(ptr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
 	}
-	// TODO: Implement RawEclGenerator::make_raw_sub.
+
+	if (ptr && size_buf >= size) {
+		if (size > UINT32_MAX) throw(exception("Output file too large."));
+		raw_ecl_sub_hdr.data_offset = size & ~(uint32_t)0;
+		memcpy(ptr_raw_ecl_sub_hdr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
+	}
+
+	vector<string> vec_var(sub.variables);
+	unordered_map<string, int32_t> map_var;
+	if (vec_var.size() > INT_MAX / 4) throw(exception("Too many local variables."));
+	int32_t i = 0;
+	for (auto val_var : vec_var) {
+		map_var[val_var] = i;
+		i += 4;
+	}
+
+	vector<Ins> vec_ins;
+	vec_ins.emplace_back(40, vector<Parameter*>({ new Parameter_int((vec_var.size() & ~(uint32_t)0) * 4) }));
+	vec_ins.insert(vec_ins.cend(), sub.inses.cbegin(), sub.inses.cend());
+	vec_ins.emplace_back(41, vector<Parameter*>());
+	for (auto val_ins : vec_ins) {
+		// TODO: Serialize instruction.
+	}
+
+	return size;
 }
