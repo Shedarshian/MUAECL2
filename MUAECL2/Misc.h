@@ -101,42 +101,6 @@ private:
 	variant<int, float, string> val;
 };
 
-//整型常量
-/*class Token_Int :public Token {
-public:
-	Token_Int(int lineNo, int val) :Token(lineNo), val(val) {}
-	const Op::TokenType type() override { return Op::TokenType::Number; }
-	//const bool isIdNum() override { return true; }
-	const int getInt() override { return val; }
-	const string debug_out() override { return to_string(val); }
-private:
-	int val;
-};
-
-//浮点型常量
-class Token_Float :public Token {
-public:
-	Token_Float(int lineNo, float val) :Token(lineNo), val(val) {}
-	const Op::TokenType type() override { return Op::TokenType::Number; }
-	//const bool isIdNum() override { return true; }
-	const float getFloat() override { return val; }
-	const string debug_out() override { return to_string(val); }
-private:
-	float val;
-};
-
-//字符串常量
-class Token_String :public Token {
-public:
-	Token_String(int lineNo, string val) :Token(lineNo), val(val) {}
-	const Op::TokenType type() override { return Op::TokenType::Number; }
-	//const bool isIdNum() override { return true; }
-	const string getString() override { return val; }
-	const string debug_out() override { return "\"" + val + "\""; }
-private:
-	string val;
-};*/
-
 //标识符，包括变量函数线程以及ins
 class Token_Identifier :public Token {
 public:

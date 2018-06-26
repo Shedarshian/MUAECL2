@@ -192,6 +192,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		auto var = sub->checkVar(tok->getId());
 		if (var == nullptr)
 			throw(ErrVarNotFound(tok->getlineNo(), tok->getId()));
+		//TODO 环境变量
 		_type = mVType{ var->type, Op::LRvalue::lvalue };
 		break;
 	}
