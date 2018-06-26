@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <map>
+#include <set>
 #include <unordered_set>
 #include <algorithm>
 #include <iterator>
@@ -140,6 +141,21 @@ public:
 	explicit Token_End(int lineNo);
 	Op::TokenType type() const override;
 	string debug_out() const override;
+};
+
+class ReadIns {
+public:
+	enum class NumType { Anything, Int, Float, String };
+	static multimap<string, pair<int, vector<NumType>>> ins;//ins表
+	static map<string, pair<int, vector<NumType>>> mode;	//mode表
+	static map<string, pair<int, NumType>> globalVariable;	//全局变量表
+	static map<string, int> constint;						//符号常量表
+	static map<string, float> constfloat;
+	static set<string> integratedFunction;					//集成函数表
+	static set<string> defaultList;							//default.ecl中的线程名表
+
+	//读取ins.ini与default.ini
+	static void Read();
 };
 
 //error-type

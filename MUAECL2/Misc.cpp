@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include <functional>
+#include <fstream>
+#include <sstream>
 #include "Misc.h"
 #include "GrammarTree.h"
 using namespace std;
@@ -171,3 +173,85 @@ string Token_KeywordType::debug_out() const { return Op::Ch::ToString(val); }
 Token_End::Token_End(int lineNo) :Token(lineNo) {}
 Op::TokenType Token_End::type() const { return Op::TokenType::End; }
 string Token_End::debug_out() const { return ""; }
+
+multimap<string, pair<int, vector<ReadIns::NumType>>> ReadIns::ins{};
+map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::mode{};
+map<string, pair<int, ReadIns::NumType>> ReadIns::globalVariable{};
+map<string, int> constint{};
+map<string, float> constfloat{};
+set<string> integratedFunction{};
+set<string> defaultList{};
+
+void ReadIns::Read() {
+	ifstream in("ins.ini");
+	char buffer[255];
+	string mode;
+	while (!in.eof()) {
+		in.getline(buffer, 255);
+		//注释
+		if (buffer[0] == '%') {
+			continue;
+		}
+		//切换mode
+		else if (buffer[0] == '#') {
+			mode = string(buffer).substr(1, mode.rfind('#') - 1);
+		}
+		//读取ins
+		else if (mode == "ins") {
+			stringstream s = stringstream(buffer);
+			int n; string name;
+			s >> n >> name;
+			string c;
+			vector<NumType> lnt; //输入参数类型表
+			while (!s.eof()) {
+				s >> c;
+				lnt.push_back(c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
+					c == "float" ? NumType::Float : NumType::Anything)));
+			}
+			ReadIns::ins.emplace(name, make_pair(n, lnt));
+		}
+		//读取全局变量
+		else if (mode == "variable") {
+			stringstream s = stringstream(buffer);
+			int n; string name; string c;
+			s >> n >> name >> c;
+			ReadIns::globalVariable.emplace(name, make_pair(n, c == "int" ? NumType::Int : NumType::Float));
+		}
+		//读取符号常量
+		else if (mode == "constint") {
+			stringstream s = stringstream(buffer);
+			string name; int key;
+			s >> name >> key;
+			ReadIns::constint.insert(make_pair(name, key));
+		}
+		else if (mode == "constfloat") {
+			stringstream s = stringstream(buffer);
+			string name; float key;
+			s >> name >> key;
+			ReadIns::constfloat.insert(make_pair(name, key));
+		}
+		//读取变换mode
+		else if (mode == "mode") {
+			stringstream s = stringstream(buffer);
+			int n; string name;
+			s >> n >> name;
+			string c; vector<NumType> lnt;
+			while (!s.eof()) {
+				s >> c;
+				lnt.push_back(c == "int" ? NumType::Int : (
+					c == "float" ? NumType::Float : NumType::Anything));
+			}
+			ReadIns::mode.emplace(name, make_pair(n, lnt));
+		}
+		//读取集成函数
+		else if (mode == "integrated function") {
+			ReadIns::integratedFunction.emplace(buffer);
+		}
+	}
+	ifstream indef("default.ini");
+	//读取default.ecl中的函数名
+	while (!indef.eof()) {
+		indef.getline(buffer, 255);
+		defaultList.insert(string(buffer));
+	}
+}
