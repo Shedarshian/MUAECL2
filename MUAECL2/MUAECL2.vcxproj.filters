@@ -36,6 +36,9 @@
     <ClInclude Include="Misc2.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="RawEclGenerator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -57,6 +60,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Misc2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RawEclGenerator.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -41,7 +41,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	if (ptr && size_buf >= size) {
 		//raw_ecl_file_hdr.include_length;
 		//raw_ecl_file_hdr.include_offset;
-		raw_ecl_file_hdr.sub_count = this->root.subs.size();
+		//raw_ecl_file_hdr.sub_count;
 		ptr_raw_ecl_file_hdr = APPEND_DATA(ptr, &raw_ecl_file_hdr, sizeof(raw_ecl_file_hdr));
 	}
 	ALIGN4_DATA(ptr, size_buf, size);
@@ -57,7 +57,6 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	ALIGN4_DATA(ptr, size_buf, size);
 	if (ptr && size_buf >= size) {
 		raw_ecl_file_hdr.include_length = size - raw_ecl_file_hdr.include_offset;
-		memcpy(ptr_raw_ecl_file_hdr, &raw_ecl_file_hdr, sizeof(raw_ecl_file_hdr));
 	}
 
 	vector<fSub> vec_sub(this->root.subs);
@@ -66,6 +65,11 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 			return l.name < r.name;
 		}
 	);
+
+	if (ptr && size_buf >= size) {
+		raw_ecl_file_hdr.sub_count = vec_sub.size();
+		memcpy(ptr_raw_ecl_file_hdr, &raw_ecl_file_hdr, sizeof(raw_ecl_file_hdr));
+	}
 
 	uint32_t* ptr_raw_ecl_sub_offsets = nullptr;
 	size += vec_sub.size() * sizeof(uint32_t);
@@ -141,12 +145,20 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 }
 
 size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub) const {
+	size_t size = 0;
+
 	struct {
 		__pragma(pack(push, 1));
-		char magic[4];
+		char magic[4] = { 'E', 'C', 'L', 'H' };
 		uint32_t data_offset;
-		uint32_t zero[2];
+		uint32_t zero[2] = { 0, 0 };
 		__pragma(pack(pop));
 	} raw_ecl_sub_hdr;
+	char* ptr_raw_ecl_sub_hdr = nullptr;
+	size += sizeof(raw_ecl_sub_hdr);
+	if (ptr && size_buf >= size) {
+		//raw_ecl_sub_hdr.data_offset;
+		ptr_raw_ecl_sub_hdr = APPEND_DATA(ptr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
+	}
 	// TODO: Implement RawEclGenerator::make_raw_sub.
 }
