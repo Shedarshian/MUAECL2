@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Misc.h"
 #include "Misc2.h"
+#include "RawEclGenerator.h"
 
 using namespace std;
 
@@ -8,6 +9,166 @@ using namespace std;
 #define APPEND_DATA(dst, src, size) (reinterpret_cast<char*>(memcpy((*reinterpret_cast<char**>(&dst) += (size)) - (size), (src), (size))))
 // Append some null bytes to align ptr and size to 4 bytes boundary.
 #define ALIGN4_DATA(ptr, size_buf, size) if ((size) % 4) { uint32_t _dummy = 0; if ((ptr) && (size_buf) >= (size) + 4 - ((size) % 4)) APPEND_DATA((ptr), &_dummy, 4 - ((size) % 4)); (size) +=  4 - ((size) % 4); }
+
+bool Parameter_int::is_ref_param() const { return false; }
+
+int32_t Parameter_int::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_int::get_ref_id")); }
+
+size_t Parameter_int::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
+	if (ptr && size_buf >= sizeof(int)) {
+		APPEND_DATA(ptr, &this->val, sizeof(int));
+	}
+	return sizeof(int);
+}
+
+bool Parameter_float::is_ref_param() const { return false; }
+
+int32_t Parameter_float::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_float::get_ref_id")); }
+
+size_t Parameter_float::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
+	if (ptr && size_buf >= sizeof(float)) {
+		APPEND_DATA(ptr, &this->val, sizeof(float));
+	}
+	return sizeof(float);
+}
+
+bool Parameter_variable::is_ref_param() const { return true; }
+
+int32_t Parameter_variable::get_ref_id(const SubSerializationContext& sub_ctx) const {
+	int32_t ref_id;
+	try {
+		ref_id = sub_ctx.map_var.at(this->var);
+	} catch (out_of_range&) {
+		throw(ErrDesignApp("variable not found when calling Parameter_variable::get_ref_id"));
+	}
+	return ref_id;
+}
+
+size_t Parameter_variable::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	int32_t ref_id = INT_MAX;
+	if (ptr && size_buf >= sizeof(float)) {
+		ref_id = this->get_ref_id(sub_ctx);
+	}
+	if (this->isFloat) {
+		static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
+		if (ptr && size_buf >= sizeof(float)) {
+			// If ref_id is more than 24 bits, storing it in a single-precision floating point value would result in inaccuracy.
+			if (ref_id & 0x7F000000) throw(exception("Too many variables."));
+#pragma warning(push)
+#pragma warning(disable:4244)
+			float f_ref_id = ref_id;
+#pragma warning(pop)
+			APPEND_DATA(ptr, &f_ref_id, sizeof(float));
+		}
+		return sizeof(float);
+	} else {
+		static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
+		if (ptr && size_buf >= sizeof(int)) {
+			int i_ref_id = ref_id;
+			APPEND_DATA(ptr, &i_ref_id, sizeof(int));
+		}
+		return sizeof(int);
+	}
+}
+
+bool Parameter_stack::is_ref_param() const { return true; }
+
+int32_t Parameter_stack::get_ref_id(const SubSerializationContext& sub_ctx) const {
+	static_assert(sizeof(int) == sizeof(int32_t), "sizeof(int) is not equal to sizeof(int32_t).");
+	return this->id;
+}
+
+size_t Parameter_stack::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	int32_t ref_id = INT_MAX;
+	if (ptr && size_buf >= sizeof(float)) {
+		ref_id = this->get_ref_id(sub_ctx);
+	}
+	if (this->isFloat) {
+		static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
+		if (ptr && size_buf >= sizeof(float)) {
+			// If ref_id is more than 24 bits, storing it in a single-precision floating point value would result in inaccuracy.
+			if (ref_id & 0x7F000000) throw(exception("Too large stack reference ID."));
+#pragma warning(push)
+#pragma warning(disable:4244)
+			float f_ref_id = ref_id;
+#pragma warning(pop)
+			APPEND_DATA(ptr, &f_ref_id, sizeof(float));
+		}
+		return sizeof(float);
+	} else {
+		static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
+		if (ptr && size_buf >= sizeof(int)) {
+			int i_ref_id = ref_id;
+			APPEND_DATA(ptr, &i_ref_id, sizeof(int));
+		}
+		return sizeof(int);
+	}
+}
+
+bool Parameter_env::is_ref_param() const { return true; }
+
+int32_t Parameter_env::get_ref_id(const SubSerializationContext& sub_ctx) const {
+	static_assert(sizeof(int) == sizeof(int32_t), "sizeof(int) is not equal to sizeof(int32_t).");
+	return -this->id;
+}
+
+size_t Parameter_env::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	int32_t ref_id = INT_MAX;
+	if (ptr && size_buf >= sizeof(float)) {
+		ref_id = this->get_ref_id(sub_ctx);
+	}
+	if (this->isFloat) {
+		static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
+		if (ptr && size_buf >= sizeof(float)) {
+			// If ref_id is more than 24 bits, storing it in a single-precision floating point value would result in inaccuracy.
+			if (ref_id & 0x7F000000) throw(exception("Too large environment reference ID."));
+#pragma warning(push)
+#pragma warning(disable:4244)
+			float f_ref_id = ref_id;
+#pragma warning(pop)
+			APPEND_DATA(ptr, &f_ref_id, sizeof(float));
+		}
+		return sizeof(float);
+	} else {
+		static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
+		if (ptr && size_buf >= sizeof(int)) {
+			int i_ref_id = ref_id;
+			APPEND_DATA(ptr, &i_ref_id, sizeof(int));
+		}
+		return sizeof(int);
+	}
+}
+
+bool Parameter_jmp::is_ref_param() const { return false; }
+
+int32_t Parameter_jmp::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_jmp::get_ref_id")); }
+
+size_t Parameter_jmp::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	size_t offs_ins_current = 0;
+	size_t offs_ins_target = 0;
+	if (ptr && size_buf >= sizeof(int)) {
+		try {
+			offs_ins_current = sub_ctx.vec_offs_ins.at(sub_ctx.i_ins_current);
+		} catch (out_of_range&) {
+			throw(ErrDesignApp("current instruction index out of range when calling Parameter_jmp::serialize"));
+		}
+		if (this->jumpPoint < sub_ctx.vec_ins.data() || this->jumpPoint >= sub_ctx.vec_ins.data() + sub_ctx.vec_ins.size()) throw(ErrDesignApp("jump target not in subroutine when calling Parameter_jmp::serialize"));
+		size_t i_ins_target = this->jumpPoint - sub_ctx.vec_ins.data();
+		try {
+			offs_ins_target = sub_ctx.vec_offs_ins.at(i_ins_target);
+		} catch (out_of_range&) {
+			throw(ErrDesignApp("target instruction index out of range when calling Parameter_jmp::serialize"));
+		}
+	}
+	int offs_jmp = offs_ins_target - offs_ins_current;
+	static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
+	if (ptr && size_buf >= sizeof(int)) {
+		APPEND_DATA(ptr, &offs_jmp, sizeof(int));
+	}
+	return sizeof(int);
+}
 
 Ins::Ins(int id, const vector<Parameter*>& paras, bool E, bool N, bool H, bool L, int time)
 	:id(id), paras(paras), diff { E, N, H, L }, time(time) {}
@@ -64,16 +225,17 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		size_t size_param = val_param->serialize(nullptr, 0, sub_ctx);
 		size += size_param;
 		if (ptr && size_buf >= size) {
-			if (val_param->is_stack_param()) {
+			if (val_param->is_ref_param()) {
 				raw_ecl_ins_hdr.param_mask |= 1 << i;
-				int32_t stack_id = val_param->get_stack_id(sub_ctx);
+				int32_t ref_id = val_param->get_ref_id(sub_ctx);
 				if (raw_ecl_ins_hdr.cur_stack_ref_count > ((uint32_t)-INT32_MIN) - 1) throw(exception("Too large stack reference ID."));
-				if (stack_id < 0 && -stack_id == raw_ecl_ins_hdr.cur_stack_ref_count + 1) ++raw_ecl_ins_hdr.cur_stack_ref_count;
+				if (ref_id < 0 && -ref_id == raw_ecl_ins_hdr.cur_stack_ref_count + 1) ++raw_ecl_ins_hdr.cur_stack_ref_count;
 			}
 			if (val_param->serialize((ptr += size_param) - size_param, size_param, sub_ctx) != size_param) throw(ErrDesignApp("Inconsistent returned size when calling Parameter::serialize"));
 		}
 		++i;
 	}
+	raw_ecl_ins_hdr.cur_stack_ref_count <<= 3;
 
 	if (ptr && size_buf >= size) {
 		if (size > UINT16_MAX) throw(exception("Too large instruction."));

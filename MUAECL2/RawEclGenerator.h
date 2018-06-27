@@ -22,3 +22,13 @@ private:
 	size_t make_raw_includes(char* ptr, size_t size_buf) const;
 	size_t make_raw_sub(char* ptr, size_t size_buf, const fSub& sub) const;
 };
+
+struct SubSerializationContext final {
+	SubSerializationContext(const vector<string>& variables, const vector<Ins>& inses);
+	~SubSerializationContext();
+	vector<string> vec_var;
+	unordered_map<string, int32_t> map_var;
+	vector<Ins> vec_ins;
+	vector<size_t> vec_offs_ins;
+	size_t i_ins_current;
+};

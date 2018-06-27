@@ -170,22 +170,39 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		memcpy(ptr_raw_ecl_sub_hdr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
 	}
 
-	vector<string> vec_var(sub.variables);
-	unordered_map<string, int32_t> map_var;
-	if (vec_var.size() > INT_MAX / 4) throw(exception("Too many local variables."));
-	int32_t i = 0;
-	for (auto val_var : vec_var) {
-		map_var[val_var] = i;
-		i += 4;
-	}
+	SubSerializationContext ctx(sub.variables, sub.inses);
 
-	vector<Ins> vec_ins;
-	vec_ins.emplace_back(40, vector<Parameter*>({ new Parameter_int((vec_var.size() & ~(uint32_t)0) * 4) }));
-	vec_ins.insert(vec_ins.cend(), sub.inses.cbegin(), sub.inses.cend());
-	vec_ins.emplace_back(41, vector<Parameter*>());
-	for (auto val_ins : vec_ins) {
-		// TODO: Serialize instruction.
+	size += ctx.vec_offs_ins[ctx.vec_ins.size()] - ctx.vec_offs_ins[0];
+	if (ptr && size_buf >= size) {
+		ctx.i_ins_current = 0;
+		for (auto val_ins : ctx.vec_ins) {
+			size_t size_ins = ctx.vec_offs_ins[ctx.i_ins_current + 1] - ctx.vec_offs_ins[ctx.i_ins_current];
+			if (val_ins.serialize((ptr += size_ins) - size_ins, size_ins, ctx) != size_ins) throw(ErrDesignApp("Inconsistent returned size when calling Ins::serialize"));
+			++ctx.i_ins_current;
+		}
 	}
 
 	return size;
 }
+
+SubSerializationContext::SubSerializationContext(const vector<string>& variables, const vector<Ins>& inses)
+	:vec_var(variables) {
+	if (this->vec_var.size() > INT_MAX / 4) throw(exception("Too many local variables."));
+	int32_t i = 0;
+	for (auto val_var : this->vec_var) {
+		this->map_var[val_var] = i;
+		i += 4;
+	}
+	this->vec_ins.emplace_back(40, vector<Parameter*>({ new Parameter_int((this->vec_var.size() & ~(uint32_t)0) * 4) }));
+	this->vec_ins.insert(this->vec_ins.cend(), inses.cbegin(), inses.cend());
+	this->vec_ins.emplace_back(41, vector<Parameter*>());
+	this->vec_offs_ins.resize(this->vec_ins.size() + 1);
+	this->vec_offs_ins[0] = 0;
+	this->i_ins_current = 0;
+	for (auto val_ins : this->vec_ins) {
+		this->vec_offs_ins[i + 1] = this->vec_offs_ins[i] + val_ins.serialize(nullptr, 0, *this);
+		++this->i_ins_current;
+	}
+}
+
+SubSerializationContext::~SubSerializationContext() {}
