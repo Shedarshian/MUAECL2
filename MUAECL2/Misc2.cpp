@@ -10,6 +10,8 @@ using namespace std;
 // Append some null bytes to align ptr and size to 4 bytes boundary.
 #define ALIGN4_DATA(ptr, size_buf, size) if ((size) % 4) { uint32_t _dummy = 0; if ((ptr) && (size_buf) >= (size) + 4 - ((size) % 4)) APPEND_DATA((ptr), &_dummy, 4 - ((size) % 4)); (size) +=  4 - ((size) % 4); }
 
+bool Parameter_int::is_float() const { return false; }
+
 bool Parameter_int::is_ref_param() const { return false; }
 
 int32_t Parameter_int::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_int::get_ref_id")); }
@@ -22,6 +24,8 @@ size_t Parameter_int::serialize(char* ptr, size_t size_buf, const SubSerializati
 	return sizeof(int);
 }
 
+bool Parameter_float::is_float() const { return true; }
+
 bool Parameter_float::is_ref_param() const { return false; }
 
 int32_t Parameter_float::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_float::get_ref_id")); }
@@ -33,6 +37,8 @@ size_t Parameter_float::serialize(char* ptr, size_t size_buf, const SubSerializa
 	}
 	return sizeof(float);
 }
+
+bool Parameter_variable::is_float() const { return this->isFloat; }
 
 bool Parameter_variable::is_ref_param() const { return true; }
 
@@ -73,6 +79,8 @@ size_t Parameter_variable::serialize(char* ptr, size_t size_buf, const SubSerial
 	}
 }
 
+bool Parameter_stack::is_float() const { return this->isFloat; }
+
 bool Parameter_stack::is_ref_param() const { return true; }
 
 int32_t Parameter_stack::get_ref_id(const SubSerializationContext& sub_ctx) const {
@@ -106,6 +114,8 @@ size_t Parameter_stack::serialize(char* ptr, size_t size_buf, const SubSerializa
 		return sizeof(int);
 	}
 }
+
+bool Parameter_env::is_float() const { return this->isFloat; }
 
 bool Parameter_env::is_ref_param() const { return true; }
 
@@ -141,6 +151,8 @@ size_t Parameter_env::serialize(char* ptr, size_t size_buf, const SubSerializati
 	}
 }
 
+bool Parameter_jmp::is_float() const { return false; }
+
 bool Parameter_jmp::is_ref_param() const { return false; }
 
 int32_t Parameter_jmp::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_jmp::get_ref_id")); }
@@ -168,6 +180,51 @@ size_t Parameter_jmp::serialize(char* ptr, size_t size_buf, const SubSerializati
 		APPEND_DATA(ptr, &offs_jmp, sizeof(int));
 	}
 	return sizeof(int);
+}
+
+bool Parameter_string::is_float() const { return false; }
+
+bool Parameter_string::is_ref_param() const { return false; }
+
+int32_t Parameter_string::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_string::get_ref_id")); }
+
+size_t Parameter_string::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	size_t size = 0;
+	if (this->str.size() > UINT32_MAX - 4) throw(exception("String parameter too large."));
+	uint32_t size_strdata = this->str.size() / 4 * 4 + 4;
+	size += sizeof(uint32_t);
+	if (ptr && size_buf >= size) {
+		APPEND_DATA(ptr, &size_strdata, sizeof(uint32_t));
+	}
+	size += size_strdata * sizeof(char);
+	if (ptr && size_buf >= size) {
+		unique_ptr<char[]> strdata(new char[size_strdata]());
+		memcpy(strdata.get(), this->str.data(), this->str.size() * sizeof(char));
+		APPEND_DATA(ptr, strdata.get(), size_strdata * sizeof(char));
+	}
+	return size;
+}
+
+bool Parameter_call::is_float() const { return this->isToFloat; }
+
+bool Parameter_call::is_ref_param() const { return this->param->is_ref_param(); }
+
+int32_t Parameter_call::get_ref_id(const SubSerializationContext& sub_ctx) const { return this->param->get_ref_id(sub_ctx); }
+
+size_t Parameter_call::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	size_t size = 0;
+	size += sizeof(uint32_t);
+	if (ptr && size_buf >= size) {
+		uint32_t typeval = (this->isFromFloat ? 0x66 : 0x69) | (this->isToFloat ? 0x6600 : 0x6900);
+		APPEND_DATA(ptr, &typeval, sizeof(uint32_t));
+	}
+	if (this->isFromFloat != this->param->is_float()) throw(ErrDesignApp("Actual parameter type mismatch when calling Parameter_call::serialize"));
+	size_t size_param = this->param->serialize(nullptr, 0, sub_ctx);
+	size += size_param;
+	if (ptr && size_buf >= size) {
+		this->param->serialize((ptr += size_param) - size_param, size_param, sub_ctx);
+	}
+	return size;
 }
 
 Ins::Ins(int id, const vector<Parameter*>& paras, bool E, bool N, bool H, bool L, int time)
