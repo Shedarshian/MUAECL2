@@ -119,6 +119,11 @@ struct fSub {
 	string name;
 	vector<string> variables;
 	vector<Ins> inses;
+
+	template<class ... Types>
+	void emplaceVar(Types&& ... args) { variables.emplace(args); }
+	template<class ... Types>
+	void emplaceIns(Types&& ... args) { inses.emplace(args); }
 };
 
 struct fRoot {

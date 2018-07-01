@@ -174,7 +174,7 @@ Token_End::Token_End(int lineNo) :Token(lineNo) {}
 Op::TokenType Token_End::type() const { return Op::TokenType::End; }
 string Token_End::debug_out() const { return ""; }
 
-multimap<string, pair<int, vector<ReadIns::NumType>>> ReadIns::ins{};
+map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::ins{};
 map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::mode{};
 map<string, pair<int, ReadIns::NumType>> ReadIns::globalVariable{};
 map<string, int> constint{};
@@ -252,6 +252,6 @@ void ReadIns::Read() {
 	//读取default.ecl中的函数名
 	while (!indef.eof()) {
 		indef.getline(buffer, 255);
-		defaultList.insert(string(buffer));
+		defaultList.emplace(buffer);
 	}
 }

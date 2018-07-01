@@ -9,13 +9,14 @@
 #include <tuple>
 #include <numeric>
 #include "Misc.h"
+#include "Misc2.h"
 
 using namespace std;
 using Op::mType;
 using Op::mVType;
 
-//变量
 struct mVar {
+	//Variable object
 	mVar(mType type, string id) :type(type), id(id) {}
 	mType type;
 	string id;
@@ -23,26 +24,26 @@ struct mVar {
 
 class tSub;
 class tRoot;
-//语法树节点类型
-//语法树以终结符与非终结符为节点，以每个产生式为子类型
+/// Grammar Tree node object
+/// Grammar Tree use terminator and nonterminator as node, use each production as child type
 class GrammarTree {
 public:
 	virtual ~GrammarTree() = default;
-	virtual void changeid(int id);
-	virtual Op::NonTerm type();
-	virtual int state();
-	virtual void addTree(GrammarTree* t);
-	//返回需要展开的vdecl
-	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);
-	virtual void extractlabel(map<string, GrammarTree*>& labels);
-	//取数
-	virtual Token* getToken();
+	virtual void changeid(int id);									//changes tNoVars::id
+	virtual Op::NonTerm type();										//return nonterminator's type
+	virtual int state();											//return tState::state
+	virtual void addTree(GrammarTree* t);							//add Tree node
+	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);		//return variable declare, use for Subs
+	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
+	virtual Token* getToken();										//return tTerminator::token
 	virtual mType getType();
 	virtual int getLineNo();
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 	//依据rank值对Token*操作
 	virtual GrammarTree* typeChange(int rank);
+	//output
+	virtual void Output(fSub& inses);
 };
 
 //为入栈所使用的状态标记
@@ -107,8 +108,13 @@ private:
 //其余tree
 class tNoVars :public GrammarTree {
 public:
-	~tNoVars();
+	/* almost all statement and expression and etc. node
+	 * id saves the type
+	 * branchs saves all child node
+	 * opID saves reloaded operator id
+	 */
 	tNoVars(int id, int lineNo);
+	~tNoVars();
 	void changeid(int id) override;
 	template<class ... Types>
 	tNoVars(int id, int lineNo, Types&& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
@@ -121,11 +127,12 @@ public:
 	void extractlabel(map<string, GrammarTree*>& labels) override;
 	int getLineNo() override;
 	GrammarTree* typeChange(int rank) override;
+	void Output(fSub& inses) override;
 private:
 	int id;
 	int lineNo;
 	mVType _type;
-	int opID;						//重载后的运算符id
+	int opID;						//重载后的运算符id，同时储存insID和modeID（modeID储存幂数*(-1)，即-7代表1<<7）
 	vector<GrammarTree*> branchs;	//全部逆序储存，因为产生式都是右递归的
 	void LiteralCal();				//字面量计算优化
 	void exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock);
@@ -141,6 +148,7 @@ public:
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& l) override;
+	void Output(fSub& inses) override;
 private:
 	vector<tuple<string, int, GrammarTree*>> labels;
 	list<GrammarTree*> branchs;		//全部逆序储存，因为产生式都是右递归的
@@ -156,6 +164,7 @@ public:
 	mVar* checkVar(const string& id);
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() override;
+	fSub Output();
 private:
 	const string name;
 	int lineNo;

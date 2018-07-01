@@ -14,6 +14,7 @@ mType GrammarTree::getType() { throw(ErrDesignApp("GrammarTree::getType")); }
 int GrammarTree::getLineNo() { throw(ErrDesignApp("GrammarTree::getLineNo")); }
 mVType GrammarTree::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) { throw(ErrDesignApp("GrammarTree::TypeCheck")); }
 GrammarTree* GrammarTree::typeChange(int rank) { throw(ErrDesignApp("GrammarTree::typeChange")); }
+void GrammarTree::Output(fSub& inses) { throw(ErrDesignApp("GrammarTree::Output")); }
 
 tState::tState(int state) :_state(state) {}
 int tState::state() { return _state; }
@@ -208,25 +209,44 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 24: { //expr->id ( insv )
 		//要访问insv内部
 		auto insv = static_cast<tNoVars*>(branchs[0]);
-		auto p = subs->checkSub(*(branchs[1]->getToken()->getString()));
+		auto name = *branchs[1]->getToken()->getString();
 		//此为函数调用
-		if (p != nullptr) {
+		if (auto p = subs->checkSub(name); p != nullptr) {
 			const auto&[returnType, declTypes] = *p;
 			if (insv->branchs.size() != declTypes.size())
 				throw(ErrFuncPara(lineNo, *(branchs[1]->getToken()->getString())));
 			auto it1 = insv->branchs.begin();
 			for (auto it2 = declTypes.begin(); it2 != declTypes.end(); it1++, it2++) {
 				auto insvptr = static_cast<tNoVars*>(*it1);
-				int rank = mVType::canChangeTo(insvptr->_type, mVType{ *it2, Op::rvalue, false });
-				if (rank < 0)
+				if (int rank = mVType::canChangeTo(insvptr->_type, mVType{ *it2, Op::rvalue, false }); rank < 0)
 					throw(ErrTypeChangeLoss((*it1)->getLineNo(), insvptr->_type, mVType{ *it2, Op::rvalue, false }));
 				else
 					*it1 = insvptr->typeChange(rank);
 			}
 			_type = mVType{ returnType, Op::rvalue, false };
+			break;
 		}
-		//ins表 TODO
-		break;
+		//此为ins调用或弹幕变换
+		if (auto it = ReadIns::ins.find(name); it != ReadIns::ins.end() || (it = ReadIns::mode.find(name)) != ReadIns::mode.end()) {
+			const auto&[id, declTypes] = it->second;
+			opID = id;
+			if (insv->branchs.size() != declTypes.size())
+				throw(ErrFuncPara(lineNo, name));
+			if (declTypes[0] != ReadIns::NumType::Anything) {
+				auto it1 = insv->branchs.begin();
+				for (auto it2 = declTypes.begin(); it2 != declTypes.end(); it1++, it2++) {
+					auto insvptr = static_cast<tNoVars*>(*it1);
+					auto typ = (*it2 == ReadIns::NumType::Int ? mType::Int : *it2 == ReadIns::NumType::Float ? mType::Float : mType::String);
+					if (int rank = mVType::canChangeTo(insvptr->_type, mVType{ typ, Op::rvalue, false }); rank < 0)
+						throw(ErrTypeChangeLoss((*it1)->getLineNo(), insvptr->_type, mVType{ typ, Op::rvalue, false }));
+					else
+						*it1 = insvptr->typeChange(rank);
+				}
+			}
+			_type = VTYPE(Void, r);
+			break;
+		}
+		throw(ErrFuncNotFound(lineNo, name));
 	}
 	case 25: //expr->Unary_op expr
 		[[fallthrough]];
@@ -262,6 +282,60 @@ GrammarTree* tNoVars::typeChange(int rank) {
 		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tTerminator(new Token_KeywordType(-1, Op::mType::Float)));
 	}
 	return this;
+}
+
+void tNoVars::Output(fSub& inses) {
+	switch (id) {
+	case 2: { //stmt->expr ;
+		break; }
+	case 4: { //stmt->if ( expr ) stmt else stmt
+		break; }
+	case 5:	//stmt->if ( expr ) stmt
+		break;
+	case 6:	//stmt->while ( expr ) stmt
+		break;
+	case 7: { //stmt->for ( exprf ) stmt
+		break; }
+	case 8: { //stmt->goto id ;
+		break; }
+	case 9: //stmt->{ stmts }
+		break;
+	case 10: //stmt->break ;
+		break;
+	case 11: //stmt->continue ;
+		break;
+	case 17: //ini->{ inia }
+		break;
+	case 19: //insv = vector<exprf>
+		break;
+	case 14: //inif->ini
+		break;
+	case 16: //inif->expr
+		break;
+	case 20: //exprf->expr
+		break;
+	case 15: //inif->ini : ini : ini : ini
+		break;
+	case 21: //exprf->expr : expr : expr : expr
+		break;
+	case 22: { //expr->id
+		break; }
+	case 23: { //expr->num
+		break; }
+	case 24: { //expr->id ( insv )
+		break; }
+	case 25: //expr->Unary_op expr
+		[[fallthrough]];
+	case 26: //expr->expr Binary_op expr/exprf/inif
+		//switch(opID)
+		break;
+	case 27: //expr->expr [ expr ]
+		break;
+	case 28: //expr->( types ) expr
+		break;
+	default:
+		throw(ErrDesignApp("GrammarTree::Output."s + to_string(id)));
+	}
 }
 
 void tNoVars::LiteralCal() {
@@ -576,6 +650,10 @@ void tStmts::extractlabel(map<string, GrammarTree*>& l) {
 	}
 }
 
+void tStmts::Output(fSub & inses) {
+	//TODO
+}
+
 tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(stmts), vardecl(subv->vars), name(name), lineNo(lineNo) {
 	transform(subv->vars.begin(), subv->vars.end(), inserter(varpara, varpara.end()), [](const mVar& t) { return t.type; });
 	delete subv;
@@ -610,6 +688,11 @@ GrammarTree* tSub::checkLabel(const string& id) {
 	return it->second;
 }
 int tSub::getLineNo() { return lineNo; }
+
+fSub tSub::Output() {
+	//TODO
+	return fSub();
+}
 
 tRoot::~tRoot() { for (auto i : subs) delete i; }
 Op::NonTerm tRoot::type() { return Op::NonTerm::subs; }
