@@ -80,7 +80,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 		ptr_raw_ecl_sub_offsets = reinterpret_cast<uint32_t*>((ptr += vec_sub.size() * sizeof(uint32_t)) - vec_sub.size() * sizeof(uint32_t));
 	}
 
-	for (auto val_sub : vec_sub) {
+	for (const fSub& val_sub : vec_sub) {
 		size += val_sub.name.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_sub.name.c_str(), val_sub.name.size() + 1);
@@ -88,7 +88,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	}
 	ALIGN4_DATA(ptr, size_buf, size);
 
-	for (auto val_sub : vec_sub) {
+	for (const fSub& val_sub : vec_sub) {
 		*(ptr_raw_ecl_sub_offsets++) = size;
 		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub);
 		size += size_raw_sub;
@@ -115,7 +115,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 		anim_hdr.count = vec_anim.size() & ~(uint32_t)0;
 		APPEND_DATA(ptr, &anim_hdr, sizeof(anim_hdr));
 	}
-	for (auto val_anim : vec_anim) {
+	for (const string& val_anim : vec_anim) {
 		size += val_anim.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_anim.c_str(), val_anim.size() + 1);
@@ -136,7 +136,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 		ecli_hdr.count = vec_ecli.size() & ~(uint32_t)0;
 		APPEND_DATA(ptr, &ecli_hdr, sizeof(ecli_hdr));
 	}
-	for (auto val_ecli : vec_ecli) {
+	for (const string& val_ecli : vec_ecli) {
 		size += val_ecli.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_ecli.c_str(), val_ecli.size() + 1);
@@ -175,7 +175,7 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 	size += ctx.vec_offs_ins[ctx.vec_ins.size()] - ctx.vec_offs_ins[0];
 	if (ptr && size_buf >= size) {
 		ctx.i_ins_current = 0;
-		for (auto val_ins : ctx.vec_ins) {
+		for (const Ins& val_ins : ctx.vec_ins) {
 			size_t size_ins = ctx.vec_offs_ins[ctx.i_ins_current + 1] - ctx.vec_offs_ins[ctx.i_ins_current];
 			if (val_ins.serialize((ptr += size_ins) - size_ins, size_ins, ctx) != size_ins) throw(ErrDesignApp("Inconsistent returned size when calling Ins::serialize"));
 			++ctx.i_ins_current;
@@ -189,7 +189,7 @@ SubSerializationContext::SubSerializationContext(const vector<string>& variables
 	:vec_var(variables) {
 	if (this->vec_var.size() > INT_MAX / 4) throw(exception("Too many local variables."));
 	int32_t i = 0;
-	for (auto val_var : this->vec_var) {
+	for (const string& val_var : this->vec_var) {
 		this->map_var[val_var] = i;
 		i += 4;
 	}
@@ -199,7 +199,7 @@ SubSerializationContext::SubSerializationContext(const vector<string>& variables
 	this->vec_offs_ins.resize(this->vec_ins.size() + 1);
 	this->vec_offs_ins[0] = 0;
 	this->i_ins_current = 0;
-	for (auto val_ins : this->vec_ins) {
+	for (const Ins& val_ins : this->vec_ins) {
 		this->vec_offs_ins[i + 1] = this->vec_offs_ins[i] + val_ins.serialize(nullptr, 0, *this);
 		++this->i_ins_current;
 	}
