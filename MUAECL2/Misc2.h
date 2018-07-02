@@ -116,12 +116,14 @@ struct Ins {
 
 //后端用Sub类型
 struct fSub {
+	fSub(const string& name, const vector<string>& variables, const vector<Ins>& inses);
 	string name;
 	vector<string> variables;
 	vector<Ins> inses;
 };
 
 struct fRoot {
+	fRoot(const vector<fSub>& subs, const vector<string>& ecli, const vector<string>& anim);
 	vector<fSub> subs;
 	vector<string> ecli;
 	vector<string> anim;

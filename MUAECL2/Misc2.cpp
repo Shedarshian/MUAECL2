@@ -302,3 +302,9 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 
 	return size;
 }
+
+fSub::fSub(const string& name, const vector<string>& variables, const vector<Ins>& inses)
+	:name(name), variables(variables), inses(inses) {}
+
+fRoot::fRoot(const vector<fSub>& subs, const vector<string>& ecli, const vector<string>& anim)
+	: subs(subs), ecli(ecli), anim(anim) {}
