@@ -151,6 +151,7 @@
     <ClInclude Include="GrammarTree.h" />
     <ClInclude Include="Misc.h" />
     <ClInclude Include="Misc2.h" />
+    <ClInclude Include="NameDecorator.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="RawEclGenerator.h" />
     <ClInclude Include="stdafx.h" />
@@ -162,6 +163,7 @@
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="Misc2.cpp" />
     <ClCompile Include="MUAECL2.cpp" />
+    <ClCompile Include="NameDecorator.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="RawEclGenerator.cpp" />
     <ClCompile Include="stdafx.cpp">
