@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <climits>
 #include <memory>
+#include <algorithm>
 #include "RawEclGenerator.h"
 
 using namespace std;

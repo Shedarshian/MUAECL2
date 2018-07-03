@@ -278,7 +278,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		raw_ecl_ins_hdr.param_count = vec_param.size() & ~(uint8_t)0;
 	}
 	int i = 0;
-	for (auto val_param : vec_param) {
+	for (const Parameter* val_param : vec_param) {
 		size_t size_param = val_param->serialize(nullptr, 0, sub_ctx);
 		size += size_param;
 		if (ptr && size_buf >= size) {
