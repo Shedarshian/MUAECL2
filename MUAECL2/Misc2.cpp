@@ -47,7 +47,7 @@ int32_t Parameter_variable::get_ref_id(const SubSerializationContext& sub_ctx) c
 	try {
 		ref_id = sub_ctx.map_var.at(this->var);
 	} catch (out_of_range&) {
-		throw(ErrDesignApp("variable not found when calling Parameter_variable::get_ref_id"));
+		throw(ErrDesignApp("Parameter_variable::get_ref_id : variable not found"));
 	}
 	return ref_id;
 }
@@ -164,14 +164,14 @@ size_t Parameter_jmp::serialize(char* ptr, size_t size_buf, const SubSerializati
 		try {
 			offs_ins_current = sub_ctx.vec_offs_ins.at(sub_ctx.i_ins_current);
 		} catch (out_of_range&) {
-			throw(ErrDesignApp("current instruction index out of range when calling Parameter_jmp::serialize"));
+			throw(ErrDesignApp("Parameter_jmp::serialize : current instruction index out of range"));
 		}
-		if (this->jumpPoint < sub_ctx.vec_ins.data() || this->jumpPoint >= sub_ctx.vec_ins.data() + sub_ctx.vec_ins.size()) throw(ErrDesignApp("jump target not in subroutine when calling Parameter_jmp::serialize"));
+		if (this->jumpPoint < sub_ctx.vec_ins.data() || this->jumpPoint >= sub_ctx.vec_ins.data() + sub_ctx.vec_ins.size()) throw(ErrDesignApp("Parameter_jmp::serialize : jump target not in subroutine"));
 		size_t i_ins_target = this->jumpPoint - sub_ctx.vec_ins.data();
 		try {
 			offs_ins_target = sub_ctx.vec_offs_ins.at(i_ins_target);
 		} catch (out_of_range&) {
-			throw(ErrDesignApp("target instruction index out of range when calling Parameter_jmp::serialize"));
+			throw(ErrDesignApp("Parameter_jmp::serialize : target instruction index out of range"));
 		}
 	}
 	int offs_jmp = offs_ins_target - offs_ins_current;
@@ -218,7 +218,7 @@ size_t Parameter_call::serialize(char* ptr, size_t size_buf, const SubSerializat
 		uint32_t typeval = (this->isFromFloat ? 0x66 : 0x69) | (this->isToFloat ? 0x6600 : 0x6900);
 		APPEND_DATA(ptr, &typeval, sizeof(uint32_t));
 	}
-	if (this->isFromFloat != this->param->is_float()) throw(ErrDesignApp("Actual parameter type mismatch when calling Parameter_call::serialize"));
+	if (this->isFromFloat != this->param->is_float()) throw(ErrDesignApp("Parameter_call::serialize : actual parameter type mismatch"));
 	size_t size_param = this->param->serialize(nullptr, 0, sub_ctx);
 	size += size_param;
 	if (ptr && size_buf >= size) {
