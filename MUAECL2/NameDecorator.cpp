@@ -34,14 +34,4 @@ namespace NameDecorator {
 		name_decorated += "@"s;
 		return name_decorated;
 	}
-
-	string decorateParamVarName(size_t i_param, Op::mType type) {
-		stringstream sstream_i_param;
-		sstream_i_param << i_param;
-		return "@MUAECL2Var@P@"s + sstream_i_param.str() + "@"s + decorateTypeName(type) + "@"s;
-	}
-
-	string decorateDeclVarName(const mVar& var) {
-		return "@MUAECL2Var@D@"s + var.id + "@"s + decorateTypeName(var.type) + "@"s;
-	}
 }

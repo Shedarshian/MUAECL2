@@ -38,9 +38,9 @@ struct Parameter_float : public Parameter {
 };
 //变量，保证在sub的variables里有
 struct Parameter_variable : public Parameter {
-	explicit Parameter_variable(string var, bool isFloat) :isFloat(isFloat), var(var) {};
+	explicit Parameter_variable(uint32_t id_var, bool isFloat) :isFloat(isFloat), id_var(id_var) {};
 	bool isFloat;
-	string var;
+	uint32_t id_var;
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
@@ -66,10 +66,10 @@ struct Parameter_env : public Parameter {
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 };
-//跳转的字节数，体现为指针，指向跳转到的语句
+//跳转的字节数
 struct Parameter_jmp : public Parameter {
-	explicit Parameter_jmp(Ins* jumpPoint) :jumpPoint(jumpPoint) {};
-	const Ins* jumpPoint;
+	explicit Parameter_jmp(uint32_t id_target) :id_target(id_target) {};
+	uint32_t id_target;
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
@@ -103,23 +103,39 @@ struct Parameter_call : public Parameter {
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 };
 
+struct fSubDataEntry abstract {
+public:
+	virtual ~fSubDataEntry() = default;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const = 0;
+	virtual void set_offs(SubSerializationContext& sub_ctx, size_t offs) const;
+};
+
+struct DummyIns_Target :public fSubDataEntry {
+public:
+	explicit DummyIns_Target(uint32_t id_target);
+	virtual ~DummyIns_Target() = default;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+	virtual void set_offs(SubSerializationContext& sub_ctx, size_t offs) const override;
+	uint32_t id_target;
+};
+
 //语句类型
-struct Ins {
+struct Ins :public fSubDataEntry {
 	Ins(int id, const vector<Parameter*>& paras, bool E = true, bool N = true, bool H = true, bool L = true, int time = 0);
-	~Ins();
+	virtual ~Ins();
 	bool diff[4];
 	int time;
 	int id;
 	vector<Parameter*> paras;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 };
 
 //后端用Sub类型
 struct fSub {
-	fSub(const string& name, const vector<string>& variables, const vector<Ins>& inses);
+	fSub(const string& name, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
 	string name;
-	vector<string> variables;
-	vector<Ins> inses;
+	uint32_t count_var;
+	vector<shared_ptr<fSubDataEntry>> data_entries;
 };
 
 struct fRoot {

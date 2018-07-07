@@ -4,7 +4,7 @@
 using namespace std;
 
 void GrammarTree::changeid(int id) { throw(ErrDesignApp("GrammarTree::changeid")); }
-Op::NonTerm GrammarTree::type() { throw(ErrDesignApp("GrammarTree::type")); }
+Op::NonTerm GrammarTree::type() const { throw(ErrDesignApp("GrammarTree::type")); }
 int GrammarTree::state() { throw(ErrDesignApp("GrammarTree::state")); }
 void GrammarTree::addTree(GrammarTree* t) { throw(ErrDesignApp("GrammarTree::addTree")); }
 list<GrammarTree*>* GrammarTree::extractdecl(vector<mVar>& v) { return nullptr; }
@@ -14,6 +14,7 @@ mType GrammarTree::getType() { throw(ErrDesignApp("GrammarTree::getType")); }
 int GrammarTree::getLineNo() { throw(ErrDesignApp("GrammarTree::getLineNo")); }
 mVType GrammarTree::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) { throw(ErrDesignApp("GrammarTree::TypeCheck")); }
 GrammarTree* GrammarTree::typeChange(int rank) { throw(ErrDesignApp("GrammarTree::typeChange")); }
+bool GrammarTree::isLabel() const { return false; }
 
 tState::tState(int state) :_state(state) {}
 int tState::state() { return _state; }
@@ -49,12 +50,12 @@ void tSubVars::emplaceVar(mType type, string id, int lineNo) {
 	vars.emplace_back(type, id);
 }
 
-Op::NonTerm tSubVars::type() { return Op::NonTerm::subv; }
+Op::NonTerm tSubVars::type() const { return Op::NonTerm::subv; }
 
 tDeclVars::tDeclVars(string id, int lineNo) :varsi({ { id, lineNo, nullptr } }), typedecl(mType::type_error) {}
 tDeclVars::tDeclVars(string id, int lineNo, GrammarTree* inif) :varsi({ { id, lineNo, inif } }), typedecl(mType::type_error) {}
 tDeclVars::~tDeclVars() { for (auto i : varsi) delete get<2>(i); }
-Op::NonTerm tDeclVars::type() { return Op::NonTerm::vdecl; }
+Op::NonTerm tDeclVars::type() const { return Op::NonTerm::vdecl; }
 void tDeclVars::addVar(string id, int lineNo) { varsi.emplace_back(id, lineNo, nullptr); }
 void tDeclVars::addVar(string id, int lineNo, GrammarTree* inif) { varsi.emplace_back(id, lineNo, inif); }
 void tDeclVars::setDeclType(mType type) { this->typedecl = type; }
@@ -92,7 +93,7 @@ tNoVars::~tNoVars() {
 
 tNoVars::tNoVars(int id, int lineNo) :id(id), lineNo(lineNo) {}
 void tNoVars::changeid(int id) { this->id = id; }
-Op::NonTerm tNoVars::type() { return Op::Ch::ToType(id); }
+Op::NonTerm tNoVars::type() const { return Op::Ch::ToType(id); }
 void tNoVars::addTree(GrammarTree* t) { branchs.push_back(t); }
 
 list<GrammarTree*>* tNoVars::extractdecl(vector<mVar>& v) {
@@ -263,6 +264,8 @@ GrammarTree* tNoVars::typeChange(int rank) {
 	}
 	return this;
 }
+
+mVType tNoVars::get_mVType() const { return this->_type; }
 
 void tNoVars::LiteralCal() {
 #define GET(tree, type) branchs[tree]->getToken()->get##type()
@@ -544,8 +547,17 @@ void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTr
 		LiteralCal();
 }
 
+tLabel::~tLabel() {}
+tLabel::tLabel(const string& name) :name(name) {}
+Op::NonTerm tLabel::type() const { return Op::NonTerm::stmt; }
+mVType tLabel::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
+	// TODO: Implement tLabel::TypeCheck.
+}
+bool tLabel::isLabel() const { return true; }
+string tLabel::getName() const { return this->name; }
+
 tStmts::~tStmts() { for (auto i : branchs) delete i; }
-Op::NonTerm tStmts::type() { return Op::NonTerm::stmts; }
+Op::NonTerm tStmts::type() const { return Op::NonTerm::stmts; }
 void tStmts::insertlabel(string s, int lineNo, GrammarTree* t) { labels.push_back(make_tuple(s, lineNo, t)); }
 void tStmts::addTree(GrammarTree* t) { branchs.push_back(t); }
 
@@ -612,7 +624,7 @@ GrammarTree* tSub::checkLabel(const string& id) {
 int tSub::getLineNo() { return lineNo; }
 
 tRoot::~tRoot() { for (auto i : subs) delete i; }
-Op::NonTerm tRoot::type() { return Op::NonTerm::subs; }
+Op::NonTerm tRoot::type() const { return Op::NonTerm::subs; }
 
 void tRoot::addSub(tSub* s) {
 	subs.push_back(s);

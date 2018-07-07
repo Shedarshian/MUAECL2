@@ -163,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GrammarTree.cpp" />
+    <ClCompile Include="GrammarTreeOutput.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="Misc2.cpp" />
     <ClCompile Include="MUAECL2.cpp" />
