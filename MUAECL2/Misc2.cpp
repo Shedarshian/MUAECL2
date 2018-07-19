@@ -301,7 +301,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 	if (ptr && size_buf >= size) {
 		if (size > UINT16_MAX) throw(exception("Too large instruction."));
 		raw_ecl_ins_hdr.size = size & ~(uint16_t)0;
-		memcpy(ptr_raw_ecl_ins_hdr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
+		if (ptr_raw_ecl_ins_hdr) memcpy(ptr_raw_ecl_ins_hdr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
 	}
 
 	return size;

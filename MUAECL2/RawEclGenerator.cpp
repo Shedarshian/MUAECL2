@@ -91,7 +91,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 
 	for (const fSub& val_sub : vec_sub) {
 		if (size > UINT32_MAX) throw(exception("Too large generated raw ECL file."));
-		*(ptr_raw_ecl_sub_offsets++) = size & ~(uint32_t)0;
+		if (ptr_raw_ecl_sub_offsets) *(ptr_raw_ecl_sub_offsets++) = size & ~(uint32_t)0;
 		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub);
 		size += size_raw_sub;
 		if (ptr && size_buf >= size) {
@@ -107,7 +107,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	struct {
 		__pragma(pack(push, 1));
 		char magic[4] = { 'A', 'N', 'I', 'M' };
-		uint32_t count;
+		uint32_t count = 0;
 		__pragma(pack(pop));
 	} anim_hdr;
 	vector<string> vec_anim(this->root.anim);
@@ -128,7 +128,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	struct {
 		__pragma(pack(push, 1));
 		char magic[4] = { 'E', 'C', 'L', 'I' };
-		uint32_t count;
+		uint32_t count = 0;
 		__pragma(pack(pop));
 	} ecli_hdr;
 	vector<string> vec_ecli(this->root.ecli);

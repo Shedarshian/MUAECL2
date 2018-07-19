@@ -607,10 +607,6 @@ void tStmts::extractlabel(map<string, GrammarTree*>& l) {
 	}
 }
 
-void tStmts::Output(fSub & inses) {
-	//TODO
-}
-
 tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(stmts), vardecl(subv->vars), name(name), lineNo(lineNo) {
 	transform(subv->vars.begin(), subv->vars.end(), inserter(varpara, varpara.end()), [](const mVar& t) { return t.type; });
 	delete subv;
@@ -645,11 +641,6 @@ GrammarTree* tSub::checkLabel(const string& id) {
 	return it->second;
 }
 int tSub::getLineNo() { return lineNo; }
-
-fSub tSub::Output() {
-	//TODO
-	return fSub();
-}
 
 tRoot::~tRoot() { for (auto i : subs) delete i; }
 Op::NonTerm tRoot::type() const { return Op::NonTerm::subs; }

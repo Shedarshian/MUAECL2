@@ -37,7 +37,7 @@ class GrammarTree {
 public:
 	virtual ~GrammarTree() = default;
 	virtual void changeid(int id);									//changes tNoVars::id
-	virtual Op::NonTerm type();										//return nonterminator's type
+	virtual Op::NonTerm type() const;										//return nonterminator's type
 	virtual int state();											//return tState::state
 	virtual void addTree(GrammarTree* t);							//add Tree node
 	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);		//return variable declare, use for Subs

@@ -8,14 +8,14 @@ using namespace std;
 
 struct StmtOutputContext;
 struct SubOutputContext;
-class LvalueResult;
-class DiscardedLvalueResult;
-class StackAddrLvalueResult;
-class ParametersLvalueResult;
 class RvalueResult;
 class DiscardedRvalueResult;
 class StackRvalueResult;
 class ParametersRvalueResult;
+class LvalueResult;
+class DiscardedLvalueResult;
+class StackAddrLvalueResult;
+class ParametersLvalueResult;
 
 struct StmtOutputContext final {
 	StmtOutputContext();
@@ -106,197 +106,6 @@ struct SubOutputContext final {
 	inline list<shared_ptr<fSubDataEntry>>::iterator insert_dummyins_target(uint32_t id_target) {
 		return this->list_data_entry.insert(this->it_list_data_entry_curpos, shared_ptr<fSubDataEntry>(new DummyIns_Target(id_target)));
 	}
-};
-
-/// <summary>
-/// An lvalue evaluation result.
-/// An lvalue result must be consumed only when the relative stack pointer is equal to the one when it's created,
-/// or, if multiple results are consumed simultaneously, when the relative stack pointer goes through the one when it's created.
-/// </summary>
-class LvalueResult abstract {
-public:
-	LvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : type(type) {}
-	virtual ~LvalueResult() = default;
-	/// <summary>Get the type of the result.</summary>
-	virtual Op::mType GetType() const { return this->type; }
-	/// <summary>
-	/// Output instructions that discard this result.
-	/// This consumes the result.
-	/// Do NOT call this after consuming this result.
-	/// </summary>
-	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
-	/// <summary>
-	/// Output instructions that pushes the address of this result to the top of the ECL stack.
-	/// This consumes the result.
-	/// Do NOT call this after consuming this result.
-	/// </summary>
-	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
-	/// <summary>
-	/// Output instructions that duplicate the result.
-	/// Duplicating the result counts as creating a result.
-	/// This does NOT consume the result.
-	/// Do NOT call this after consuming this result.
-	/// </summary>
-	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
-	/// <summary>
-	/// Output instructions that convert this result to an rvalue result that represents the value of this result.
-	/// This consumes the result.
-	/// Do NOT call this after consuming this result.
-	/// </summary>
-	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
-	/// <summary>
-	/// Output instructions that assign the rvalue result <paramref name="rvres" /> to this lvalue result.
-	/// This consumes both this result and <paramref name="rvres" />.
-	/// <paramref name="rvres" /> is consumed BEFORE this result. Thus, it must be created AFTER this result.
-	/// Do NOT call this after consuming this result or <paramref name="rvres" />.
-	/// </summary>
-	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) = 0;
-protected:
-	Op::mType type;
-};
-
-/// <summary>
-/// An lvalue evaluation result that has been discarded and cannot be recovered.
-/// Nothing has to be done for the result to be consumed.
-/// </summary>
-class DiscardedLvalueResult : public LvalueResult {
-public:
-	DiscardedLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : LvalueResult(sub_ctx, stmt_ctx, type) {}
-	virtual ~DiscardedLvalueResult() = default;
-	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {}
-	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		throw(ErrDesignApp("DiscardedLvalueResult::ToStackAddrLvalueResult : discarded results cannot be recovered."));
-	}
-	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->type));
-	}
-	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, this->type));
-	}
-	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
-		throw(ErrDesignApp("DiscardedLvalueResult::Assign : discarded results cannot be recovered."));
-	}
-};
-
-/// <summary>
-/// An lvalue evaluation result whose address is at the top of the ECL stack when being created.
-/// Popping the address out of the ECL stack consumes the result.
-/// </summary>
-class StackAddrLvalueResult : public LvalueResult {
-public:
-	StackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : LvalueResult(sub_ctx, stmt_ctx, type) {}
-	virtual ~StackAddrLvalueResult() = default;
-	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		if (this->stackptr_rel != stmt_ctx.stackptr_rel_current) throw(ErrDesignApp("StackAddrLvalueResult::DiscardResult : The current relative stack pointer doesn't match the relative stack pointer when this result is being created"));
-		uint32_t id_var_dummy = sub_ctx.count_var++;
-		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_dummy, false) }, -1);
-	}
-	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		if (stmt_ctx.stackptr_rel_current != this->stackptr_rel) throw(ErrDesignApp("StackAddrLvalueResult::ToStackAddrLvalueResult : The current relative stack pointer doesn't match the relative stack pointer when this result is being created"));
-		return shared_ptr<StackAddrLvalueResult>(new StackAddrLvalueResult(*this));
-	}
-	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		sub_ctx.insert_ins(stmt_ctx, 2005, { new Parameter_int(-this->GetStackId(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current)) }, 1);
-		return shared_ptr<LvalueResult>(new StackAddrLvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
-	}
-	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		switch (this->type) {
-		case Op::mType::Void:
-			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
-		case Op::mType::Int: {
-			sub_ctx.insert_ins(stmt_ctx, 2100, {}, 0);
-			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
-		}
-		case Op::mType::Float: {
-			sub_ctx.insert_ins(stmt_ctx, 2101, {}, 0);
-			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
-		}
-		default:
-			throw(ErrDesignApp("StackAddrLvalueResult::ToRvalueResult : unknown type"));
-		}
-	}
-	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
-		if (rvres->GetType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetType() != this->type"));
-		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
-		switch (this->type) {
-		case Op::mType::Void:
-			break;
-		case Op::mType::Int: {
-			sub_ctx.insert_ins(stmt_ctx, 2102, {}, -2);
-			break;
-		}
-		case Op::mType::Float: {
-			sub_ctx.insert_ins(stmt_ctx, 2103, {}, -2);
-			break;
-		}
-		default:
-			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
-		}
-	}
-protected:
-	int32_t stackptr_rel;
-private:
-	int32_t GetStackId(const SubOutputContext& sub_ctx, const StmtOutputContext& stmt_ctx, int32_t stackptr_rel_parameval) const {
-		return this->stackptr_rel - stackptr_rel_parameval - 1;
-	}
-};
-
-/// <summary>
-/// An lvalue evaluation result that represents one or more ECL parameter(s).
-/// This includes local variables, environment variables, etc.
-/// However, <c>Parameter_stack</c>, <c>Parameter_call</c> and literals may not be used.
-/// </summary>
-class ParametersLvalueResult : public LvalueResult {
-public:
-	ParametersLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type, const vector<shared_ptr<Parameter>>& params) : LvalueResult(sub_ctx, stmt_ctx, type), params(params) {
-		switch (type) {
-		case Op::mType::Void:
-			if (params.size() != 0) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			break;
-		case Op::mType::Int:
-			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
-			break;
-		case Op::mType::Float:
-			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (!params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
-			break;
-		default:
-			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
-		}
-	}
-	virtual ~ParametersLvalueResult() = default;
-	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {}
-	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		sub_ctx.insert_ins(stmt_ctx, 2105, { this->params[0]->Duplicate() }, 1);
-		return shared_ptr<StackAddrLvalueResult>(new StackAddrLvalueResult(sub_ctx, stmt_ctx, this->type));
-	}
-	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		return shared_ptr<LvalueResult>(new ParametersLvalueResult(sub_ctx, stmt_ctx, this->type, this->params));
-	}
-	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, this->type, this->params));
-	}
-	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
-		if (rvres->GetType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetType() != this->type"));
-		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
-		switch (this->type) {
-		case Op::mType::Void:
-			break;
-		case Op::mType::Int: {
-			sub_ctx.insert_ins(stmt_ctx, 43, { this->params[0]->Duplicate() }, -1);
-			break;
-		}
-		case Op::mType::Float: {
-			sub_ctx.insert_ins(stmt_ctx, 45, { this->params[0]->Duplicate() }, -1);
-			break;
-		}
-		default:
-			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
-		}
-	}
-protected:
-	vector<shared_ptr<Parameter>> params;
 };
 
 /// <summary>
@@ -487,6 +296,197 @@ public:
 	}
 	virtual shared_ptr<RvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
 		return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, this->type, this->params));
+	}
+protected:
+	vector<shared_ptr<Parameter>> params;
+};
+
+/// <summary>
+/// An lvalue evaluation result.
+/// An lvalue result must be consumed only when the relative stack pointer is equal to the one when it's created,
+/// or, if multiple results are consumed simultaneously, when the relative stack pointer goes through the one when it's created.
+/// </summary>
+class LvalueResult abstract {
+public:
+	LvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : type(type) {}
+	virtual ~LvalueResult() = default;
+	/// <summary>Get the type of the result.</summary>
+	virtual Op::mType GetType() const { return this->type; }
+	/// <summary>
+	/// Output instructions that discard this result.
+	/// This consumes the result.
+	/// Do NOT call this after consuming this result.
+	/// </summary>
+	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
+	/// <summary>
+	/// Output instructions that pushes the address of this result to the top of the ECL stack.
+	/// This consumes the result.
+	/// Do NOT call this after consuming this result.
+	/// </summary>
+	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
+	/// <summary>
+	/// Output instructions that duplicate the result.
+	/// Duplicating the result counts as creating a result.
+	/// This does NOT consume the result.
+	/// Do NOT call this after consuming this result.
+	/// </summary>
+	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
+	/// <summary>
+	/// Output instructions that convert this result to an rvalue result that represents the value of this result.
+	/// This consumes the result.
+	/// Do NOT call this after consuming this result.
+	/// </summary>
+	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) = 0;
+	/// <summary>
+	/// Output instructions that assign the rvalue result <paramref name="rvres" /> to this lvalue result.
+	/// This consumes both this result and <paramref name="rvres" />.
+	/// <paramref name="rvres" /> is consumed BEFORE this result. Thus, it must be created AFTER this result.
+	/// Do NOT call this after consuming this result or <paramref name="rvres" />.
+	/// </summary>
+	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) = 0;
+protected:
+	Op::mType type;
+};
+
+/// <summary>
+/// An lvalue evaluation result that has been discarded and cannot be recovered.
+/// Nothing has to be done for the result to be consumed.
+/// </summary>
+class DiscardedLvalueResult : public LvalueResult {
+public:
+	DiscardedLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : LvalueResult(sub_ctx, stmt_ctx, type) {}
+	virtual ~DiscardedLvalueResult() = default;
+	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {}
+	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		throw(ErrDesignApp("DiscardedLvalueResult::ToStackAddrLvalueResult : discarded results cannot be recovered."));
+	}
+	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->type));
+	}
+	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, this->type));
+	}
+	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
+		throw(ErrDesignApp("DiscardedLvalueResult::Assign : discarded results cannot be recovered."));
+	}
+};
+
+/// <summary>
+/// An lvalue evaluation result whose address is at the top of the ECL stack when being created.
+/// Popping the address out of the ECL stack consumes the result.
+/// </summary>
+class StackAddrLvalueResult : public LvalueResult {
+public:
+	StackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : LvalueResult(sub_ctx, stmt_ctx, type), stackptr_rel(stmt_ctx.stackptr_rel_current) {}
+	virtual ~StackAddrLvalueResult() = default;
+	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		if (this->stackptr_rel != stmt_ctx.stackptr_rel_current) throw(ErrDesignApp("StackAddrLvalueResult::DiscardResult : The current relative stack pointer doesn't match the relative stack pointer when this result is being created"));
+		uint32_t id_var_dummy = sub_ctx.count_var++;
+		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_dummy, false) }, -1);
+	}
+	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		if (stmt_ctx.stackptr_rel_current != this->stackptr_rel) throw(ErrDesignApp("StackAddrLvalueResult::ToStackAddrLvalueResult : The current relative stack pointer doesn't match the relative stack pointer when this result is being created"));
+		return shared_ptr<StackAddrLvalueResult>(new StackAddrLvalueResult(*this));
+	}
+	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		sub_ctx.insert_ins(stmt_ctx, 2005, { new Parameter_int(-this->GetStackId(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current)) }, 1);
+		return shared_ptr<LvalueResult>(new StackAddrLvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+	}
+	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		switch (this->type) {
+		case Op::mType::Void:
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
+		case Op::mType::Int: {
+			sub_ctx.insert_ins(stmt_ctx, 2100, {}, 0);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+		}
+		case Op::mType::Float: {
+			sub_ctx.insert_ins(stmt_ctx, 2101, {}, 0);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+		}
+		default:
+			throw(ErrDesignApp("StackAddrLvalueResult::ToRvalueResult : unknown type"));
+		}
+	}
+	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
+		if (rvres->GetType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetType() != this->type"));
+		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		switch (this->type) {
+		case Op::mType::Void:
+			break;
+		case Op::mType::Int: {
+			sub_ctx.insert_ins(stmt_ctx, 2102, {}, -2);
+			break;
+		}
+		case Op::mType::Float: {
+			sub_ctx.insert_ins(stmt_ctx, 2103, {}, -2);
+			break;
+		}
+		default:
+			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
+		}
+	}
+protected:
+	int32_t stackptr_rel;
+private:
+	int32_t GetStackId(const SubOutputContext& sub_ctx, const StmtOutputContext& stmt_ctx, int32_t stackptr_rel_parameval) const {
+		return this->stackptr_rel - stackptr_rel_parameval - 1;
+	}
+};
+
+/// <summary>
+/// An lvalue evaluation result that represents one or more ECL parameter(s).
+/// This includes local variables, environment variables, etc.
+/// However, <c>Parameter_stack</c>, <c>Parameter_call</c> and literals may not be used.
+/// </summary>
+class ParametersLvalueResult : public LvalueResult {
+public:
+	ParametersLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type, const vector<shared_ptr<Parameter>>& params) : LvalueResult(sub_ctx, stmt_ctx, type), params(params) {
+		switch (type) {
+		case Op::mType::Void:
+			if (params.size() != 0) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			break;
+		case Op::mType::Int:
+			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			if (params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			break;
+		case Op::mType::Float:
+			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			if (!params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			break;
+		default:
+			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
+		}
+	}
+	virtual ~ParametersLvalueResult() = default;
+	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {}
+	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		sub_ctx.insert_ins(stmt_ctx, 2105, { this->params[0]->Duplicate() }, 1);
+		return shared_ptr<StackAddrLvalueResult>(new StackAddrLvalueResult(sub_ctx, stmt_ctx, this->type));
+	}
+	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		return shared_ptr<LvalueResult>(new ParametersLvalueResult(sub_ctx, stmt_ctx, this->type, this->params));
+	}
+	virtual shared_ptr<RvalueResult> ToRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
+		return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, this->type, this->params));
+	}
+	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
+		if (rvres->GetType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetType() != this->type"));
+		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		switch (this->type) {
+		case Op::mType::Void:
+			break;
+		case Op::mType::Int: {
+			sub_ctx.insert_ins(stmt_ctx, 43, { this->params[0]->Duplicate() }, -1);
+			break;
+		}
+		case Op::mType::Float: {
+			sub_ctx.insert_ins(stmt_ctx, 45, { this->params[0]->Duplicate() }, -1);
+			break;
+		}
+		default:
+			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
+		}
 	}
 protected:
 	vector<shared_ptr<Parameter>> params;
@@ -810,6 +810,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 				return shared_ptr<LvalueResult>(new StackAddrLvalueResult(sub_ctx, stmt_ctx, this->_type.type));
 			}
+		default:
+			throw(ErrDesignApp("tNoVars::OutputLvalueExpr : id=25 : unknown unary operator"));
 		}
 		break;
 	}
@@ -1116,7 +1118,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				if (vec_numtype->size() == 1 && vec_numtype->at(0) == ReadIns::NumType::Anything) break;
 				vector<ReadIns::NumType>::const_iterator it_numtype = vec_numtype->cbegin();
 				vector<shared_ptr<RvalueResult>>::const_reverse_iterator it_result;
-				for (it_result = vec_result.crbegin(); it_result != vec_result.crend(); ++it_result) {// TODO: Use iterator.
+				for (it_result = vec_result.crbegin(); it_result != vec_result.crend(); ++it_result) {
 					// For each rvalue result returned by the exprf outputting function:
 					// If there's no more formal parameter type slots, fail immediately (for this instruction slot).
 					if (it_numtype == vec_numtype->cend()) break;
@@ -1151,7 +1153,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				for (const shared_ptr<Parameter>& val_param : vec_param) {
 					paras.push_back(val_param->Duplicate());
 				}
-				sub_ctx.insert_ins(stmt_ctx, it_ins->second.first, paras, 0);
+				sub_ctx.insert_ins(stmt_ctx, it_ins->second.first, paras, 0);// TODO: Set stackptr_delta.
 				paras.clear();
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
 			}
