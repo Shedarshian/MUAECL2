@@ -25,7 +25,10 @@ struct mVar {
 
 class tSub;
 class tRoot;
+struct StmtOutputContext;
 struct SubOutputContext;
+class LvalueResult;
+class RvalueResult;
 //语法树节点类型
 //语法树以终结符与非终结符为节点，以每个产生式为子类型
 class GrammarTree {
@@ -67,7 +70,7 @@ public:
 	GrammarTree* typeChange(int rank) override;
 	int getLineNo() override;
 private:
-	Token* t;
+	Token * t;
 };
 
 //types
@@ -127,8 +130,10 @@ public:
 	GrammarTree* typeChange(int rank) override;
 	mVType get_mVType() const;
 	void OutputStmt(SubOutputContext& sub_ctx) const;
-	void OutputExpr(SubOutputContext& sub_ctx, bool discard_result) const;
-	void OutputExprf(SubOutputContext& sub_ctx, bool discard_result) const;
+	shared_ptr<LvalueResult> OutputLvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
+	shared_ptr<RvalueResult> OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
+	shared_ptr<LvalueResult> OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
+	shared_ptr<RvalueResult> OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
 private:
 	int id;
 	int lineNo;
@@ -184,7 +189,7 @@ public:
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() override;
 	string getDecoratedName() const;
-	fSub Output() const;
+	fSub Output(const tRoot& root) const;
 private:
 	const string name;
 	int lineNo;
@@ -203,6 +208,7 @@ public:
 	void addSub(tSub* s);
 	pair<mType, vector<mType>>* checkSub(const string& id);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
+	string getSubDecoratedName(const string& id) const;
 	fRoot Output() const;
 private:
 	map<string, pair<mType, vector<mType>>> subdecl;

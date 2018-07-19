@@ -80,7 +80,6 @@ bool Parameter_stack::is_float() const { return this->isFloat; }
 bool Parameter_stack::is_ref_param() const { return true; }
 
 int32_t Parameter_stack::get_ref_id(const SubSerializationContext& sub_ctx) const {
-	static_assert(sizeof(int) == sizeof(int32_t), "sizeof(int) is not equal to sizeof(int32_t).");
 	return this->id;
 }
 
@@ -233,8 +232,8 @@ void DummyIns_Target::set_offs(SubSerializationContext& sub_ctx, size_t offs) co
 	sub_ctx.map_offs_target[this->id_target] = offs;
 }
 
-Ins::Ins(int id, const vector<Parameter*>& paras, bool E, bool N, bool H, bool L, int time)
-	: id(id), paras(paras), diff { E, N, H, L }, time(time) {}
+Ins::Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask, int time)
+	: id(id), paras(paras), difficulty_mask(difficulty_mask), time(time) {}
 
 Ins::~Ins() {
 	for (auto ptr : paras)
@@ -271,8 +270,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		raw_ecl_ins_hdr.id = this->id;
 		//raw_ecl_ins_hdr.size;
 		raw_ecl_ins_hdr.param_mask = 0;
-		raw_ecl_ins_hdr.diff_mask = 0xF0;
-		for (int i = 0; i < 4; ++i) if (this->diff[i]) raw_ecl_ins_hdr.diff_mask |= 1 << i;
+		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
 		//raw_ecl_ins_hdr.param_count;
 		//raw_ecl_ins_hdr.cur_stack_ref_count;
 		ptr_raw_ecl_ins_hdr = APPEND_DATA(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
