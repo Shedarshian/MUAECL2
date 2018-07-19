@@ -24,9 +24,9 @@ tTerminator::~tTerminator() { delete t; }
 Token* tTerminator::getToken() { return t; }
 int tTerminator::getLineNo() { return t->getlineNo(); }
 GrammarTree* tTerminator::typeChange(int rank) {
-	//Ò»¶¨ÊÇÓÒÖµ
+	//ä¸€å®šæ˜¯å³å€¼
 	if (rank == mVType::ITOF) {
-		//ÕûÊı×ª¸¡µã
+		//æ•´æ•°è½¬æµ®ç‚¹
 		Token* tok = new Token_Literal(t->getlineNo(), (float)*t->getInt());
 		delete t;
 		t = tok;
@@ -114,11 +114,11 @@ list<GrammarTree*>* tNoVars::extractdecl(vector<mVar>& v) {
 mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	switch (id) {
 	case 2: { //stmt->expr ;
-		//ĞèÒª¿É×ª³ÉvoidÓÒÖµ·Ç×ÖÃæÁ¿£¬²»ÔÊĞíÆúÖµ±í´ïÊ½¡£ÓÉÓÚÃ»ÓĞ¿ÉÒÔÒşÊ½×ª³ÉvoidÓÒÖµµÄÊµ¼Ê±í´ïÊ½¹Ê²»Ìí¼ÓÒşÊ½×ª»»½Úµã
+		//éœ€è¦å¯è½¬æˆvoidå³å€¼éå­—é¢é‡ï¼Œä¸å…è®¸å¼ƒå€¼è¡¨è¾¾å¼ã€‚ç”±äºæ²¡æœ‰å¯ä»¥éšå¼è½¬æˆvoidå³å€¼çš„å®é™…è¡¨è¾¾å¼æ•…ä¸æ·»åŠ éšå¼è½¬æ¢èŠ‚ç‚¹
 		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
 		if (!mVType::canChangeTo(_type, VTYPE(Void, r)))
 			throw(ErrTypeChangeLoss(branchs[2]->getLineNo(), _type, VTYPE(Void, r, false)));
-		//²»ĞèÒª×óÖµµ½ÓÒÖµ×ª»»
+		//ä¸éœ€è¦å·¦å€¼åˆ°å³å€¼è½¬æ¢
 		//_type.valuetype = Op::LRvalue::rvalue;
 		break; }
 	case 3: //stmt->types vdecl ;
@@ -155,7 +155,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 9: //stmt->{ stmts }
 		return branchs[0]->TypeCheck(sub, subs, whileBlock);
 	case 10: //stmt->break ;
-		//Èç¹ûÃ»ÓĞwhile/for¿éÔòÅ×³öÒì³£
+		//å¦‚æœæ²¡æœ‰while/forå—åˆ™æŠ›å‡ºå¼‚å¸¸
 		if (whileBlock == nullptr)
 			throw(ErrBreakWithoutWhile(lineNo, "break"));
 		branchs.push_back(whileBlock);
@@ -168,11 +168,11 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 12: //inia = vector<expr>
 		throw(ErrDesignApp("GrammarTree::TypeCheck.12"));
 	case 17: //ini->{ inia } inia = vector<expr>
-		//ÀàĞÍ¼ì²éÊ±Ö±½ÓÓÉid = inif·ÃÎÊiniÄÚ²¿Ñ°ÕÒ???
+		//ç±»å‹æ£€æŸ¥æ—¶ç›´æ¥ç”±id = inifè®¿é—®iniå†…éƒ¨å¯»æ‰¾???
 		_type = VTYPE(inilist, r);
 		break;
 	case 19: //insv = vector<exprf>
-		//ÀàĞÍ¼ì²éÊ±Ö±½ÓÓÉid(insv)·ÃÎÊinsvÄÚ²¿Ñ°ÕÒ
+		//ç±»å‹æ£€æŸ¥æ—¶ç›´æ¥ç”±id(insv)è®¿é—®insvå†…éƒ¨å¯»æ‰¾
 		for (auto i : branchs)
 			i->TypeCheck(sub, subs, whileBlock);
 		break;
@@ -193,7 +193,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		auto var = sub->checkVar(tok->getId());
 		if (var == nullptr)
 			throw(ErrVarNotFound(tok->getlineNo(), tok->getId()));
-		//TODO »·¾³±äÁ¿
+		//TODO ç¯å¢ƒå˜é‡
 		_type = mVType{ var->type, Op::LRvalue::lvalue };
 		break;
 	}
@@ -207,27 +207,46 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		break;
 	}
 	case 24: { //expr->id ( insv )
-		//Òª·ÃÎÊinsvÄÚ²¿
+		//è¦è®¿é—®insvå†…éƒ¨
 		auto insv = static_cast<tNoVars*>(branchs[0]);
-		auto p = subs->checkSub(*(branchs[1]->getToken()->getString()));
-		//´ËÎªº¯Êıµ÷ÓÃ
-		if (p != nullptr) {
+		auto name = *branchs[1]->getToken()->getString();
+		//æ­¤ä¸ºå‡½æ•°è°ƒç”¨
+		if (auto p = subs->checkSub(name); p != nullptr) {
 			const auto&[returnType, declTypes] = *p;
 			if (insv->branchs.size() != declTypes.size())
 				throw(ErrFuncPara(lineNo, *(branchs[1]->getToken()->getString())));
 			auto it1 = insv->branchs.begin();
 			for (auto it2 = declTypes.begin(); it2 != declTypes.end(); it1++, it2++) {
 				auto insvptr = static_cast<tNoVars*>(*it1);
-				int rank = mVType::canChangeTo(insvptr->_type, mVType{ *it2, Op::rvalue, false });
-				if (rank < 0)
+				if (int rank = mVType::canChangeTo(insvptr->_type, mVType{ *it2, Op::rvalue, false }); rank < 0)
 					throw(ErrTypeChangeLoss((*it1)->getLineNo(), insvptr->_type, mVType{ *it2, Op::rvalue, false }));
 				else
 					*it1 = insvptr->typeChange(rank);
 			}
 			_type = mVType{ returnType, Op::rvalue, false };
+			break;
 		}
-		//ins±í TODO
-		break;
+		//æ­¤ä¸ºinsè°ƒç”¨æˆ–å¼¹å¹•å˜æ¢
+		if (auto it = ReadIns::ins.find(name); it != ReadIns::ins.end() || (it = ReadIns::mode.find(name)) != ReadIns::mode.end()) {
+			const auto&[id, declTypes] = it->second;
+			opID = id;
+			if (insv->branchs.size() != declTypes.size())
+				throw(ErrFuncPara(lineNo, name));
+			if (declTypes[0] != ReadIns::NumType::Anything) {
+				auto it1 = insv->branchs.begin();
+				for (auto it2 = declTypes.begin(); it2 != declTypes.end(); it1++, it2++) {
+					auto insvptr = static_cast<tNoVars*>(*it1);
+					auto typ = (*it2 == ReadIns::NumType::Int ? mType::Int : *it2 == ReadIns::NumType::Float ? mType::Float : mType::String);
+					if (int rank = mVType::canChangeTo(insvptr->_type, mVType{ typ, Op::rvalue, false }); rank < 0)
+						throw(ErrTypeChangeLoss((*it1)->getLineNo(), insvptr->_type, mVType{ typ, Op::rvalue, false }));
+					else
+						*it1 = insvptr->typeChange(rank);
+				}
+			}
+			_type = VTYPE(Void, r);
+			break;
+		}
+		throw(ErrFuncNotFound(lineNo, name));
 	}
 	case 25: //expr->Unary_op expr
 		[[fallthrough]];
@@ -254,12 +273,12 @@ int tNoVars::getLineNo() { return lineNo; }
 
 GrammarTree* tNoVars::typeChange(int rank) {
 	if (rank % 3 == mVType::LTOR) {
-		//×óÖµµ½ÓÒÖµÖ±½Ó¸³Öµ½øÈ¥
+		//å·¦å€¼åˆ°å³å€¼ç›´æ¥èµ‹å€¼è¿›å»
 		_type.valuetype = Op::LRvalue::rvalue;
 		rank -= mVType::LTOR;
 	}
 	if (rank == mVType::ITOF) {
-		//ÕûÊı×ª¸¡µã
+		//æ•´æ•°è½¬æµ®ç‚¹
 		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tTerminator(new Token_KeywordType(-1, Op::mType::Float)));
 	}
 	return this;
@@ -271,7 +290,7 @@ void tNoVars::LiteralCal() {
 #define GET(tree, type) branchs[tree]->getToken()->get##type()
 #define TERM(number) new tTerminator(new Token_Literal(branchs[0]->getLineNo(), number))
 	GrammarTree* tree = nullptr;
-	int change = 0;		//0£º²»±ä 1£ºÉ¾³ı1¸ö²¢¸Äid 2£ºÉ¾³ı2¸ö²¢¸Äid 3£ºÉ¾³ı3¸ö£¬¸³Öµtree£¬¸Äid
+	int change = 0;		//0ï¼šä¸å˜ 1ï¼šåˆ é™¤1ä¸ªå¹¶æ”¹id 2ï¼šåˆ é™¤2ä¸ªå¹¶æ”¹id 3ï¼šåˆ é™¤3ä¸ªï¼Œèµ‹å€¼treeï¼Œæ”¹id
 	using Op::TokenType;
 	switch (opID) {
 	case TokenType::Plus:
@@ -495,7 +514,7 @@ void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTr
 	auto ltype = branchs[0]->TypeCheck(sub, subs, whileBlock);
 	decltype(ltype) rtype;
 	bool isLiteral = ltype.isLiteral;
-	//Èç¹ûÊÇ¶şÔªÔËËã·û
+	//å¦‚æœæ˜¯äºŒå…ƒè¿ç®—ç¬¦
 	if (branchs.size() == 3) {
 		rtype = branchs[2]->TypeCheck(sub, subs, whileBlock);
 		isLiteral = isLiteral && rtype.isLiteral;
@@ -532,17 +551,17 @@ void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTr
 			_type = type; this->opID = opID;
 		}
 	}
-	//ÎŞ·¨Ó¦ÓÃÔËËã·ûµ½´ËÀàĞÍ²Ù×÷Êı
+	//æ— æ³•åº”ç”¨è¿ç®—ç¬¦åˆ°æ­¤ç±»å‹æ“ä½œæ•°
 	if (minID == INT_MAX)
 		throw(ErrTypeOperate(lineNo, ltype, rtype, (branchs.size() == 4) ? "colon"s : branchs[1]->getToken()->debug_out()));
-	//ÒÀ¾İrankÖµÈ·¶¨×öÁËĞ©Ê²Ã´±ä»»
+	//ä¾æ®rankå€¼ç¡®å®šåšäº†äº›ä»€ä¹ˆå˜æ¢
 	branchs[0] = branchs[0]->typeChange(rank[0]);
 	if (branchs.size() == 3)
 		branchs[2] = branchs[2]->typeChange(rank[1]);
 	else if (branchs.size() == 4)
 		for (int i : {1, 2, 3})
 			branchs[i] = branchs[i]->typeChange(rank[i]);
-	//´¦Àí×ÖÃæÁ¿¼ÆËãÓÅ»¯£¬ĞèÒªÅÅ³ı×ÖÃæÁ¿Ö¸ÕëµÄÇé¿ö£¨ÔÚÀïÃæ´¦Àí£©
+	//å¤„ç†å­—é¢é‡è®¡ç®—ä¼˜åŒ–ï¼Œéœ€è¦æ’é™¤å­—é¢é‡æŒ‡é’ˆçš„æƒ…å†µï¼ˆåœ¨é‡Œé¢å¤„ç†ï¼‰
 	if (isLiteral)
 		LiteralCal();
 }
@@ -588,11 +607,15 @@ void tStmts::extractlabel(map<string, GrammarTree*>& l) {
 	}
 }
 
+void tStmts::Output(fSub & inses) {
+	//TODO
+}
+
 tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(stmts), vardecl(subv->vars), name(name), lineNo(lineNo) {
 	transform(subv->vars.begin(), subv->vars.end(), inserter(varpara, varpara.end()), [](const mVar& t) { return t.type; });
 	delete subv;
 	stmts->extractdecl(vardecl);
-	typeReturn = Op::mType::Void;		//·µ»ØÖµÎªvoid
+	typeReturn = Op::mType::Void;		//è¿”å›å€¼ä¸ºvoid
 	stmts->extractlabel(labels);
 }
 tSub::~tSub() { delete stmts; }
@@ -622,6 +645,11 @@ GrammarTree* tSub::checkLabel(const string& id) {
 	return it->second;
 }
 int tSub::getLineNo() { return lineNo; }
+
+fSub tSub::Output() {
+	//TODO
+	return fSub();
+}
 
 tRoot::~tRoot() { for (auto i : subs) delete i; }
 Op::NonTerm tRoot::type() const { return Op::NonTerm::subs; }
