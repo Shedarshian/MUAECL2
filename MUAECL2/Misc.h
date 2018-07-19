@@ -26,12 +26,15 @@ namespace Op {
 		transform(m.cbegin(), m.cend(), inserter(mo, mo.begin()), swap_pair<T1, T2>);
 		return mo;
 	}
-	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
+	/// all types of tokens
+	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };\
+	/// built-in types
 	enum class mType { type_error, Void, Int, Float, String, Point, inilist };
-	//非终结符
+	/// nonterminators used for parser
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr };
 	
 	class Ch {
+		/// <summary>changing enums to string</summary>
 	public:
 		static const unordered_set<char> OperatorChar;
 		static const map<TokenType, string> OperatorToString;
@@ -46,8 +49,10 @@ namespace Op {
 		static NonTerm ToType(int id);
 	};
 
+	/// value type, l and r
 	enum LRvalue { lvalue, rvalue };
 	struct mVType {
+		/// <summary>full type object, contains value type and literal type</summary>
 		mVType() = default;
 		mType type;
 		LRvalue valuetype;
@@ -55,11 +60,14 @@ namespace Op {
 		string debug_out() {
 			return (isLiteral ? "literal "s : ""s) + (valuetype == rvalue ? "right value "s : "left value "s) + Ch::ToString(type);
 		}
+		/// only compare type and value type
 		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
+		/// used as rank for type changing
 		enum { LTOR = 1, ITOF = 5 };
-		//保存运算符->左操作数要求+右操作数要求+返回类型+重载运算符ID
+		/// saves : operator->left operand + right operand + return type + operator reload ID
 		static const multimap<TokenType, tuple<mVType, mVType, mVType, int>> typeChange;
-		//隐式类型转换，返回可转换到的类型以及转换的rank值（今后如果需要则rank值需转换成可供比较的自创对象，保存做了什么类型变换）
+		/// <summary>implicit type change, return ranks</summary>
+		/// <returns>return rank for changes, saves what changes are done. can change to object if needs</returns>
 		static int canChangeTo(const mVType& typ, const mVType& typto);
 	};
 };
@@ -71,7 +79,6 @@ public:
 	//类型
 	virtual Op::TokenType type() const = 0;
 	//检验
-	//virtual const bool isIdNum();
 	virtual bool isExprFollow() const;
 	//取行号
 	int getlineNo() const;
@@ -146,13 +153,13 @@ public:
 class ReadIns {
 public:
 	enum class NumType { Anything, Int, Float, String };
-	static multimap<string, pair<int, vector<NumType>>> ins;//ins表
-	static map<string, pair<int, vector<NumType>>> mode;	//mode表
-	static map<string, pair<int, NumType>> globalVariable;	//全局变量表
-	static map<string, int> constint;						//符号常量表
+	static map<string, pair<int, vector<NumType>>> ins;			//ins表
+	static map<string, pair<int, vector<NumType>>> mode;		//mode表
+	static map<string, pair<int, NumType>> globalVariable;		//全局变量表
+	static map<string, int> constint;							//符号常量表
 	static map<string, float> constfloat;
-	static set<string> integratedFunction;					//集成函数表
-	static set<string> defaultList;							//default.ecl中的线程名表
+	static set<string> integratedFunction;						//集成函数表
+	static set<string> defaultList;								//default.ecl中的线程名表
 
 	//读取ins.ini与default.ini
 	static void Read();
@@ -168,6 +175,7 @@ public:
 class ErrDesignApp :public exception {
 public:
 	ErrDesignApp(const char* what) : s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {}
+	ErrDesignApp(const string what) : s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {}
 	virtual const char* what() const throw() { return s.c_str(); }
 private:
 	const string s;

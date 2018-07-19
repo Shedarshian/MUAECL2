@@ -16,8 +16,8 @@ using namespace std;
 using Op::mType;
 using Op::mVType;
 
-//±äÁ¿
 struct mVar {
+	//Variable object
 	mVar(mType type, string id) :type(type), id(id) {}
 	mType type;
 	string id;
@@ -25,34 +25,35 @@ struct mVar {
 
 class tSub;
 class tRoot;
+
 struct StmtOutputContext;
 struct SubOutputContext;
 class LvalueResult;
 class RvalueResult;
-//Óï·¨Ê÷½ÚµãÀàĞÍ
-//Óï·¨Ê÷ÒÔÖÕ½á·ûÓë·ÇÖÕ½á·ûÎª½Úµã£¬ÒÔÃ¿¸ö²úÉúÊ½Îª×ÓÀàĞÍ
+
+/// Grammar Tree node object
+/// Grammar Tree use terminator and nonterminator as node, use each production as child type
 class GrammarTree {
 public:
 	virtual ~GrammarTree() = default;
-	virtual void changeid(int id);
-	virtual Op::NonTerm type() const;
-	virtual int state();
-	virtual void addTree(GrammarTree* t);
-	//·µ»ØĞèÒªÕ¹¿ªµÄvdecl
-	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);
-	virtual void extractlabel(map<string, GrammarTree*>& labels);
-	//È¡Êı
-	virtual Token* getToken();
+	virtual void changeid(int id);									//changes tNoVars::id
+	virtual Op::NonTerm type();										//return nonterminator's type
+	virtual int state();											//return tState::state
+	virtual void addTree(GrammarTree* t);							//add Tree node
+	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);		//return variable declare, use for Subs
+	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
+	virtual Token* getToken();										//return tTerminator::token
+  
 	virtual mType getType();
 	virtual int getLineNo();
-	//ÀàĞÍ¼ì²é£¬°üÀ¨ÀàĞÍÆ¥Åä£¬¼ì²é±äÁ¿ÉùÃ÷£¬´¦Àíbreak£¬¼ÆËãgoto±êÇ©µÈ
+	//ç±»å‹æ£€æŸ¥ï¼ŒåŒ…æ‹¬ç±»å‹åŒ¹é…ï¼Œæ£€æŸ¥å˜é‡å£°æ˜ï¼Œå¤„ç†breakï¼Œè®¡ç®—gotoæ ‡ç­¾ç­‰
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
-	//ÒÀ¾İrankÖµ¶ÔToken*²Ù×÷
+	//ä¾æ®rankå€¼å¯¹Token*æ“ä½œ
 	virtual GrammarTree* typeChange(int rank);
 	virtual bool isLabel() const;
 };
 
-//ÎªÈëÕ»ËùÊ¹ÓÃµÄ×´Ì¬±ê¼Ç
+//ä¸ºå…¥æ ˆæ‰€ä½¿ç”¨çš„çŠ¶æ€æ ‡è®°
 class tState : public GrammarTree {
 public:
 	explicit tState(int state);
@@ -61,7 +62,7 @@ private:
 	const int _state;
 };
 
-//Ê÷Ò¶
+//æ ‘å¶
 class tTerminator :public GrammarTree {
 public:
 	explicit tTerminator(Token* t);
@@ -108,14 +109,19 @@ public:
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 private:
 	mType typedecl;
-	vector<tuple<string, int, GrammarTree*>> varsi;	//ÄæĞò´¢´æ
+	vector<tuple<string, int, GrammarTree*>> varsi;	//é€†åºå‚¨å­˜
 };
 
-//ÆäÓàtree
+//å…¶ä½™tree
 class tNoVars :public GrammarTree {
 public:
-	~tNoVars();
+	/* almost all statement and expression and etc. node
+	 * id saves the type
+	 * branchs saves all child node
+	 * opID saves reloaded operator id
+	 */
 	tNoVars(int id, int lineNo);
+	~tNoVars();
 	void changeid(int id) override;
 	template<class ... Types>
 	tNoVars(int id, int lineNo, Types&& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
@@ -138,9 +144,9 @@ private:
 	int id;
 	int lineNo;
 	mVType _type;
-	int opID;						//ÖØÔØºóµÄÔËËã·ûid
-	vector<GrammarTree*> branchs;	//È«²¿ÄæĞò´¢´æ£¬ÒòÎª²úÉúÊ½¶¼ÊÇÓÒµİ¹éµÄ
-	void LiteralCal();				//×ÖÃæÁ¿¼ÆËãÓÅ»¯
+	int opID;						//é‡è½½åçš„è¿ç®—ç¬¦idï¼ŒåŒæ—¶å‚¨å­˜insIDå’ŒmodeIDï¼ˆmodeIDå‚¨å­˜å¹‚æ•°*(-1)ï¼Œå³-7ä»£è¡¨1<<7ï¼‰
+	vector<GrammarTree*> branchs;	//å…¨éƒ¨é€†åºå‚¨å­˜ï¼Œå› ä¸ºäº§ç”Ÿå¼éƒ½æ˜¯å³é€’å½’çš„
+	void LiteralCal();				//å­—é¢é‡è®¡ç®—ä¼˜åŒ–
 	void exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 };
 
@@ -162,7 +168,7 @@ private:
 	string name;
 };
 
-//stmts£¬ÒòÎªÒª´¢´æmap<label, stmt*>
+//stmtsï¼Œå› ä¸ºè¦å‚¨å­˜map<label, stmt*>
 class tStmts :public GrammarTree {
 public:
 	~tStmts();
@@ -175,10 +181,10 @@ public:
 	void Output(SubOutputContext& sub_ctx) const;
 private:
 	vector<tuple<string, int, GrammarTree*>> labels;
-	list<GrammarTree*> branchs;		//È«²¿ÄæĞò´¢´æ£¬ÒòÎª²úÉúÊ½¶¼ÊÇÓÒµİ¹éµÄ
+	list<GrammarTree*> branchs;		//å…¨éƒ¨é€†åºå‚¨å­˜ï¼Œå› ä¸ºäº§ç”Ÿå¼éƒ½æ˜¯å³é€’å½’çš„
 };
 
-//µ¥¸öSub£¬²»»á³öÏÖÔÚ¹æÔ¼Õ»ÖĞËùÒÔ²»ÖØÔØtype
+//å•ä¸ªSubï¼Œä¸ä¼šå‡ºç°åœ¨è§„çº¦æ ˆä¸­æ‰€ä»¥ä¸é‡è½½type
 class tSub : public GrammarTree {
 public:
 	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts);
@@ -193,14 +199,14 @@ public:
 private:
 	const string name;
 	int lineNo;
-	vector<mType> varpara;				//È«²¿ÄæĞò´¢´æ
-	mType typeReturn;					//Ä¿Ç°°æ±¾¾ùÎªvoid£¬ÒÔºó¿ÉÄÜÀ©Õ¹ÖÁº¬·µ»ØÖµµÄº¯Êı
-	vector<mVar> vardecl;				//È«²¿ÄæĞò´¢´æ
+	vector<mType> varpara;				//å…¨éƒ¨é€†åºå‚¨å­˜
+	mType typeReturn;					//ç›®å‰ç‰ˆæœ¬å‡ä¸ºvoidï¼Œä»¥åå¯èƒ½æ‰©å±•è‡³å«è¿”å›å€¼çš„å‡½æ•°
+	vector<mVar> vardecl;				//å…¨éƒ¨é€†åºå‚¨å­˜
 	map<string, GrammarTree*> labels;
 	GrammarTree* stmts;
 };
 
-//¸ù½Úµã
+//æ ¹èŠ‚ç‚¹
 class tRoot : public GrammarTree {
 public:
 	~tRoot();

@@ -10,7 +10,7 @@ using namespace std;
 struct Ins;
 struct SubSerializationContext;
 
-//Óï¾äËùÓÃ²ÎÊı
+//è¯­å¥æ‰€ç”¨å‚æ•°
 struct Parameter abstract {
 	virtual ~Parameter() {};
 	virtual Parameter* Duplicate() const = 0;
@@ -18,9 +18,9 @@ struct Parameter abstract {
 	virtual bool is_ref_param() const = 0;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const = 0;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const = 0;
-	//Êä³öµÈµÈ£¿
+	//è¾“å‡ºç­‰ç­‰ï¼Ÿ
 };
-//×ÖÃæÁ¿
+//å­—é¢é‡
 struct Parameter_int : public Parameter {
 	explicit Parameter_int(int val) :val(val) {};
 	virtual Parameter* Duplicate() const override {
@@ -43,7 +43,7 @@ struct Parameter_float : public Parameter {
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 	float val;
 };
-//±äÁ¿£¬±£Ö¤ÔÚsubµÄvariablesÀïÓĞ
+//å˜é‡ï¼Œä¿è¯åœ¨subçš„variablesé‡Œæœ‰
 struct Parameter_variable : public Parameter {
 	explicit Parameter_variable(uint32_t id_var, bool isFloat) :isFloat(isFloat), id_var(id_var) {};
 	virtual Parameter* Duplicate() const override {
@@ -56,7 +56,7 @@ struct Parameter_variable : public Parameter {
 	bool isFloat;
 	uint32_t id_var;
 };
-//¶ÑÕ»Á¿
+//å †æ ˆé‡
 struct Parameter_stack : public Parameter {
 	Parameter_stack(int32_t id, bool isFloat) :isFloat(isFloat), id(id) {};
 	virtual Parameter* Duplicate() const override {
@@ -69,7 +69,7 @@ struct Parameter_stack : public Parameter {
 	bool isFloat;
 	int32_t id;
 };
-//»·¾³±äÁ¿
+//ç¯å¢ƒå˜é‡
 struct Parameter_env : public Parameter {
 	explicit Parameter_env(int id, bool isFloat) :isFloat(isFloat), id(id) {};
 	virtual Parameter* Duplicate() const override {
@@ -80,9 +80,9 @@ struct Parameter_env : public Parameter {
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 	bool isFloat;
-	int id; //99xxµÄÕûÊı£¨Õı£©
+	int id; //99xxçš„æ•´æ•°ï¼ˆæ­£ï¼‰
 };
-//Ìø×ªµÄ×Ö½ÚÊı
+//è·³è½¬çš„å­—èŠ‚æ•°
 struct Parameter_jmp : public Parameter {
 	explicit Parameter_jmp(uint32_t id_target) :id_target(id_target) {};
 	virtual Parameter* Duplicate() const override {
@@ -94,7 +94,7 @@ struct Parameter_jmp : public Parameter {
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 	uint32_t id_target;
 };
-//×Ö·û´®
+//å­—ç¬¦ä¸²
 struct Parameter_string : public Parameter {
 	explicit Parameter_string(const string& str) :str(str) {};
 	virtual Parameter* Duplicate() const override {
@@ -106,7 +106,7 @@ struct Parameter_string : public Parameter {
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 	string str;
 };
-//µ÷ÓÃµÄ²ÎÊı
+//è°ƒç”¨çš„å‚æ•°
 struct Parameter_call : public Parameter {
 	/// <summary>Create a <c>Parameter_call</c> object.</summary>
 	/// <param name="param">
@@ -144,7 +144,7 @@ public:
 	uint32_t id_target;
 };
 
-//Óï¾äÀàĞÍ
+//è¯­å¥ç±»å‹
 struct Ins :public fSubDataEntry {
 	Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask = 0xFF, int time = 0);
 	virtual ~Ins();
@@ -155,12 +155,17 @@ struct Ins :public fSubDataEntry {
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 };
 
-//ºó¶ËÓÃSubÀàĞÍ
+//åç«¯ç”¨Subç±»å‹
 struct fSub {
 	fSub(const string& name, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
 	string name;
 	uint32_t count_var;
 	vector<shared_ptr<fSubDataEntry>> data_entries;
+
+	template<class ... Types>
+	void emplaceVar(Types&& ... args) { variables.emplace(args); }
+	template<class ... Types>
+	void emplaceIns(Types&& ... args) { inses.emplace(args); }
 };
 
 struct fRoot {
