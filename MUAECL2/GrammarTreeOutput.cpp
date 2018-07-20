@@ -24,6 +24,7 @@ struct StmtOutputContext final {
 	/// The current stack pointer relative to the stack pointer at the beginning of this statement.
 	/// Each raw ECL stack value counts as 1.
 	/// Should never be less than zero.
+	/// Note that the program doesn't keep track of the relative stack pointer for direct instruction call statements.
 	/// </summary>
 	int32_t stackptr_rel_current = 0;
 };
@@ -86,6 +87,7 @@ struct SubOutputContext final {
 	/// <param name="stackptr_delta">
 	/// The net change of the ECL stack pointer, in ECL stack values, of this instruction, EXCEPT of those caused by <c>Parameter_stack</c> parameters.
 	/// Changes of the ECL stack pointer caused by <c>Parameter_stack</c> parameters are checked in this function and will be handled internally.
+	/// For direct instruction calls, this parameter may be set to 0.
 	/// </param>
 	/// <returns>An iterator to the newly inserted instruction.</returns>
 	inline list<shared_ptr<fSubDataEntry>>::iterator insert_ins(StmtOutputContext& stmt_ctx, int id, const vector<Parameter*>& paras, int32_t stackptr_delta) {
@@ -613,18 +615,18 @@ static inline void stmt_output(const GrammarTree* p, SubOutputContext& sub_ctx) 
 	}
 }
 
-static inline shared_ptr<StackRvalueResult> stack_rvalue_int_expr_output(const GrammarTree* p, SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) {
+static inline shared_ptr<StackRvalueResult> stack_rvalue_int_expr_output(const GrammarTree* p, SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool no_check_valuetype = false, bool is_root_expr = false) {
 	const tNoVars* expr = cast_to_expr(p);
 	if (expr->get_mVType().valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("rvalue_int_expr_output : expr->get_mVType().valuetype != Op::LRvalue::rvalue"));
 	if (expr->get_mVType().type != Op::mType::Int) throw(ErrDesignApp("rvalue_int_expr_output : expr->get_mVType().type != Op::mType::Int"));
-	return expr->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+	return expr->OutputRvalueExpr(sub_ctx, stmt_ctx, false, no_check_valuetype, is_root_expr)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 }
 
-static inline shared_ptr<StackRvalueResult> stack_rvalue_int_exprf_output(const GrammarTree* p, SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) {
+static inline shared_ptr<StackRvalueResult> stack_rvalue_int_exprf_output(const GrammarTree* p, SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool no_check_valuetype = false, bool is_root_expr = false) {
 	const tNoVars* exprf = cast_to_exprf(p);
 	if (exprf->get_mVType().valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("rvalue_int_exprf_output : exprf->get_mVType().valuetype != Op::LRvalue::rvalue"));
 	if (exprf->get_mVType().type != Op::mType::Int) throw(ErrDesignApp("rvalue_int_exprf_output : exprf->get_mVType().type != Op::mType::Int"));
-	return exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+	return exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false, no_check_valuetype, is_root_expr)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 }
 
 void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
@@ -636,10 +638,10 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		const tNoVars* expr = cast_to_expr(this->branchs[0]);
 		switch (expr->_type.valuetype) {
 		case Op::LRvalue::lvalue:
-			expr->OutputLvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
+			expr->OutputLvalueExpr(sub_ctx, stmt_ctx, true, false, true)->DiscardResult(sub_ctx, stmt_ctx);
 			break;
 		case Op::LRvalue::rvalue:
-			expr->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
+			expr->OutputRvalueExpr(sub_ctx, stmt_ctx, true, false, true)->DiscardResult(sub_ctx, stmt_ctx);
 			break;
 		default:
 			throw(ErrDesignApp("tNoVars::OutputStmt : id=2 : unknown valuetype"));
@@ -650,7 +652,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	{
 		uint32_t id_target_f = sub_ctx.count_target++;
 		uint32_t id_target_after = sub_ctx.count_target++;
-		stack_rvalue_int_expr_output(this->branchs[2], sub_ctx, stmt_ctx);
+		stack_rvalue_int_expr_output(this->branchs[2], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_f), new Parameter_int(0) }, -1);
 		stmt_output(this->branchs[1], sub_ctx);
 		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, 0);
@@ -662,7 +664,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	case 5:// stmt->if ( expr ) stmt
 	{
 		uint32_t id_target_after = sub_ctx.count_target++;
-		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx);
+		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, -1);
 		stmt_output(this->branchs[0], sub_ctx);
 		sub_ctx.insert_dummyins_target(id_target_after);
@@ -673,7 +675,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		uint32_t id_target_loop = sub_ctx.count_target++;
 		uint32_t id_target_after = sub_ctx.count_target++;
 		sub_ctx.insert_dummyins_target(id_target_loop);
-		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx);
+		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, -1);
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_loop);
@@ -690,7 +692,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		uint32_t id_target_loop = sub_ctx.count_target++;
 		uint32_t id_target_cont = sub_ctx.count_target++;
 		uint32_t id_target_after = sub_ctx.count_target++;
-		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx);
+		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_loopvar, false) }, -1);
 		sub_ctx.insert_dummyins_target(id_target_loop);
 		sub_ctx.stack_id_target_break.push(id_target_after);
@@ -741,7 +743,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	if (stmt_ctx.stackptr_rel_current) throw(ErrDesignApp("tNoVars::OutputStmt : unbalanced stack at the end of the statement"));
 }
 
-shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype) const {
+shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
 	if (this->type() != Op::NonTerm::expr) throw(ErrDesignApp("tNoVars::OutputLvalueExpr : this->type() != Op::NonTerm::expr"));
 	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::lvalue) throw(ErrDesignApp("tNoVars::OutputLvalueExpr : this->_type.valuetype != Op::LRvalue::lvalue"));
 	switch (this->id) {
@@ -984,7 +986,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 	}
 }
 
-shared_ptr<LvalueResult> tNoVars::OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype) const {
+shared_ptr<LvalueResult> tNoVars::OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
 	if (this->type() != Op::NonTerm::exprf) throw(ErrDesignApp("tNoVars::OutputLvalueExprf : this->type() != Op::NonTerm::exprf"));
 	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::lvalue) throw(ErrDesignApp("tNoVars::OutputLvalueExprf : this->_type.valuetype != Op::LRvalue::lvalue"));
 	switch (this->id) {
@@ -1017,7 +1019,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExprf(SubOutputContext& sub_ctx, S
 	}
 }
 
-shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype) const {
+shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
 	if (this->type() != Op::NonTerm::expr) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : this->type() != Op::NonTerm::expr"));
 	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : this->_type.valuetype != Op::LRvalue::rvalue"));
 	switch (this->id) {
@@ -1140,6 +1142,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				if (it_result == vec_result.crend() && it_numtype == vec_numtype->cend()) break;
 			}
 			if (it_ins != range_ins_id.second) {
+				if (!is_root_expr || !discard_result) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : only an expression that's a root expression and has its result discarded may be an instruction call expression"));
 				// If an instruction slot matches the call:
 				// From left to right.
 				vector<shared_ptr<Parameter>> vec_param;
@@ -1153,7 +1156,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				for (const shared_ptr<Parameter>& val_param : vec_param) {
 					paras.push_back(val_param->Duplicate());
 				}
-				sub_ctx.insert_ins(stmt_ctx, it_ins->second.first, paras, 0);// TODO: Set stackptr_delta.
+				sub_ctx.insert_ins(stmt_ctx, it_ins->second.first, paras, 0);
 				paras.clear();
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
 			}
@@ -1463,7 +1466,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 	}
 }
 
-shared_ptr<RvalueResult> tNoVars::OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype) const {
+shared_ptr<RvalueResult> tNoVars::OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
 	if (this->type() != Op::NonTerm::exprf) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->type() != Op::NonTerm::exprf"));
 	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->_type.valuetype != Op::LRvalue::rvalue"));
 	switch (this->id) {

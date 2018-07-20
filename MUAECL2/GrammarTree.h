@@ -43,7 +43,7 @@ public:
 	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);		//return variable declare, use for Subs
 	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
 	virtual Token* getToken();										//return tTerminator::token
-  
+
 	virtual mType getType();
 	virtual int getLineNo();
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
@@ -136,10 +136,10 @@ public:
 	GrammarTree* typeChange(int rank) override;
 	mVType get_mVType() const;
 	void OutputStmt(SubOutputContext& sub_ctx) const;
-	shared_ptr<LvalueResult> OutputLvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
-	shared_ptr<RvalueResult> OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
-	shared_ptr<LvalueResult> OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
-	shared_ptr<RvalueResult> OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false) const;
+	shared_ptr<LvalueResult> OutputLvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<RvalueResult> OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<LvalueResult> OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<RvalueResult> OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
 private:
 	int id;
 	int lineNo;
