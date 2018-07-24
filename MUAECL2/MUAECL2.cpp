@@ -5,6 +5,8 @@
 #include "Tokenizer.h"
 #include "Parser.h"
 #include "RawEclGenerator.h"
+#include "RawEclDecoder.h"
+#include <string>
 #include <fstream>
 #include <iostream>
 
@@ -25,6 +27,14 @@ int main(int argc, char* argv[])
 	}
 	catch (ExceptionWithLineNo &e) {
 		cerr << e.lineNo << " " << e.what() << endl;
+	}
+	catch (DecoderException &e) {
+		char str_offs[1024];
+		_ui64toa(e.GetOffset(), str_offs, 0x10);
+		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
+	}
+	catch (exception &e) {
+		cerr << e.what() << endl;
 	}
 	Parser::clear();
     return 0;

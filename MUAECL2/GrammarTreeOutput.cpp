@@ -95,7 +95,7 @@ struct SubOutputContext final {
 		for (const Parameter* val_param : paras) {
 			const Parameter_stack* param_stack = dynamic_cast<const Parameter_stack*>(val_param);
 			if (param_stack) {
-				int32_t ref_id = param_stack->id;
+				int32_t ref_id = param_stack->ref_id;
 				if (cur_stack_ref_count > ((uint32_t)-INT32_MIN) - 1) throw(exception("Too large stack reference ID."));
 				if (ref_id < 0 && -ref_id == cur_stack_ref_count + 1) ++cur_stack_ref_count;
 			}
@@ -254,11 +254,11 @@ public:
 			break;
 		case Op::mType::Int:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (params[0]->is_float()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		case Op::mType::Float:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (!params[0]->is_float()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
@@ -450,11 +450,11 @@ public:
 			break;
 		case Op::mType::Int:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		case Op::mType::Float:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (!params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
@@ -1118,20 +1118,21 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
 				// If the parameter type specified for this instruction slot is "anything", succeed immediately.
 				if (vec_numtype->size() == 1 && vec_numtype->at(0) == ReadIns::NumType::Anything) break;
-				vector<ReadIns::NumType>::const_iterator it_numtype = vec_numtype->cbegin();
 				vector<shared_ptr<RvalueResult>>::const_reverse_iterator it_result;
-				for (it_result = vec_result.crbegin(); it_result != vec_result.crend(); ++it_result) {
+				vector<ReadIns::NumType>::const_iterator it_numtype;
+				for (
+					it_result = vec_result.crbegin(), it_numtype = vec_numtype->cbegin();
+					it_result != vec_result.crend() && it_numtype != vec_numtype->cend();
+					++it_result) {
 					// For each rvalue result returned by the exprf outputting function:
-					// If there's no more formal parameter type slots, fail immediately (for this instruction slot).
-					if (it_numtype == vec_numtype->cend()) break;
 					bool is_res_match = false;
 					switch ((*it_result)->GetType()) {
 					case Op::mType::Int:
-						is_res_match = *it_numtype == ReadIns::NumType::Int;
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Int;
 						break;
 					case Op::mType::Float:
-						is_res_match = *it_numtype == ReadIns::NumType::Float;
-						break;
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
+						break;// TODO: Support ReadIns::NumType::Call.
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : unknown actual parameter type"));
 					}
