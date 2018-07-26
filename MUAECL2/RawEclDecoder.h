@@ -27,24 +27,28 @@ struct DecodedParam abstract {
 };
 
 struct DecodedParam_Int : public DecodedParam {
+	static DecodedParam_Int* CastToMe(DecodedParam* p);
 	int32_t val;
 	explicit DecodedParam_Int(int32_t val);
 	virtual ~DecodedParam_Int();
 };
 
 struct DecodedParam_Float : public DecodedParam {
+	static DecodedParam_Float* CastToMe(DecodedParam* p);
 	float val;
 	explicit DecodedParam_Float(float val);
 	virtual ~DecodedParam_Float();
 };
 
 struct DecodedParam_String : public DecodedParam {
+	static DecodedParam_String* CastToMe(DecodedParam* p);
 	string val;
 	explicit DecodedParam_String(string val);
 	virtual ~DecodedParam_String();
 };
 
 struct DecodedParam_Variable : public DecodedParam {
+	static DecodedParam_Variable* CastToMe(DecodedParam* p);
 	uint32_t id_var;
 	bool is_float;
 	explicit DecodedParam_Variable(uint32_t id_var, bool is_float);
@@ -52,6 +56,7 @@ struct DecodedParam_Variable : public DecodedParam {
 };
 
 struct DecodedParam_AbnormalVariable : public DecodedParam {
+	static DecodedParam_AbnormalVariable* CastToMe(DecodedParam* p);
 	int32_t ref_id;
 	bool is_float;
 	explicit DecodedParam_AbnormalVariable(int32_t ref_id, bool is_float);
@@ -59,6 +64,7 @@ struct DecodedParam_AbnormalVariable : public DecodedParam {
 };
 
 struct DecodedParam_Stack : public DecodedParam {
+	static DecodedParam_Stack* CastToMe(DecodedParam* p);
 	int32_t ref_id;
 	bool is_float;
 	explicit DecodedParam_Stack(int32_t ref_id, bool is_float);
@@ -66,6 +72,7 @@ struct DecodedParam_Stack : public DecodedParam {
 };
 
 struct DecodedParam_Env : public DecodedParam {
+	static DecodedParam_Env* CastToMe(DecodedParam* p);
 	uint32_t env_id;
 	bool is_float;
 	explicit DecodedParam_Env(uint32_t env_id, bool is_float);
@@ -73,12 +80,14 @@ struct DecodedParam_Env : public DecodedParam {
 };
 
 struct DecodedParam_Jmp : public DecodedParam {
+	static DecodedParam_Jmp* CastToMe(DecodedParam* p);
 	uint32_t id_target;
 	explicit DecodedParam_Jmp(uint32_t id_target);
 	virtual ~DecodedParam_Jmp();
 };
 
 struct DecodedParam_Call : public DecodedParam {
+	static DecodedParam_Call* CastToMe(DecodedParam* p);
 	shared_ptr<DecodedParam> param;
 	bool is_from_float;
 	bool is_to_float;
@@ -86,20 +95,30 @@ struct DecodedParam_Call : public DecodedParam {
 	virtual ~DecodedParam_Call();
 };
 
-struct DecodedSubDataEntry abstract {};
+struct DecodedSubDataEntry abstract {
+	enum DataEntryType {
+		JmpTarget,
+		Ins
+	};
+	const DataEntryType data_entry_type;
+	explicit DecodedSubDataEntry(DataEntryType data_entry_type);
+	virtual ~DecodedSubDataEntry();
+};
 
 /// <summary>Jump target.</summary>
 struct DecodedJmpTarget final : public DecodedSubDataEntry {
+	static DecodedJmpTarget* CastToMe(DecodedSubDataEntry* p);
 	uint32_t id_target;
 	explicit DecodedJmpTarget(uint32_t id_target);
-	~DecodedJmpTarget();
+	virtual ~DecodedJmpTarget();
 };
 
 /// <summary>Decoded ECL instruction.</summary>
 struct DecodedIns final : public DecodedSubDataEntry {
+	static DecodedIns* CastToMe(DecodedSubDataEntry* p);
 	struct rawins_params_t {
-		uint8_t param_count;
-		uint16_t param_mask;
+		uint8_t param_count = 0;
+		uint16_t param_mask = 0;
 		string str_raw_params;
 	};
 	uint32_t time;
@@ -120,6 +139,7 @@ struct DecodedIns final : public DecodedSubDataEntry {
 
 /// <summary>Decoded ECL subroutine.</summary>
 struct DecodedSub final {
+	string id;
 	vector<shared_ptr<DecodedSubDataEntry>> data_entries;
 };
 
@@ -148,7 +168,7 @@ protected:
 	multimap<int, ins_def_t> map_ins;
 	shared_ptr<DecodedRoot> DecodeRawEclRoot(const char* ptr, size_t size_buf) const;
 	void DecodeRawEclIncludes(const char* ptr, size_t size_buf, const shared_ptr<DecodedRoot>& root) const;
-	void DecodeRawEclSub(const char* ptr, size_t size_buf, shared_ptr<DecodedSub>& sub) const;
+	void DecodeRawEclSubDataEntries(const char* ptr, size_t size_buf, DecodedSub& sub) const;
 	void DecodeRawEclParams(
 		const char*& ptr,
 		size_t& size_buf,

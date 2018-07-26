@@ -42,49 +42,131 @@ DecodedParam::DecodedParam(ParamType param_type) : param_type(param_type) {}
 
 DecodedParam::~DecodedParam() {}
 
+DecodedParam_Int* DecodedParam_Int::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Int) throw(ErrDesignApp("DecodedParam_Int::CastToMe : p->param_type != ParamType::Int"));
+	DecodedParam_Int* ret = dynamic_cast<DecodedParam_Int*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Int::CastToMe : cannot cast p to type \"DecodedParam_Int*\""));
+	return ret;
+}
+
 DecodedParam_Int::DecodedParam_Int(int32_t val) : DecodedParam(DecodedParam::ParamType::Int), val(val) {}
 
 DecodedParam_Int::~DecodedParam_Int() {}
+
+DecodedParam_Float* DecodedParam_Float::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Float) throw(ErrDesignApp("DecodedParam_Float::CastToMe : p->param_type != ParamType::Float"));
+	DecodedParam_Float* ret = dynamic_cast<DecodedParam_Float*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Float::CastToMe : cannot cast p to type \"DecodedParam_Float*\""));
+	return ret;
+}
 
 DecodedParam_Float::DecodedParam_Float(float val) : DecodedParam(DecodedParam::ParamType::Float), val(val) {}
 
 DecodedParam_Float::~DecodedParam_Float() {}
 
+DecodedParam_String* DecodedParam_String::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::String) throw(ErrDesignApp("DecodedParam_String::CastToMe : p->param_type != ParamType::String"));
+	DecodedParam_String* ret = dynamic_cast<DecodedParam_String*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_String::CastToMe : cannot cast p to type \"DecodedParam_String*\""));
+	return ret;
+}
+
 DecodedParam_String::DecodedParam_String(string str) : DecodedParam(DecodedParam::ParamType::String), val(val) {}
 
 DecodedParam_String::~DecodedParam_String() {}
+
+DecodedParam_Variable* DecodedParam_Variable::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Variable) throw(ErrDesignApp("DecodedParam_Variable::CastToMe : p->param_type != ParamType::Variable"));
+	DecodedParam_Variable* ret = dynamic_cast<DecodedParam_Variable*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Variable::CastToMe : cannot cast p to type \"DecodedParam_Variable*\""));
+	return ret;
+}
 
 DecodedParam_Variable::DecodedParam_Variable(uint32_t id_var, bool is_float) : DecodedParam(DecodedParam::ParamType::Variable), id_var(id_var), is_float(is_float) {}
 
 DecodedParam_Variable::~DecodedParam_Variable() {}
 
+DecodedParam_AbnormalVariable* DecodedParam_AbnormalVariable::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::AbnormalVariable) throw(ErrDesignApp("DecodedParam_AbnormalVariable::CastToMe : p->param_type != ParamType::AbnormalVariable"));
+	DecodedParam_AbnormalVariable* ret = dynamic_cast<DecodedParam_AbnormalVariable*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_AbnormalVariable::CastToMe : cannot cast p to type \"DecodedParam_AbnormalVariable*\""));
+	return ret;
+}
+
 DecodedParam_AbnormalVariable::DecodedParam_AbnormalVariable(int32_t ref_id, bool is_float) : DecodedParam(DecodedParam::ParamType::AbnormalVariable), ref_id(ref_id), is_float(is_float) {}
 
 DecodedParam_AbnormalVariable::~DecodedParam_AbnormalVariable() {}
+
+DecodedParam_Stack* DecodedParam_Stack::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Stack) throw(ErrDesignApp("DecodedParam_Stack::CastToMe : p->param_type != ParamType::Stack"));
+	DecodedParam_Stack* ret = dynamic_cast<DecodedParam_Stack*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Stack::CastToMe : cannot cast p to type \"DecodedParam_Stack*\""));
+	return ret;
+}
 
 DecodedParam_Stack::DecodedParam_Stack(int32_t ref_id, bool is_float) : DecodedParam(DecodedParam::ParamType::Stack), ref_id(ref_id), is_float(is_float) {}
 
 DecodedParam_Stack::~DecodedParam_Stack() {}
 
+DecodedParam_Env* DecodedParam_Env::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Env) throw(ErrDesignApp("DecodedParam_Env::CastToMe : p->param_type != ParamType::Env"));
+	DecodedParam_Env* ret = dynamic_cast<DecodedParam_Env*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Env::CastToMe : cannot cast p to type \"DecodedParam_Env*\""));
+	return ret;
+}
+
 DecodedParam_Env::DecodedParam_Env(uint32_t env_id, bool is_float) : DecodedParam(DecodedParam::ParamType::Env), env_id(env_id), is_float(is_float) {}
 
 DecodedParam_Env::~DecodedParam_Env() {}
+
+DecodedParam_Jmp* DecodedParam_Jmp::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Jmp) throw(ErrDesignApp("DecodedParam_Jmp::CastToMe : p->param_type != ParamType::Jmp"));
+	DecodedParam_Jmp* ret = dynamic_cast<DecodedParam_Jmp*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Jmp::CastToMe : cannot cast p to type \"DecodedParam_Jmp*\""));
+	return ret;
+}
 
 DecodedParam_Jmp::DecodedParam_Jmp(uint32_t id_target) : DecodedParam(DecodedParam::ParamType::Jmp), id_target(id_target) {}
 
 DecodedParam_Jmp::~DecodedParam_Jmp() {}
 
+DecodedParam_Call* DecodedParam_Call::CastToMe(DecodedParam* p) {
+	if (p->param_type != ParamType::Call) throw(ErrDesignApp("DecodedParam_Call::CastToMe : p->param_type != ParamType::Call"));
+	DecodedParam_Call* ret = dynamic_cast<DecodedParam_Call*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedParam_Call::CastToMe : cannot cast p to type \"DecodedParam_Call*\""));
+	return ret;
+}
+
 DecodedParam_Call::DecodedParam_Call(shared_ptr<DecodedParam>& param, bool is_from_float, bool is_to_float) : DecodedParam(DecodedParam::ParamType::Call), param(param), is_from_float(is_from_float), is_to_float(is_to_float) {}
 
 DecodedParam_Call::~DecodedParam_Call() {}
 
-DecodedJmpTarget::DecodedJmpTarget(uint32_t id_target) : id_target(id_target) {}
+DecodedSubDataEntry::DecodedSubDataEntry(DataEntryType data_entry_type) : data_entry_type(data_entry_type) {}
+
+DecodedSubDataEntry:: ~DecodedSubDataEntry() {}
+
+DecodedJmpTarget* DecodedJmpTarget::CastToMe(DecodedSubDataEntry* p) {
+	if (p->data_entry_type != DataEntryType::JmpTarget) throw(ErrDesignApp("DecodedJmpTarget::CastToMe : p->data_entry_type != DataEntryType::JmpTarget"));
+	DecodedJmpTarget* ret = dynamic_cast<DecodedJmpTarget*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedJmpTarget::CastToMe : cannot cast p to type \"DecodedJmpTarget*\""));
+	return ret;
+}
+
+DecodedJmpTarget::DecodedJmpTarget(uint32_t id_target) : DecodedSubDataEntry(DecodedSubDataEntry::DataEntryType::JmpTarget), id_target(id_target) {}
 
 DecodedJmpTarget::~DecodedJmpTarget() {}
 
-DecodedIns::DecodedIns() {}
+DecodedIns* DecodedIns::CastToMe(DecodedSubDataEntry* p) {
+	if (p->data_entry_type != DataEntryType::Ins) throw(ErrDesignApp("DecodedIns::CastToMe : p->data_entry_type != DataEntryType::Ins"));
+	DecodedIns* ret = dynamic_cast<DecodedIns*>(p);
+	if (!ret) throw(ErrDesignApp("DecodedIns::CastToMe : cannot cast p to type \"DecodedIns*\""));
+	return ret;
+}
 
-DecodedIns::DecodedIns(const DecodedIns& t) {
+DecodedIns::DecodedIns()
+	: DecodedSubDataEntry(DecodedSubDataEntry::DataEntryType::Ins), time(UINT32_MAX), id(UINT16_MAX), difficulty_mask(0), post_pop_count(0) {}
+
+DecodedIns::DecodedIns(const DecodedIns& t) : DecodedSubDataEntry(DecodedSubDataEntry::DataEntryType::Ins) {
 	this->time = t.time;
 	this->id = t.id;
 	this->difficulty_mask = t.difficulty_mask;
@@ -97,7 +179,7 @@ DecodedIns::DecodedIns(const DecodedIns& t) {
 	}
 }
 
-DecodedIns::DecodedIns(DecodedIns&& t) {
+DecodedIns::DecodedIns(DecodedIns&& t) : DecodedSubDataEntry(DecodedSubDataEntry::DataEntryType::Ins) {
 	this->time = t.time;
 	this->id = t.id;
 	this->difficulty_mask = t.difficulty_mask;
@@ -205,12 +287,14 @@ shared_ptr<DecodedRoot> RawEclDecoder::DecodeRawEclRoot(const char* ptr, size_t 
 	}
 	seek_align4(ptr, size_buf, ptr_initial);
 
-	root->subs.resize(raw_ecl_file_hdr.sub_count);
+	root->subs.reserve(raw_ecl_file_hdr.sub_count);
 	for (uint32_t i_sub = 0; i_sub < raw_ecl_file_hdr.sub_count; ++i_sub) {
 		seek_to(vec_sub_offsets.at(i_sub), ptr, size_buf, ptr_initial);
+		root->subs[i_sub] = shared_ptr<DecodedSub>(new DecodedSub());
+		root->subs.at(i_sub)->id = vec_sub_names.at(i_sub);
 		try {
 			try {
-				this->DecodeRawEclSub(ptr, size_buf, root->subs.at(i_sub));
+				this->DecodeRawEclSubDataEntries(ptr, size_buf, *root->subs.at(i_sub));
 			} catch (ErrDecoderUnexpEof& err) {
 				throw(ErrDecoderInvalidSub(err.GetOffset()));
 			}
@@ -249,8 +333,7 @@ void RawEclDecoder::DecodeRawEclIncludes(const char* ptr, size_t size_buf, const
 	}
 }
 
-void RawEclDecoder::DecodeRawEclSub(const char* ptr, size_t size_buf, shared_ptr<DecodedSub>& sub) const {
-	sub.reset(new DecodedSub());
+void RawEclDecoder::DecodeRawEclSubDataEntries(const char* ptr, size_t size_buf, DecodedSub& sub) const {
 	const char* const ptr_initial = ptr;
 	struct {
 		__pragma(pack(push, 1));
@@ -422,7 +505,7 @@ void RawEclDecoder::DecodeRawEclSub(const char* ptr, size_t size_buf, shared_ptr
 		val_param_jmp_pending.first->id_target = id_target;
 	}
 	vec_param_jmp_pending.clear();
-	sub->data_entries = vector<shared_ptr<DecodedSubDataEntry>>(list_data_entry.cbegin(), list_data_entry.cend());
+	sub.data_entries = vector<shared_ptr<DecodedSubDataEntry>>(list_data_entry.cbegin(), list_data_entry.cend());
 }
 
 void RawEclDecoder::DecodeRawEclParams(

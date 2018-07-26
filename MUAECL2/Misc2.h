@@ -115,7 +115,7 @@ struct Parameter_call : public Parameter {
 	/// </param>
 	/// <param name="isFromFloat">Whether the actual parameter (aka the object pointed to by <c>param</c>) is a floating point value.</param>
 	/// <param name="isToFloat">Whether the formal parameter is a floating point value.</param>
-	explicit Parameter_call(shared_ptr<Parameter>& param, bool is_from_float, bool is_to_float) :param(param), is_from_float(is_from_float), is_to_float(is_to_float) {}
+	explicit Parameter_call(const shared_ptr<Parameter>& param, bool is_from_float, bool is_to_float) :param(param), is_from_float(is_from_float), is_to_float(is_to_float) {}
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_call(*this);
 	}

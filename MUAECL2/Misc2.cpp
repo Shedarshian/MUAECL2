@@ -116,7 +116,7 @@ bool Parameter_env::isRefParam() const { return true; }
 
 int32_t Parameter_env::getRefId(const SubSerializationContext& sub_ctx) const {
 	static_assert(sizeof(int) == sizeof(int32_t), "sizeof(int) is not equal to sizeof(int32_t).");
-	return -this->env_id;
+	return -(int32_t)this->env_id;
 }
 
 size_t Parameter_env::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
