@@ -177,10 +177,10 @@ string Token_End::debug_out() const { return ""; }
 map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::ins{};
 map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::mode{};
 map<string, pair<int, ReadIns::NumType>> ReadIns::globalVariable{};
-map<string, int> constint{};
-map<string, float> constfloat{};
-set<string> integratedFunction{};
-set<string> defaultList{};
+map<string, int> ReadIns::constint{};
+map<string, float> ReadIns::constfloat{};
+set<string> ReadIns::integratedFunction{};
+set<string> ReadIns::defaultList{};
 
 void ReadIns::Read() {
 	ifstream in("ins.ini");

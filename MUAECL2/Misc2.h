@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <variant>
 #include <string>
@@ -10,81 +10,103 @@ using namespace std;
 struct Ins;
 struct SubSerializationContext;
 
-//Óï¾äËùÓÃ²ÎÊı
+//è¯­å¥æ‰€ç”¨å‚æ•°
 struct Parameter abstract {
 	virtual ~Parameter() {};
+	virtual Parameter* Duplicate() const = 0;
 	virtual bool is_float() const = 0;
 	virtual bool is_ref_param() const = 0;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const = 0;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const = 0;
-	//Êä³öµÈµÈ£¿
+	//è¾“å‡ºç­‰ç­‰ï¼Ÿ
 };
-//×ÖÃæÁ¿
+//å­—é¢é‡
 struct Parameter_int : public Parameter {
 	explicit Parameter_int(int val) :val(val) {};
-	int val;
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_int(*this);
+	}
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	int val;
 };
 struct Parameter_float : public Parameter {
 	explicit Parameter_float(float val) :val(val) {};
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_float(*this);
+	}
+	virtual bool is_float() const;
+	virtual bool is_ref_param() const;
+	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 	float val;
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 };
-//±äÁ¿£¬±£Ö¤ÔÚsubµÄvariablesÀïÓĞ
+//å˜é‡ï¼Œä¿è¯åœ¨subçš„variablesé‡Œæœ‰
 struct Parameter_variable : public Parameter {
-	explicit Parameter_variable(string var, bool isFloat) :isFloat(isFloat), var(var) {};
-	bool isFloat;
-	string var;
+	explicit Parameter_variable(uint32_t id_var, bool isFloat) :isFloat(isFloat), id_var(id_var) {};
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_variable(*this);
+	}
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	bool isFloat;
+	uint32_t id_var;
 };
-//¶ÑÕ»Á¿
+//å †æ ˆé‡
 struct Parameter_stack : public Parameter {
-	Parameter_stack(int id, bool isFloat) :isFloat(isFloat), id(id) {};
-	bool isFloat;
-	int id;
+	Parameter_stack(int32_t id, bool isFloat) :isFloat(isFloat), id(id) {};
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_stack(*this);
+	}
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	bool isFloat;
+	int32_t id;
 };
-//»·¾³±äÁ¿
+//ç¯å¢ƒå˜é‡
 struct Parameter_env : public Parameter {
 	explicit Parameter_env(int id, bool isFloat) :isFloat(isFloat), id(id) {};
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_env(*this);
+	}
+	virtual bool is_float() const;
+	virtual bool is_ref_param() const;
+	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
 	bool isFloat;
-	int id; //99xxµÄÕûÊı£¨Õı£©
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	int id; //99xxçš„æ•´æ•°ï¼ˆæ­£ï¼‰
 };
-//Ìø×ªµÄ×Ö½ÚÊı£¬ÌåÏÖÎªÖ¸Õë£¬Ö¸ÏòÌø×ªµ½µÄÓï¾ä
+//è·³è½¬çš„å­—èŠ‚æ•°
 struct Parameter_jmp : public Parameter {
-	explicit Parameter_jmp(Ins* jumpPoint) :jumpPoint(jumpPoint) {};
-	const Ins* jumpPoint;
+	explicit Parameter_jmp(uint32_t id_target) :id_target(id_target) {};
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_jmp(*this);
+	}
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	uint32_t id_target;
 };
-//×Ö·û´®
+//å­—ç¬¦ä¸²
 struct Parameter_string : public Parameter {
 	explicit Parameter_string(const string& str) :str(str) {};
-	string str;
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_string(*this);
+	}
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	string str;
 };
-//µ÷ÓÃµÄ²ÎÊı
+//è°ƒç”¨çš„å‚æ•°
 struct Parameter_call : public Parameter {
 	/// <summary>Create a <c>Parameter_call</c> object.</summary>
 	/// <param name="param">
@@ -93,32 +115,52 @@ struct Parameter_call : public Parameter {
 	/// </param>
 	/// <param name="isFromFloat">Whether the actual parameter (aka the object pointed to by <c>param</c>) is a floating point value.</param>
 	/// <param name="isToFloat">Whether the formal parameter is a floating point value.</param>
-	explicit Parameter_call(shared_ptr<Parameter>& param, bool isFromFloat, bool isToFloat) :param(param) {}
-	shared_ptr<Parameter> param;
-	bool isFromFloat;
-	bool isToFloat;
+	explicit Parameter_call(shared_ptr<Parameter>& param, bool isFromFloat, bool isToFloat) :param(param), isFromFloat(isFromFloat), isToFloat(isToFloat) {}
+	virtual Parameter* Duplicate() const override {
+		return new Parameter_call(*this);
+	}
 	virtual bool is_float() const;
 	virtual bool is_ref_param() const;
 	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	shared_ptr<Parameter> param;
+	bool isFromFloat;
+	bool isToFloat;
 };
 
-//Óï¾äÀàĞÍ
-struct Ins {
-	Ins(int id, const vector<Parameter*>& paras, bool E = true, bool N = true, bool H = true, bool L = true, int time = 0);
-	~Ins();
-	bool diff[4];
+struct fSubDataEntry abstract {
+public:
+	virtual ~fSubDataEntry() = default;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const = 0;
+	virtual void set_offs(SubSerializationContext& sub_ctx, size_t offs) const;
+};
+
+struct DummyIns_Target :public fSubDataEntry {
+public:
+	explicit DummyIns_Target(uint32_t id_target);
+	virtual ~DummyIns_Target() = default;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+	virtual void set_offs(SubSerializationContext& sub_ctx, size_t offs) const override;
+	uint32_t id_target;
+};
+
+//è¯­å¥ç±»å‹
+struct Ins :public fSubDataEntry {
+	Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask = 0xFF, int time = 0);
+	virtual ~Ins();
+	uint8_t difficulty_mask;
 	int time;
 	int id;
 	vector<Parameter*> paras;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 };
 
-//ºó¶ËÓÃSubÀàĞÍ
+//åç«¯ç”¨Subç±»å‹
 struct fSub {
+	fSub(const string& name, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
 	string name;
-	vector<string> variables;
-	vector<Ins> inses;
+	uint32_t count_var;
+	vector<shared_ptr<fSubDataEntry>> data_entries;
 
 	template<class ... Types>
 	void emplaceVar(Types&& ... args) { variables.emplace(args); }
@@ -127,6 +169,7 @@ struct fSub {
 };
 
 struct fRoot {
+	fRoot(const vector<fSub>& subs, const vector<string>& ecli, const vector<string>& anim);
 	vector<fSub> subs;
 	vector<string> ecli;
 	vector<string> anim;

@@ -1,6 +1,7 @@
 #pragma once
 #include <ostream>
 #include <unordered_map>
+#include <memory>
 #include "Misc.h"
 #include "Misc2.h"
 
@@ -24,11 +25,11 @@ private:
 };
 
 struct SubSerializationContext final {
-	SubSerializationContext(const vector<string>& variables, const vector<Ins>& inses);
+	SubSerializationContext(uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
 	~SubSerializationContext();
-	vector<string> vec_var;
-	unordered_map<string, int32_t> map_var;
-	vector<Ins> vec_ins;
-	vector<size_t> vec_offs_ins;
-	size_t i_ins_current;
+	uint32_t count_var;
+	vector<shared_ptr<fSubDataEntry>> vec_data_entry;
+	vector<size_t> vec_offs_data_entry;
+	size_t i_data_entry_current;
+	unordered_map<uint32_t, size_t> map_offs_target;
 };

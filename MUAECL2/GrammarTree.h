@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <array>
 #include <deque>
 #include <list>
@@ -8,6 +8,7 @@
 #include <memory>
 #include <tuple>
 #include <numeric>
+#include <string>
 #include "Misc.h"
 #include "Misc2.h"
 
@@ -24,29 +25,35 @@ struct mVar {
 
 class tSub;
 class tRoot;
+
+struct StmtOutputContext;
+struct SubOutputContext;
+class LvalueResult;
+class RvalueResult;
+
 /// Grammar Tree node object
 /// Grammar Tree use terminator and nonterminator as node, use each production as child type
 class GrammarTree {
 public:
 	virtual ~GrammarTree() = default;
 	virtual void changeid(int id);									//changes tNoVars::id
-	virtual Op::NonTerm type();										//return nonterminator's type
+	virtual Op::NonTerm type() const;										//return nonterminator's type
 	virtual int state();											//return tState::state
 	virtual void addTree(GrammarTree* t);							//add Tree node
 	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);		//return variable declare, use for Subs
 	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
 	virtual Token* getToken();										//return tTerminator::token
+
 	virtual mType getType();
 	virtual int getLineNo();
-	//ÀàĞÍ¼ì²é£¬°üÀ¨ÀàĞÍÆ¥Åä£¬¼ì²é±äÁ¿ÉùÃ÷£¬´¦Àíbreak£¬¼ÆËãgoto±êÇ©µÈ
+	//ç±»å‹æ£€æŸ¥ï¼ŒåŒ…æ‹¬ç±»å‹åŒ¹é…ï¼Œæ£€æŸ¥å˜é‡å£°æ˜ï¼Œå¤„ç†breakï¼Œè®¡ç®—gotoæ ‡ç­¾ç­‰
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
-	//ÒÀ¾İrankÖµ¶ÔToken*²Ù×÷
+	//ä¾æ®rankå€¼å¯¹Token*æ“ä½œ
 	virtual GrammarTree* typeChange(int rank);
-	//output
-	virtual void Output(fSub& inses);
+	virtual bool isLabel() const;
 };
 
-//ÎªÈëÕ»ËùÊ¹ÓÃµÄ×´Ì¬±ê¼Ç
+//ä¸ºå…¥æ ˆæ‰€ä½¿ç”¨çš„çŠ¶æ€æ ‡è®°
 class tState : public GrammarTree {
 public:
 	explicit tState(int state);
@@ -55,7 +62,7 @@ private:
 	const int _state;
 };
 
-//Ê÷Ò¶
+//æ ‘å¶
 class tTerminator :public GrammarTree {
 public:
 	explicit tTerminator(Token* t);
@@ -64,7 +71,7 @@ public:
 	GrammarTree* typeChange(int rank) override;
 	int getLineNo() override;
 private:
-	Token* t;
+	Token * t;
 };
 
 //types
@@ -83,7 +90,7 @@ public:
 	tSubVars() = default;
 	tSubVars(mType type, string id);
 	void emplaceVar(mType type, string id, int lineNo);
-	Op::NonTerm type() override;
+	Op::NonTerm type() const override;
 private:
 	vector<mVar> vars;
 	friend class tSub;
@@ -95,17 +102,17 @@ public:
 	tDeclVars(string id, int lineNo);
 	tDeclVars(string id, int lineNo, GrammarTree* inif);
 	~tDeclVars();
-	Op::NonTerm type() override;
+	Op::NonTerm type() const override;
 	void addVar(string id, int lineNo);
 	void addVar(string id, int lineNo, GrammarTree* inif);
 	void setDeclType(mType type);
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 private:
 	mType typedecl;
-	vector<tuple<string, int, GrammarTree*>> varsi;	//ÄæĞò´¢´æ
+	vector<tuple<string, int, GrammarTree*>> varsi;	//é€†åºå‚¨å­˜
 };
 
-//ÆäÓàtree
+//å…¶ä½™tree
 class tNoVars :public GrammarTree {
 public:
 	/* almost all statement and expression and etc. node
@@ -120,41 +127,64 @@ public:
 	tNoVars(int id, int lineNo, Types&& ... args) : id(id), lineNo(lineNo), branchs({ args... }) {}
 	template<class ... Types>
 	tNoVars(mVType type, int id, int lineNo, Types&& ... args) : _type(type), id(id), lineNo(lineNo), branchs({ args... }) {}
-	Op::NonTerm type() override;
+	Op::NonTerm type() const override;
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& labels) override;
 	int getLineNo() override;
 	GrammarTree* typeChange(int rank) override;
-	void Output(fSub& inses) override;
+	mVType get_mVType() const;
+	void OutputStmt(SubOutputContext& sub_ctx) const;
+	shared_ptr<LvalueResult> OutputLvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<RvalueResult> OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<LvalueResult> OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<RvalueResult> OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
 private:
 	int id;
 	int lineNo;
 	mVType _type;
-	int opID;						//ÖØÔØºóµÄÔËËã·ûid£¬Í¬Ê±´¢´æinsIDºÍmodeID£¨modeID´¢´æÃİÊı*(-1)£¬¼´-7´ú±í1<<7£©
-	vector<GrammarTree*> branchs;	//È«²¿ÄæĞò´¢´æ£¬ÒòÎª²úÉúÊ½¶¼ÊÇÓÒµİ¹éµÄ
-	void LiteralCal();				//×ÖÃæÁ¿¼ÆËãÓÅ»¯
+	int opID;						//é‡è½½åçš„è¿ç®—ç¬¦idï¼ŒåŒæ—¶å‚¨å­˜insIDå’ŒmodeIDï¼ˆmodeIDå‚¨å­˜å¹‚æ•°*(-1)ï¼Œå³-7ä»£è¡¨1<<7ï¼‰
+	vector<GrammarTree*> branchs;	//å…¨éƒ¨é€†åºå‚¨å­˜ï¼Œå› ä¸ºäº§ç”Ÿå¼éƒ½æ˜¯å³é€’å½’çš„
+	void LiteralCal();				//å­—é¢é‡è®¡ç®—ä¼˜åŒ–
 	void exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 };
 
-//stmts£¬ÒòÎªÒª´¢´æmap<label, stmt*>
+/// <summary>
+/// Label statement node in the grammar tree.
+/// stmt->id :
+/// </summary>
+class tLabel final :public GrammarTree {
+public:
+	~tLabel();
+	tLabel(const string& name);
+	Op::NonTerm type() const override;
+	// TODO: Finish tLabel.
+	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
+	bool isLabel() const override;
+	string getName() const;
+	void Output(SubOutputContext& sub_ctx) const;
+private:
+	string name;
+};
+
+//stmtsï¼Œå› ä¸ºè¦å‚¨å­˜map<label, stmt*>
 class tStmts :public GrammarTree {
 public:
 	~tStmts();
-	Op::NonTerm type() override;
+	Op::NonTerm type() const override;
 	void insertlabel(string s, int lineNo, GrammarTree* t);
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& l) override;
-	void Output(fSub& inses) override;
+	void Output(SubOutputContext& sub_ctx) const;
 private:
 	vector<tuple<string, int, GrammarTree*>> labels;
-	list<GrammarTree*> branchs;		//È«²¿ÄæĞò´¢´æ£¬ÒòÎª²úÉúÊ½¶¼ÊÇÓÒµİ¹éµÄ
+	list<GrammarTree*> branchs;		//å…¨éƒ¨é€†åºå‚¨å­˜ï¼Œå› ä¸ºäº§ç”Ÿå¼éƒ½æ˜¯å³é€’å½’çš„
 };
 
-//µ¥¸öSub£¬²»»á³öÏÖÔÚ¹æÔ¼Õ»ÖĞËùÒÔ²»ÖØÔØtype
+//å•ä¸ªSubï¼Œä¸ä¼šå‡ºç°åœ¨è§„çº¦æ ˆä¸­æ‰€ä»¥ä¸é‡è½½type
 class tSub : public GrammarTree {
 public:
 	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts);
@@ -164,25 +194,28 @@ public:
 	mVar* checkVar(const string& id);
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() override;
-	fSub Output();
+	string getDecoratedName() const;
+	fSub Output(const tRoot& root) const;
 private:
 	const string name;
 	int lineNo;
-	vector<mType> varpara;				//È«²¿ÄæĞò´¢´æ
-	mType typeReturn;					//Ä¿Ç°°æ±¾¾ùÎªvoid£¬ÒÔºó¿ÉÄÜÀ©Õ¹ÖÁº¬·µ»ØÖµµÄº¯Êı
-	vector<mVar> vardecl;				//È«²¿ÄæĞò´¢´æ
+	vector<mType> varpara;				//å…¨éƒ¨é€†åºå‚¨å­˜
+	mType typeReturn;					//ç›®å‰ç‰ˆæœ¬å‡ä¸ºvoidï¼Œä»¥åå¯èƒ½æ‰©å±•è‡³å«è¿”å›å€¼çš„å‡½æ•°
+	vector<mVar> vardecl;				//å…¨éƒ¨é€†åºå‚¨å­˜
 	map<string, GrammarTree*> labels;
 	GrammarTree* stmts;
 };
 
-//¸ù½Úµã
+//æ ¹èŠ‚ç‚¹
 class tRoot : public GrammarTree {
 public:
 	~tRoot();
-	Op::NonTerm type() override;
+	Op::NonTerm type() const override;
 	void addSub(tSub* s);
 	pair<mType, vector<mType>>* checkSub(const string& id);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
+	string getSubDecoratedName(const string& id) const;
+	fRoot Output() const;
 private:
 	map<string, pair<mType, vector<mType>>> subdecl;
 	vector<tSub*> subs;

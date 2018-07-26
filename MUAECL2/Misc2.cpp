@@ -43,17 +43,13 @@ bool Parameter_variable::is_float() const { return this->isFloat; }
 bool Parameter_variable::is_ref_param() const { return true; }
 
 int32_t Parameter_variable::get_ref_id(const SubSerializationContext& sub_ctx) const {
-	int32_t ref_id;
-	try {
-		ref_id = sub_ctx.map_var.at(this->var);
-	} catch (out_of_range&) {
-		throw(ErrDesignApp("variable not found when calling Parameter_variable::get_ref_id"));
-	}
-	return ref_id;
+	if (this->id_var >= sub_ctx.count_var) throw(ErrDesignApp("Parameter_variable::get_ref_id : id_var out of range"));
+	if (this->id_var > INT32_MAX / 4) throw(exception("Too many local variables."));
+	return this->id_var * 4;
 }
 
 size_t Parameter_variable::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
-	int32_t ref_id = INT_MAX;
+	int32_t ref_id = INT32_MAX;
 	if (ptr && size_buf >= sizeof(float)) {
 		ref_id = this->get_ref_id(sub_ctx);
 	}
@@ -84,12 +80,11 @@ bool Parameter_stack::is_float() const { return this->isFloat; }
 bool Parameter_stack::is_ref_param() const { return true; }
 
 int32_t Parameter_stack::get_ref_id(const SubSerializationContext& sub_ctx) const {
-	static_assert(sizeof(int) == sizeof(int32_t), "sizeof(int) is not equal to sizeof(int32_t).");
 	return this->id;
 }
 
 size_t Parameter_stack::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
-	int32_t ref_id = INT_MAX;
+	int32_t ref_id = INT32_MAX;
 	if (ptr && size_buf >= sizeof(float)) {
 		ref_id = this->get_ref_id(sub_ctx);
 	}
@@ -125,7 +120,7 @@ int32_t Parameter_env::get_ref_id(const SubSerializationContext& sub_ctx) const 
 }
 
 size_t Parameter_env::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
-	int32_t ref_id = INT_MAX;
+	int32_t ref_id = INT32_MAX;
 	if (ptr && size_buf >= sizeof(float)) {
 		ref_id = this->get_ref_id(sub_ctx);
 	}
@@ -158,28 +153,24 @@ bool Parameter_jmp::is_ref_param() const { return false; }
 int32_t Parameter_jmp::get_ref_id(const SubSerializationContext& sub_ctx) const { throw(ErrDesignApp("Parameter_jmp::get_ref_id")); }
 
 size_t Parameter_jmp::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
-	size_t offs_ins_current = 0;
-	size_t offs_ins_target = 0;
-	if (ptr && size_buf >= sizeof(int)) {
+	if (ptr && size_buf >= sizeof(int32_t)) {
+		size_t offs_data_entry_current = 0;
+		size_t offs_data_entry_target = 0;
 		try {
-			offs_ins_current = sub_ctx.vec_offs_ins.at(sub_ctx.i_ins_current);
+			offs_data_entry_current = sub_ctx.vec_offs_data_entry.at(sub_ctx.i_data_entry_current);
 		} catch (out_of_range&) {
-			throw(ErrDesignApp("current instruction index out of range when calling Parameter_jmp::serialize"));
+			throw(ErrDesignApp("Parameter_jmp::serialize : current data entry index out of range"));
 		}
-		if (this->jumpPoint < sub_ctx.vec_ins.data() || this->jumpPoint >= sub_ctx.vec_ins.data() + sub_ctx.vec_ins.size()) throw(ErrDesignApp("jump target not in subroutine when calling Parameter_jmp::serialize"));
-		size_t i_ins_target = this->jumpPoint - sub_ctx.vec_ins.data();
 		try {
-			offs_ins_target = sub_ctx.vec_offs_ins.at(i_ins_target);
+			offs_data_entry_target = sub_ctx.map_offs_target.at(this->id_target);
 		} catch (out_of_range&) {
-			throw(ErrDesignApp("target instruction index out of range when calling Parameter_jmp::serialize"));
+			throw(ErrDesignApp("Parameter_jmp::serialize : target not found"));
 		}
+		if (offs_data_entry_target > INT32_MAX || offs_data_entry_current > INT32_MAX) throw(exception("Too large ECL sub data entry offset."));
+		int32_t offs_jmp = (offs_data_entry_target & ~(uint32_t)0) - (offs_data_entry_current & ~(uint32_t)0);
+		APPEND_DATA(ptr, &offs_jmp, sizeof(int32_t));
 	}
-	int offs_jmp = offs_ins_target - offs_ins_current;
-	static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
-	if (ptr && size_buf >= sizeof(int)) {
-		APPEND_DATA(ptr, &offs_jmp, sizeof(int));
-	}
-	return sizeof(int);
+	return sizeof(int32_t);
 }
 
 bool Parameter_string::is_float() const { return false; }
@@ -191,7 +182,7 @@ int32_t Parameter_string::get_ref_id(const SubSerializationContext& sub_ctx) con
 size_t Parameter_string::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
 	size_t size = 0;
 	if (this->str.size() > UINT32_MAX - 4) throw(exception("String parameter too large."));
-	uint32_t size_strdata = this->str.size() / 4 * 4 + 4;
+	uint32_t size_strdata = (this->str.size() & ~(uint32_t)0) / 4 * 4 + 4;
 	size += sizeof(uint32_t);
 	if (ptr && size_buf >= size) {
 		APPEND_DATA(ptr, &size_strdata, sizeof(uint32_t));
@@ -218,7 +209,7 @@ size_t Parameter_call::serialize(char* ptr, size_t size_buf, const SubSerializat
 		uint32_t typeval = (this->isFromFloat ? 0x66 : 0x69) | (this->isToFloat ? 0x6600 : 0x6900);
 		APPEND_DATA(ptr, &typeval, sizeof(uint32_t));
 	}
-	if (this->isFromFloat != this->param->is_float()) throw(ErrDesignApp("Actual parameter type mismatch when calling Parameter_call::serialize"));
+	if (this->isFromFloat != this->param->is_float()) throw(ErrDesignApp("Parameter_call::serialize : actual parameter type mismatch"));
 	size_t size_param = this->param->serialize(nullptr, 0, sub_ctx);
 	size += size_param;
 	if (ptr && size_buf >= size) {
@@ -227,8 +218,22 @@ size_t Parameter_call::serialize(char* ptr, size_t size_buf, const SubSerializat
 	return size;
 }
 
-Ins::Ins(int id, const vector<Parameter*>& paras, bool E, bool N, bool H, bool L, int time)
-	:id(id), paras(paras), diff { E, N, H, L }, time(time) {}
+void fSubDataEntry::set_offs(SubSerializationContext& sub_ctx, size_t offs) const {}
+
+DummyIns_Target::DummyIns_Target(uint32_t id_target)
+	: id_target(id_target) {}
+
+size_t DummyIns_Target::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	return 0;
+}
+
+void DummyIns_Target::set_offs(SubSerializationContext& sub_ctx, size_t offs) const {
+	if (sub_ctx.map_offs_target.count(this->id_target)) throw(ErrDesignApp("DummyIns_Target::set_offs : duplicate targets with the same ID"));
+	sub_ctx.map_offs_target[this->id_target] = offs;
+}
+
+Ins::Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask, int time)
+	: id(id), paras(paras), difficulty_mask(difficulty_mask), time(time) {}
 
 Ins::~Ins() {
 	for (auto ptr : paras)
@@ -265,8 +270,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		raw_ecl_ins_hdr.id = this->id;
 		//raw_ecl_ins_hdr.size;
 		raw_ecl_ins_hdr.param_mask = 0;
-		raw_ecl_ins_hdr.diff_mask = 0xF0;
-		for (int i = 0; i < 4; ++i) if (this->diff[i]) raw_ecl_ins_hdr.diff_mask |= 1 << i;
+		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
 		//raw_ecl_ins_hdr.param_count;
 		//raw_ecl_ins_hdr.cur_stack_ref_count;
 		ptr_raw_ecl_ins_hdr = APPEND_DATA(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
@@ -278,7 +282,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		raw_ecl_ins_hdr.param_count = vec_param.size() & ~(uint8_t)0;
 	}
 	int i = 0;
-	for (auto val_param : vec_param) {
+	for (const Parameter* val_param : vec_param) {
 		size_t size_param = val_param->serialize(nullptr, 0, sub_ctx);
 		size += size_param;
 		if (ptr && size_buf >= size) {
@@ -297,8 +301,14 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 	if (ptr && size_buf >= size) {
 		if (size > UINT16_MAX) throw(exception("Too large instruction."));
 		raw_ecl_ins_hdr.size = size & ~(uint16_t)0;
-		memcpy(ptr_raw_ecl_ins_hdr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
+		if (ptr_raw_ecl_ins_hdr) memcpy(ptr_raw_ecl_ins_hdr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
 	}
 
 	return size;
 }
+
+fSub::fSub(const string& name, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
+	:name(name), count_var(count_var), data_entries(data_entries) {}
+
+fRoot::fRoot(const vector<fSub>& subs, const vector<string>& ecli, const vector<string>& anim)
+	: subs(subs), ecli(ecli), anim(anim) {}

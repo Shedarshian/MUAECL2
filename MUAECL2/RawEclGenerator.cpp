@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <climits>
 #include <memory>
+#include <algorithm>
 #include "RawEclGenerator.h"
 
 using namespace std;
@@ -17,7 +18,7 @@ RawEclGenerator::~RawEclGenerator() {}
 
 void RawEclGenerator::generate(std::ostream& stream) const {
 	size_t size = this->generate(nullptr, 0);
-	unique_ptr<char[]> ptr(new char[size]());
+	unique_ptr<char[]> ptr(new char[size ? size : 1]());
 	if (this->generate(ptr.get(), size) != size) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::generate"));
 	stream.write(ptr.get(), size);
 }
@@ -80,7 +81,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 		ptr_raw_ecl_sub_offsets = reinterpret_cast<uint32_t*>((ptr += vec_sub.size() * sizeof(uint32_t)) - vec_sub.size() * sizeof(uint32_t));
 	}
 
-	for (auto val_sub : vec_sub) {
+	for (const fSub& val_sub : vec_sub) {
 		size += val_sub.name.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_sub.name.c_str(), val_sub.name.size() + 1);
@@ -88,8 +89,9 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	}
 	ALIGN4_DATA(ptr, size_buf, size);
 
-	for (auto val_sub : vec_sub) {
-		*(ptr_raw_ecl_sub_offsets++) = size;
+	for (const fSub& val_sub : vec_sub) {
+		if (size > UINT32_MAX) throw(exception("Too large generated raw ECL file."));
+		if (ptr_raw_ecl_sub_offsets) *(ptr_raw_ecl_sub_offsets++) = size & ~(uint32_t)0;
 		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub);
 		size += size_raw_sub;
 		if (ptr && size_buf >= size) {
@@ -105,7 +107,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	struct {
 		__pragma(pack(push, 1));
 		char magic[4] = { 'A', 'N', 'I', 'M' };
-		uint32_t count;
+		uint32_t count = 0;
 		__pragma(pack(pop));
 	} anim_hdr;
 	vector<string> vec_anim(this->root.anim);
@@ -115,7 +117,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 		anim_hdr.count = vec_anim.size() & ~(uint32_t)0;
 		APPEND_DATA(ptr, &anim_hdr, sizeof(anim_hdr));
 	}
-	for (auto val_anim : vec_anim) {
+	for (const string& val_anim : vec_anim) {
 		size += val_anim.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_anim.c_str(), val_anim.size() + 1);
@@ -126,7 +128,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	struct {
 		__pragma(pack(push, 1));
 		char magic[4] = { 'E', 'C', 'L', 'I' };
-		uint32_t count;
+		uint32_t count = 0;
 		__pragma(pack(pop));
 	} ecli_hdr;
 	vector<string> vec_ecli(this->root.ecli);
@@ -136,7 +138,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 		ecli_hdr.count = vec_ecli.size() & ~(uint32_t)0;
 		APPEND_DATA(ptr, &ecli_hdr, sizeof(ecli_hdr));
 	}
-	for (auto val_ecli : vec_ecli) {
+	for (const string& val_ecli : vec_ecli) {
 		size += val_ecli.size() + 1;
 		if (ptr && size_buf >= size) {
 			APPEND_DATA(ptr, val_ecli.c_str(), val_ecli.size() + 1);
@@ -170,38 +172,34 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		memcpy(ptr_raw_ecl_sub_hdr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
 	}
 
-	SubSerializationContext ctx(sub.variables, sub.inses);
+	SubSerializationContext ctx(sub.count_var, sub.data_entries);
 
-	size += ctx.vec_offs_ins[ctx.vec_ins.size()] - ctx.vec_offs_ins[0];
+	size += ctx.vec_offs_data_entry[ctx.vec_data_entry.size()] - ctx.vec_offs_data_entry[0];
 	if (ptr && size_buf >= size) {
-		ctx.i_ins_current = 0;
-		for (auto val_ins : ctx.vec_ins) {
-			size_t size_ins = ctx.vec_offs_ins[ctx.i_ins_current + 1] - ctx.vec_offs_ins[ctx.i_ins_current];
-			if (val_ins.serialize((ptr += size_ins) - size_ins, size_ins, ctx) != size_ins) throw(ErrDesignApp("Inconsistent returned size when calling Ins::serialize"));
-			++ctx.i_ins_current;
+		ctx.i_data_entry_current = 0;
+		for (const shared_ptr<fSubDataEntry>& val_data_entry : ctx.vec_data_entry) {
+			size_t size_data_entry = ctx.vec_offs_data_entry[ctx.i_data_entry_current + 1] - ctx.vec_offs_data_entry[ctx.i_data_entry_current];
+			if (val_data_entry->serialize((ptr += size_data_entry) - size_data_entry, size_data_entry, ctx) != size_data_entry) throw(ErrDesignApp("Inconsistent returned size when calling fSubDataEntry::serialize"));
+			++ctx.i_data_entry_current;
 		}
 	}
 
 	return size;
 }
 
-SubSerializationContext::SubSerializationContext(const vector<string>& variables, const vector<Ins>& inses)
-	:vec_var(variables) {
-	if (this->vec_var.size() > INT_MAX / 4) throw(exception("Too many local variables."));
-	int32_t i = 0;
-	for (auto val_var : this->vec_var) {
-		this->map_var[val_var] = i;
-		i += 4;
-	}
-	this->vec_ins.emplace_back(40, vector<Parameter*>({ new Parameter_int((this->vec_var.size() & ~(uint32_t)0) * 4) }));
-	this->vec_ins.insert(this->vec_ins.cend(), inses.cbegin(), inses.cend());
-	this->vec_ins.emplace_back(41, vector<Parameter*>());
-	this->vec_offs_ins.resize(this->vec_ins.size() + 1);
-	this->vec_offs_ins[0] = 0;
-	this->i_ins_current = 0;
-	for (auto val_ins : this->vec_ins) {
-		this->vec_offs_ins[i + 1] = this->vec_offs_ins[i] + val_ins.serialize(nullptr, 0, *this);
-		++this->i_ins_current;
+SubSerializationContext::SubSerializationContext(uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
+	:count_var(count_var) {
+	if (count_var > INT32_MAX / 4) throw(exception("Too many local variables."));
+	this->vec_data_entry.emplace_back(new Ins(40, vector<Parameter*>({ new Parameter_int(count_var * 4) })));
+	this->vec_data_entry.insert(this->vec_data_entry.cend(), data_entries.cbegin(), data_entries.cend());
+	this->vec_data_entry.emplace_back(new Ins(41, vector<Parameter*>()));
+	this->vec_offs_data_entry.resize(this->vec_data_entry.size() + 1);
+	this->vec_offs_data_entry[0] = 0;
+	this->i_data_entry_current = 0;
+	for (const shared_ptr<fSubDataEntry>& val_data_entry : this->vec_data_entry) {
+		this->vec_offs_data_entry[i_data_entry_current + 1] = this->vec_offs_data_entry[i_data_entry_current] + val_data_entry->serialize(nullptr, 0, *this);
+		val_data_entry->set_offs(*this, this->vec_offs_data_entry[i_data_entry_current]);
+		++this->i_data_entry_current;
 	}
 }
 
