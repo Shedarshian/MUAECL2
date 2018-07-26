@@ -5,10 +5,10 @@ R14		subv->\e
 R15		subv->type id
 R16		subv->type id , subv
 R1		stmts->stmt stmts
-R2		stmts->id : stmt stmts
 R3		stmts->\e
 R4	id2	stmt->expr ;
 R5	id3	stmt->type vdecl ;
+R6		stmt->id :
 R7	id5	stmt->if ( expr ) stmt
 R18	id4	stmt->if ( expr ) stmt else stmt
 R8	id6	stmt->while ( expr ) stmt
@@ -17,6 +17,9 @@ R10	id8	stmt->goto id ;
 R11	id9	stmt->{ stmts }
 R19	id10	stmt->break ;
 R20	id11	stmt->continue ;
+R21	id29	stmt->thread id ( insv ) ;
+R22	id30	stmt->do stmt while ( expr ) ;
+R23	id31	stmt->__rawins { data }
 R32		vdecl->id
 R33		vdecl->id = inif
 R34		vdecl->id , vdecl
@@ -62,6 +65,10 @@ R65	id25	expr->(&) expr
 R66	id27	expr->expr [ expr ]
 R67	id26	expr->expr as_op exprf
 R68	id28	expr->( type ) expr
+R69	id32	data->\e
+R70		data->{ insdata } ; data
+R71	id33	insdata->\e
+R72		insdata->num insdata
 
 FOLLOW
 E	$
@@ -69,7 +76,7 @@ subs	$
 subv	)
 subva	)
 stmts	$ }
-stmt	$ id num type if else while for goto break continue { } op1 (
+stmt	$ id num type if else while for goto break continue { } op1 ( thread do __rawins
 inif	; ,
 ini	; , :
 inia	}
@@ -77,6 +84,8 @@ exprf	) , ;
 expr	) : , ; } op2 [ ] = as_op
 vdecl	;
 insv	)
+data	}
+insdata	}
 
 
 FIRST
@@ -92,7 +101,7 @@ exprf	expr
 vdecl	id
 insv	\e expr
 
-24 52 65 66 67 72 128 129 130 151
+24 52 65 66 67 72 79 128 129 130 151
 
 
 I255:
@@ -106,7 +115,6 @@ I0---sub id (--->I61(I34 I35)
 I9:
 subs->sub id ( subv ) {\.stmts } subs
 stmts->\.stmt stmts
-stmts->\.id : stmt stmts
 stmts->\.
 stmt->\.expr ;
 stmt->\.type vdecl ;
@@ -117,6 +125,10 @@ stmt->\.for ( exprf ) stmt
 stmt->\.goto id ;
 stmt->\.break ;
 stmt->\.continue ;
+stmt->\.thread id ( insv ) ;
+stmt->\.do stmt while ( expr ) ;
+stmt->\.__rawins { data }
+stmt->\.id :
 stmt->\.{ stmts }
 expr->\.id
 expr->\.num
@@ -156,6 +168,9 @@ I9---id----------->I1
   ---goto id ;---->I6(I124 I125)
   ---break ;------>I96(I126)
   ---continue ;--->I97(I127)
+  ---thread id (-->I156(I154 I155)
+  ---do----------->I160
+  ---__rawins {--->I168(I167)
   ---{------------>I77
   ---(-)---------->I82
   ---!------------>I83
@@ -166,7 +181,7 @@ I9---id----------->I1
   ---stmts-------->I49
   ---expr--------->I87
 I1:
-stmts->id\.: stmt stmts
+stmt->id\.:
 expr->id\.
 expr->id\.( insv )
 I1---:------------>I8
@@ -219,21 +234,7 @@ I77---same---I0
    ---stmts------->I78
    ---expr-------->I87
 I8:
-stmts->id :\.stmt stmts
-\.stmt
-\.expr
-I8---id----------->I94
-  ---same---I0
-  ---stmt--------->I79
-  ---expr--------->I87
-I79:
-stmts->id : stmt\.stmts
-\.stmts
-\.stmt
-\.expr
-I79---same---I0
-   ---{------------>I77
-   ---stmts-------->I18
+stmt->id :\.
 I10:
 expr->id (\.insv )
 insv->\.exprf
@@ -459,7 +460,7 @@ stmt->if ( expr )\.stmt
 stmt->if ( expr )\.stmt else stmt
 \.stmt
 \.expr
-I58---same---I8
+I58---same---I58
    ---stmt--------->I60
    ---expr--------->I87
 I60:
@@ -497,7 +498,7 @@ I70:
 stmt->if ( expr ) stmt else\.stmt
 \.stmt
 \.expr
-I70---same---I8
+I70---same---I58
    ---expr--------->I87
    ---stmt--------->I71
 I71:
@@ -506,7 +507,7 @@ I73:
 stmt->while ( expr )\.stmt
 \.stmt
 \.expr
-I73---same---I8
+I73---same---I58
    ---expr--------->I87
    ---stmt--------->I74
 I74:
@@ -515,7 +516,7 @@ I75:
 stmt->for ( exprf )\.stmt
 \.stmt
 \.expr
-I75---same---I8
+I75---same---I58
    ---expr--------->I87
    ---stmt--------->I76
 I76:
@@ -840,6 +841,70 @@ I153:
 expr->( type ) expr\.
 expr\.
 I153---op---I87
+I156:
+stmt->thread id (\.insv ) ;
+insv->\.exprf
+insv->\.exprf , insv
+insv->\.
+\.exprf
+\.expr
+I156---same---I3
+    ---expr------->I15
+    ---exprf------>I42
+    ---insv------->I157
+I157:
+stmt->thread id ( insv\.) ;
+I157---) ;-------->I159(I158)
+I159:
+stmt->thread id ( insv ) ;\.
+I160:
+stmt->do\.stmt while ( expr ) ;
+\.stmt
+\.expr
+I160---same---I58
+    ---expr--------->I87
+    ---stmt--------->I161
+I161:
+stmt->do stmt\.while ( expr ) ;
+I161---while (------>I163(I162)
+I163:
+stmt->do stmt while (\.expr ) ;
+I163---same---I3
+    ---expr--------->I164
+I164---) ;---------->I166(I165)
+I168:
+stmt->__rawins {\.data }
+data->\.
+data->\.{ insdata } ; data
+I168---{------------>I169
+    ---data--------->I170
+I169:
+data->{\.insdata } ; data
+insdata->\.
+insdata->\.num insdata
+I169---num---------->I172
+    ---insdata------>I173
+I170:
+stmt->__rawins { data\.}
+I170---}------------>I171
+I172:
+insdata->num\.insdata
+insdata->\.
+insdata->\.num insdata
+I172---num---------->I172
+    ---insdata------>I174
+I173:
+data->{ insdata\.} ; data
+I173---} ;---------->I176(I175)
+I174:
+insdata->num insdata\.
+I176:
+data->{ insdata } ;\.data
+\.data
+I176---same---I168
+    ---data---I177
+I177:
+data->{ insdata } ; data\.
 
 
 
@@ -875,10 +940,11 @@ Grammar error
 -30 :Unexpected TOKEN in initializer list
 -31 :Unexpected TOKEN, expect initializer list end
 -32 :Difficulty switch need to have four expression
--33 :Unexpected TOKEN, expect left braket
+-33 :Unexpected TOKEN, expect left small braket
 -34 :Unexpected TOKEN, expect file end
-
-
+-35 :Unexpected TOKEN, expect while
+-36 :Unexpected TOKEN, expect left big braket
+-37 :Unexpected TOKEN, expect raw data
 
 -255:Design error
 

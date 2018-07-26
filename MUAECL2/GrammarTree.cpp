@@ -567,7 +567,7 @@ void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTr
 }
 
 tLabel::~tLabel() {}
-tLabel::tLabel(const string& name) :name(name) {}
+tLabel::tLabel(const string& name, int lineNo) :name(name), lineNo(lineNo) {}
 Op::NonTerm tLabel::type() const { return Op::NonTerm::stmt; }
 mVType tLabel::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	// TODO: Implement tLabel::TypeCheck.

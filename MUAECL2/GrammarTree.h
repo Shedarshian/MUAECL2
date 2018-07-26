@@ -157,7 +157,7 @@ private:
 class tLabel final :public GrammarTree {
 public:
 	~tLabel();
-	tLabel(const string& name);
+	tLabel(const string& name, int lineNo);
 	Op::NonTerm type() const override;
 	// TODO: Finish tLabel.
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
@@ -166,6 +166,7 @@ public:
 	void Output(SubOutputContext& sub_ctx) const;
 private:
 	string name;
+	int lineNo;
 };
 
 //stmts，因为要储存map<label, stmt*>

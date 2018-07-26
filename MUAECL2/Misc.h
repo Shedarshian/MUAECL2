@@ -27,11 +27,11 @@ namespace Op {
 		return mo;
 	}
 	/// all types of tokens
-	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };\
+	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, Type, If, Else, While, For, Goto, Break, Continue, Do, Thread, Rawins, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	/// built-in types
 	enum class mType { type_error, Void, Int, Float, String, Point, inilist };
 	/// nonterminators used for parser
-	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr };
+	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, data, insdata };
 	
 	class Ch {
 		/// <summary>changing enums to string</summary>
@@ -303,7 +303,7 @@ public:
 		case -2: id = "Unexpected " + tokenName + ", expect parameter list."; break;
 		case -3: id = "Missing type specifier."; break;
 		case -4: id = "Missing parameter name."; break;
-		case -5: id = "Unexpected " + tokenName + ", unclosed braket."; break;
+		case -5: id = "Unexpected " + tokenName + ", unclosed small braket."; break;
 		case -6: id = "Unexpected " + tokenName + ", expect code block begin."; break;
 		case -7: id = "Missing label name."; break;
 		case -8: id = "Blank statement not allowed."; break;
@@ -328,8 +328,11 @@ public:
 		case -30: id = "Unexpected " + tokenName + " in initializer list."; break;
 		case -31: id = "Unexpected " + tokenName + ", expect initializer list end."; break;
 		case -32: id = "Difficulty switch need to have four expression."; break;
-		case -33: id = "Unexpected " + tokenName + ", expect left braket."; break;
+		case -33: id = "Unexpected " + tokenName + ", expect left small braket."; break;
 		case -34: id = "Unexpected " + tokenName + ", expect file end."; break;
+		case -35: id = "Unexpected " + tokenName + ", expect while."; break;
+		case -36: id = "Unexpected " + tokenName + ", expect left big braket."; break;
+		case -37: id = "Unexpected " + tokenName + ", expect raw data."; break;
 		default: break;
 		}
 	}
