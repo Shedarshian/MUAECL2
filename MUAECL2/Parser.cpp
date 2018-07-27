@@ -20,7 +20,7 @@ const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::inif, map<int, int>({ { 53, 80 } }) },
 	{ NonTerm::inia, map<int, int>({ { 20, 26 }, { 23, 25 } }) },
 	{ NonTerm::exprf, map<int, int>({ { 5, 16 }, { 10, 42 }, { 43, 42 }, { 121, 122 }, { 156, 42 } }) },
-	{ NonTerm::expr, map<int, int>({ { 3, 13 }, { 4, 14 }, { 5, 15 }, { 7, 87 }, { 9, 87 }, { 10, 15 }, { 20, 22 }, { 23, 22 }, { 28, 19 }, { 30, 19 }, { 32, 19 }, { 36, 37 }, { 38, 39 }, { 40, 41 }, { 43, 15 }, { 53, 19 }, { 58, 87 }, { 70, 87 }, { 77, 87 }, { 82, 88 }, { 83, 89 }, { 84, 92 }, { 85, 90 }, { 86, 91 }, { 101, 131 }, { 102, 132 }, { 103, 133 }, { 104, 134 }, { 105, 135 }, { 106, 136 }, { 107, 137 }, { 108, 138 }, { 109, 139 }, { 110, 140 }, { 111, 141 }, { 112, 142 }, { 113, 143 }, { 114, 144 }, { 115, 145 }, { 116, 146 }, { 117, 147 }, { 118, 148 }, { 119, 149 }, { 120, 150 }, { 121, 15 }, { 152, 153 }, { 156, 15 }, { 160, 87 }, { 163, 164 } }) },
+	{ NonTerm::expr, map<int, int>({ { 3, 13 }, { 4, 14 }, { 5, 15 }, { 7, 87 }, { 9, 87 }, { 10, 15 }, { 20, 22 }, { 23, 22 }, { 28, 19 }, { 30, 19 }, { 32, 19 }, { 36, 37 }, { 38, 39 }, { 40, 41 }, { 43, 15 }, { 53, 19 }, { 58, 87 }, { 70, 87 }, { 73, 87 }, { 75, 87 }, { 77, 87 }, { 82, 88 }, { 83, 89 }, { 84, 92 }, { 85, 90 }, { 86, 91 }, { 101, 131 }, { 102, 132 }, { 103, 133 }, { 104, 134 }, { 105, 135 }, { 106, 136 }, { 107, 137 }, { 108, 138 }, { 109, 139 }, { 110, 140 }, { 111, 141 }, { 112, 142 }, { 113, 143 }, { 114, 144 }, { 115, 145 }, { 116, 146 }, { 117, 147 }, { 118, 148 }, { 119, 149 }, { 120, 150 }, { 121, 15 }, { 152, 153 }, { 156, 15 }, { 160, 87 }, { 163, 164 } }) },
 	{ NonTerm::data, map<int, int>({ { 168, 170 }, { 176, 177 } }) },
 	{ NonTerm::insdata, map<int, int>({ { 169, 173 }, { 172, 174 } }) }
 };
@@ -252,9 +252,8 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		auto t1 = s.top(); s.pop();
 		popd(s, 3);
 		auto t2 = s.top(); s.pop();
-		popd(s);
-		auto lineNo = s.top()->getLineNo(); popd(s);
-		return new tNoVars(29, lineNo, t1, t2);
+		popd(s, 2);
+		return new tNoVars(29, -1, t1, t2);
 	}
 	case 22: { //stmt->do stmt while ( expr ) ;
 		popd(s, 5);
@@ -265,7 +264,10 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		return new tNoVars(30, -1, t1, t2);
 	}
 	case 23: { //stmt->__rawins { data }
-
+		popd(s, 3);
+		auto t = s.top(); s.pop();
+		popd(s, 4);
+		return new tNoVars(31, -1, t);
 	}
 	case 32: { //vdecl->id
 		popd(s);
@@ -455,10 +457,14 @@ int Parser::action(int s, Op::TokenType t) {
 	auto m = Action.find(s)->second;
 	auto it = m->find(t);
 	if (it == m->end())
-		throw(ErrDesignApp(("Parser::action("s + to_string(s) + ", "s + Op::Ch::ToString(t)).c_str()));//TODO
+		throw(ErrDesignApp("Parser::action("s + to_string(s) + ", "s + Op::Ch::ToString(t)));
 	return it->second;
 }
 
 int Parser::gotostat(int s, Op::NonTerm t) {
-	return Goto.find(t)->second.find(s)->second;
+	const auto& i = Goto.find(t)->second;
+	const auto& it = i.find(s);
+	if (it == i.end())
+		throw(ErrDesignApp("Parser::gotostat("s + to_string(s) + ", "s + to_string((int)t)));
+	return it->second;
 }

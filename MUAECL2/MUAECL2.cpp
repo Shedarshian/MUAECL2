@@ -20,11 +20,15 @@ int main(int argc, char* argv[])
 		Tokenizer tokenizer(in);
 		Parser parser(tokenizer, true);
 		tRoot* tree = parser.analyse();
+		parser.TypeCheck();
 		RawEclGenerator raw_ecl_generator(tree->Output());
 		raw_ecl_generator.generate(cout);
 	}
 	catch (ExceptionWithLineNo &e) {
 		cerr << e.lineNo << " " << e.what() << endl;
+	}
+	catch (ErrDesignApp &e) {
+		cerr << e.what() << endl;
 	}
 	Parser::clear();
     return 0;

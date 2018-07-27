@@ -10,7 +10,7 @@ using TT = Op::TokenType;
 using BT = Op::mType;
 
 const unordered_set<char> Op::Ch::OperatorChar = { '+', '-', '*', '/', '%', '&', '|', '!', '^', '=', '>', '<', '.', ';', ':', '(', ')', '{', '}', ',', '[', ']' };
-const map<TokenType, string> Op::Ch::OperatorToString = { { TT::Plus, "+" }, { TT::Minus, "-" }, { TT::Times, "*" }, { TT::Divide, "/" }, { TT::Mod, "%" }, { TT::EqualTo, "==" }, { TT::NotEqual, "!=" }, { TT::Less, "<" }, { TT::LessEqual, "<=" }, { TT::Greater, ">" }, { TT::GreaterEqual, ">=" }, { TT::Not, "!" }, { TT::LogicalOr, "||" }, { TT::LogicalAnd, "&&" }, { TT::BitOr, "|" }, { TT::BitAnd, "&" }, { TT::BitXor, "^" }, { TT::Negative, "(-)" }, { TT::Deref, "(*)" }, { TT::Address, "(&)" }, { TT::Dot, "." }, { TT::And, "and" }, { TT::Or, "or" }, { TT::Equal, "=" }, { TT::PlusEqual, "+=" }, { TT::MinusEqual, "-=" }, { TT::TimesEqual, "*=" }, { TT::DividesEqual, "/=" }, { TT::ModEqual, "%=" }, { TT::LogicalOrEqual, "||=" }, { TT::LogicalAndEqual, "&&=" }, { TT::BitOrEqual, "|=" }, { TT::BitAndEqual, "&=" }, { TT::BitXorEqual, "^=" }, { TT::If, "if" }, { TT::Else, "else" }, { TT::For, "for" }, { TT::While, "while" }, { TT::Break, "break" }, { TT::Continue, "continue" }, { TT::Goto, "goto" }, { TT::Sub, "sub" }, { TT::Do, "do" }, { TT::Thread, "thread" }, { TT:Rawins, "__rawins" }, { TT::Semicolon, ";" }, { TT::Colon, ":" }, { TT::Bra, "(" }, { TT::Ket, ")" }, { TT::MidBra, "[" }, { TT::MidKet, "]" }, { TT::BigBra, "{" }, { TT::BigKet, "}" }, { TT::Comma, "," } };
+const map<Op::TokenType, string> Op::Ch::OperatorToString = { { TT::Plus, "+" }, { TT::Minus, "-" }, { TT::Times, "*" }, { TT::Divide, "/" }, { TT::Mod, "%" }, { TT::EqualTo, "==" }, { TT::NotEqual, "!=" }, { TT::Less, "<" }, { TT::LessEqual, "<=" }, { TT::Greater, ">" }, { TT::GreaterEqual, ">=" }, { TT::Not, "!" }, { TT::LogicalOr, "||" }, { TT::LogicalAnd, "&&" }, { TT::BitOr, "|" }, { TT::BitAnd, "&" }, { TT::BitXor, "^" }, { TT::Negative, "(-)" }, { TT::Deref, "(*)" }, { TT::Address, "(&)" }, { TT::Dot, "." }, { TT::And, "and" }, { TT::Or, "or" }, { TT::Equal, "=" }, { TT::PlusEqual, "+=" }, { TT::MinusEqual, "-=" }, { TT::TimesEqual, "*=" }, { TT::DividesEqual, "/=" }, { TT::ModEqual, "%=" }, { TT::LogicalOrEqual, "||=" }, { TT::LogicalAndEqual, "&&=" }, { TT::BitOrEqual, "|=" }, { TT::BitAndEqual, "&=" }, { TT::BitXorEqual, "^=" }, { TT::If, "if" }, { TT::Else, "else" }, { TT::For, "for" }, { TT::While, "while" }, { TT::Break, "break" }, { TT::Continue, "continue" }, { TT::Goto, "goto" }, { TT::Sub, "sub" }, { TT::Do, "do" }, { TT::Thread, "thread" }, { TT::Rawins, "__rawins" }, { TT::Semicolon, ";" }, { TT::Colon, ":" }, { TT::Bra, "(" }, { TT::Ket, ")" }, { TT::MidBra, "[" }, { TT::MidKet, "]" }, { TT::BigBra, "{" }, { TT::BigKet, "}" }, { TT::Comma, "," } };
 const map<string, TokenType> Op::Ch::StringToOperator = Op::swap_map(Op::Ch::OperatorToString);
 const map<string, mType> Op::Ch::StringToType = { { "type_error", BT::type_error }, { "void", BT::Void }, { "int", BT::Int }, { "float", BT::Float }, { "point", BT::Point }, { "string", BT::String }, { "initializer_list", BT::inilist } };
 const map<mType, string> Op::Ch::TypeToString = Op::swap_map(Op::Ch::StringToType);
@@ -20,13 +20,15 @@ TokenType Op::Ch::ToOperator(string s) { return StringToOperator.find(s)->second
 string Op::Ch::ToString(mType op) { return TypeToString.find(op)->second; }
 mType Op::Ch::ToType(string s) { return StringToType.find(s)->second; }
 NonTerm Op::Ch::ToType(int id) {
-	if (id >= 2 && id <= 11) return NonTerm::stmt;
+	if (id >= 2 && id <= 11 || id >= 29 && id <= 31) return NonTerm::stmt;
 	if (id >= 22 && id <= 28) return NonTerm::expr;
 	if (id == 12) return NonTerm::inia;
 	if (id == 14 || id == 15) return NonTerm::inif;
 	if (id == 16 || id == 17) return NonTerm::ini;
 	if (id == 19) return NonTerm::insv;
 	if (id == 20 || id == 21) return NonTerm::exprf;
+	if (id == 32) return NonTerm::data;
+	if (id == 33) return NonTerm::insdata;
 	throw(ErrDesignApp("Op::ToType(int)"));
 }
 

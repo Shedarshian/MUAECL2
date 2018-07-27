@@ -13,10 +13,15 @@ sub A(int a, string b){
 }
 
 sub B(){*/
+	__rawins{
+		{23 0 0 0 0 0 0 60};
+		{23 0 0 0 0 0 0 60};
+	}
 	int d=1:2:3:4;
 	if(d)
 		for(8:10:15:0x20){
 			C(1.:2:3:4);
+			thread C(10);
 			if(0)
 				break;
 			else {
@@ -26,7 +31,9 @@ sub B(){*/
 	*d=(int)1.5;
 	while(1)
 		wait(1000);
-	
+	do
+		wait(1000);
+	while(1);
 }
 
 sub C(float c){
