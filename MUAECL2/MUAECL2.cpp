@@ -13,12 +13,15 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	Parser::initialize();
+	stack<pair<int, int*>> s;
+	for (int i = 0; i < 10; i++)
+		s.emplace(i, new int(i));
 	try {
 		//µ÷ÊÔÖÐ
 		ifstream in(argv[1]);
 		//ifstream in("D:\\A.Ñ§Ï°¡¾Learning¡¿\\A2.Mathematics\\VC\\C++workspace\\MUAECL2\\in.txt");
 		Tokenizer tokenizer(in);
-		Parser parser(tokenizer, true);
+		Parser parser(tokenizer);
 		tRoot* tree = parser.analyse();
 		parser.TypeCheck();
 		RawEclGenerator raw_ecl_generator(tree->Output());
@@ -29,7 +32,7 @@ int main(int argc, char* argv[])
 	}
 	catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
-	}
+	}// */
 	Parser::clear();
     return 0;
 }

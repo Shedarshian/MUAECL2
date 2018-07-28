@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <stack>
 #include <unordered_set>
 #include <algorithm>
 #include <iterator>

@@ -16,8 +16,8 @@ mVType GrammarTree::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 GrammarTree* GrammarTree::typeChange(int rank) { throw(ErrDesignApp("GrammarTree::typeChange")); }
 bool GrammarTree::isLabel() const { return false; }
 
-tState::tState(int state) :_state(state) {}
-int tState::state() const { return _state; }
+/*tState::tState(int state) :_state(state) {}
+int tState::state() const { return _state; }*/
 
 tTerminator::tTerminator(Token* t) :t(t) {}
 tTerminator::~tTerminator() { delete t; }

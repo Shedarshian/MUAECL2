@@ -54,13 +54,13 @@ public:
 };
 
 //为入栈所使用的状态标记
-class tState : public GrammarTree {
+/*class tState : public GrammarTree {
 public:
 	explicit tState(int state);
 	int state() const override;
 private:
 	const int _state;
-};
+};*/
 
 //树叶
 class tTerminator :public GrammarTree {
