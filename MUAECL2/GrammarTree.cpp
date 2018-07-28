@@ -8,7 +8,7 @@ Op::NonTerm GrammarTree::type() const { throw(ErrDesignApp("GrammarTree::type"))
 int GrammarTree::state() const { throw(ErrDesignApp("GrammarTree::state")); }
 void GrammarTree::addTree(GrammarTree* t) { throw(ErrDesignApp("GrammarTree::addTree")); }
 list<GrammarTree*>* GrammarTree::extractdecl(vector<mVar>& v) { return nullptr; }
-void GrammarTree::extractlabel(map<string, GrammarTree*>& labels) const {};
+void GrammarTree::extractlabel(map<string, GrammarTree*>& labels) {}
 Token* GrammarTree::getToken() const { throw(ErrDesignApp("GrammarTree::getToken")); }
 mType GrammarTree::getType() const { throw(ErrDesignApp("GrammarTree::getType")); }
 int GrammarTree::getLineNo() const { throw(ErrDesignApp("GrammarTree::getLineNo")); }
@@ -50,7 +50,6 @@ Op::NonTerm tSubVars::type() const { return Op::NonTerm::subv; }
 
 tDeclVars::tDeclVars(string id, int lineNo) :varsi({ { id, lineNo, nullptr } }), typedecl(mType::type_error) {}
 tDeclVars::tDeclVars(string id, int lineNo, GrammarTree* inif) :varsi({ { id, lineNo, inif } }), typedecl(mType::type_error) {}
-tDeclVars::~tDeclVars() { for (auto i : varsi) delete get<2>(i); }
 Op::NonTerm tDeclVars::type() const { return Op::NonTerm::vdecl; }
 void tDeclVars::addVar(string id, int lineNo) { varsi.emplace_back(id, lineNo, nullptr); }
 void tDeclVars::addVar(string id, int lineNo, GrammarTree* inif) { varsi.emplace_back(id, lineNo, inif); }
@@ -59,14 +58,14 @@ void tDeclVars::setDeclType(mType type) { this->typedecl = type; }
 list<GrammarTree*>* tDeclVars::extractdecl(vector<mVar>& v) {
 	auto l = new list<GrammarTree*>();
 	try {
-		for (auto s : varsi) {
-			auto&[var, lineNo, tree] = s;
-			auto same = accumulate(varsi.begin(), varsi.end(), false,
+		for (auto s = varsi.rbegin(); s != varsi.rend(); s++) {
+			auto&[var, lineNo, tree] = *s;
+			auto same = accumulate(s + 1, varsi.rend(), false,
 				[&str = var](bool b, tuple<string, int, GrammarTree*>& a) {
 				return (get<0>(a) == str) || b; });
 			if (same)
 				throw(ErrVarRedeclared(lineNo, var));
-			v.emplace_back(typedecl, var);
+			v.emplace(v.begin(), typedecl, var);
 			if (tree != nullptr)
 				l->push_back(tree);
 		}
@@ -92,17 +91,31 @@ void tNoVars::changeid(int id) { this->id = id; }
 Op::NonTerm tNoVars::type() const { return Op::Ch::ToType(id); }
 void tNoVars::addTree(GrammarTree* t) { branchs.push_back(t); }
 
+inline void extract_and_expand(GrammarTree*& tree, vector<mVar>& v) {
+	//if tree is a "type vdecl ;", then we need to expand it to "{ stmts }"
+	if (auto l = tree->extractdecl(v); l != nullptr) {
+		delete tree;
+		tree = new tStmts(*l);
+		delete l;
+	}
+}
+
 list<GrammarTree*>* tNoVars::extractdecl(vector<mVar>& v) {
 	if (id == 3) {
-		auto x = branchs[0]->extractdecl(v);
-		delete branchs[0];
-		return x;
+		return branchs[0]->extractdecl(v);
 	}
-	if (id >= 5 && id <= 7 || id == 9)
+	else if (id == 9) {
 		branchs[0]->extractdecl(v);
-	if (id == 18) {
-		branchs[0]->extractdecl(v);
-		branchs[1]->extractdecl(v);
+	}
+	else if (id >= 5 && id <= 7) {
+		extract_and_expand(branchs[0], v);
+	}
+	else if (id == 4) {
+		extract_and_expand(branchs[0], v);
+		extract_and_expand(branchs[1], v);
+	}
+	else if (id == 30) {
+		extract_and_expand(branchs[1], v);
 	}
 	return nullptr;
 }
@@ -141,6 +154,14 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 			branchs[1] = branchs[1]->typeChange(rank);
 		branchs[0]->TypeCheck(sub, subs, whileBlock);
 		break; }
+	case 30: { //stmt->do stmt while ( expr )
+		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
+		if (int rank = mVType::canChangeTo(_type, VTYPE(Int, r)); rank < 0)
+			throw(ErrTypeChangeLoss(branchs[0]->getLineNo(), _type, VTYPE(Int, r)));
+		else
+			branchs[0] = branchs[0]->typeChange(rank);
+		branchs[1]->TypeCheck(sub, subs, whileBlock);
+		break; }
 	case 8: { //stmt->goto id ;
 		auto str = branchs[0]->getToken()->getString();
 		auto ptr = sub->checkLabel(*str);
@@ -161,6 +182,28 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 			throw(ErrBreakWithoutWhile(lineNo, "continue"));
 		branchs.push_back(whileBlock);
 		break;
+	case 29: { //stmt->thread id ( insv ) ;
+		//要访问insv内部
+		auto insv = static_cast<tNoVars*>(branchs[0]);
+		auto name = *branchs[1]->getToken()->getString();
+		//此为函数调用
+		if (auto p = subs->checkSub(name); p != nullptr) {
+			const auto&[returnType, declTypes] = *p;
+			if (insv->branchs.size() != declTypes.size())
+				throw(ErrFuncPara(lineNo, *(branchs[1]->getToken()->getString())));
+			auto it1 = insv->branchs.begin();
+			for (auto it2 = declTypes.begin(); it2 != declTypes.end(); it1++, it2++) {
+				auto insvptr = static_cast<tNoVars*>(*it1);
+				if (int rank = mVType::canChangeTo(insvptr->_type, mVType{ *it2, Op::rvalue, false }); rank < 0)
+					throw(ErrTypeChangeLoss((*it1)->getLineNo(), insvptr->_type, mVType{ *it2, Op::rvalue, false }));
+				else
+					*it1 = insvptr->typeChange(rank);
+			}
+			_type = mVType{ returnType, Op::rvalue, false };
+			break;
+		}
+		throw(ErrFuncNotFound(lineNo, name));
+	}
 	case 12: //inia = vector<expr>
 		throw(ErrDesignApp("GrammarTree::TypeCheck.12"));
 	case 17: //ini->{ inia } inia = vector<expr>
@@ -206,7 +249,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		//要访问insv内部
 		auto insv = static_cast<tNoVars*>(branchs[0]);
 		auto name = *branchs[1]->getToken()->getString();
-		//此为函数调用
+		//此为函数调用,same as thread
 		if (auto p = subs->checkSub(name); p != nullptr) {
 			const auto&[returnType, declTypes] = *p;
 			if (insv->branchs.size() != declTypes.size())
@@ -262,7 +305,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	return _type;
 }
 
-void tNoVars::extractlabel(map<string, GrammarTree*>& labels) const {
+void tNoVars::extractlabel(map<string, GrammarTree*>& labels) {
 	if (id == 4) {
 		branchs[0]->extractlabel(labels);
 		branchs[1]->extractlabel(labels);
@@ -575,25 +618,29 @@ mVType tLabel::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	// TODO: Implement tLabel::TypeCheck.
 	return mVType();
 }
-void tLabel::extractlabel(map<string, GrammarTree*>& l) const {
+void tLabel::extractlabel(map<string, GrammarTree*>& l) {
 	l.emplace(name, this);
 }
 bool tLabel::isLabel() const { return true; }
 string tLabel::getName() const { return this->name; }
 
+tStmts::tStmts(list<GrammarTree*>& branchs) :branchs(move(branchs)) {}
 tStmts::~tStmts() { for (auto i : branchs) delete i; }
 Op::NonTerm tStmts::type() const { return Op::NonTerm::stmts; }
 //void tStmts::insertlabel(string s, int lineNo, GrammarTree* t) { labels.push_back(make_tuple(s, lineNo, t)); }
 void tStmts::addTree(GrammarTree* t) { branchs.push_back(t); }
 
 list<GrammarTree*>* tStmts::extractdecl(vector<mVar>& v) {
-	for (auto it = branchs.begin(); it != branchs.end(); ++it) {
-		auto t = (*it)->extractdecl(v);
-		if (t != nullptr)
+	for (auto it = branchs.begin(); it != branchs.end();) {
+		if (auto t = (*it)->extractdecl(v); t != nullptr) {
 			move(t->begin(), t->end(), inserter(branchs, it));
-		delete *it;
-		branchs.erase(it);
-		delete t;
+			delete *it;
+			it = branchs.erase(it);
+			delete t;
+		}
+		else {
+			++it;
+		}
 	}
 	return nullptr;
 }
@@ -604,7 +651,7 @@ mVType tStmts::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	return mVType();
 }
 
-void tStmts::extractlabel(map<string, GrammarTree*>& l) const {
+void tStmts::extractlabel(map<string, GrammarTree*>& l) {
 	/*for (auto p : labels) {
 		auto&[label, lineNo, tree] = p;
 		auto x = l.insert(make_pair(label, tree));

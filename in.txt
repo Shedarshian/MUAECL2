@@ -12,7 +12,7 @@ sub A(int a, string b){
 	goto biaoqian;
 }
 
-sub B(){*/
+sub B(){
 	__rawins{
 		{23 0 0 0 0 0 0 60};
 		{23 0 0 0 0 0 0 60};
@@ -37,6 +37,10 @@ sub B(){*/
 }
 
 sub C(float c){
-	c=0;
+	c=0;*/
+	if(a==1){
+		int i=0,j=1;
+		return();
+	}
 }
 // vim:ft=c:

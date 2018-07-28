@@ -34,7 +34,7 @@ void popd(stack<_Ty, _Container> &s, int n = 1) {
 	}
 }
 
-Parser::Parser(Tokenizer &tokenizer, bool debug) :tokenizer(tokenizer), saveTree(nullptr), debug(debug) {}
+Parser::Parser(Tokenizer &tokenizer, const bool debug) :tokenizer(tokenizer), saveTree(nullptr), debug(debug) {}
 
 Parser::~Parser() {
 	while (!s.empty()) {
@@ -282,7 +282,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto t2 = s.top();
 		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
-		auto ta = new tNoVars(26, t1->getLineNo(), t1, tok, t2);
+		auto ta = new tNoVars(2, t1->getLineNo(), new tNoVars(26, t1->getLineNo(), t1, tok, t2));
 		return new tDeclVars(str, lineNo, ta); }
 	case 34: { //vdecl->id , vdecl
 		popd(s);
@@ -302,7 +302,7 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 		popd(s);
 		auto t2 = s.top();
 		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
-		auto ta = new tNoVars(26, t1->getLineNo(), t1, tok, t2);
+		auto ta = new tNoVars(2, t1->getLineNo(), new tNoVars(26, t1->getLineNo(), t1, tok, t2));
 		static_cast<tDeclVars*>(t)->addVar(str, lineNo, ta);
 		return t; }
 	case 29: //inia->expr

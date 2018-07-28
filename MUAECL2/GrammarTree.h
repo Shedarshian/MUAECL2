@@ -41,7 +41,7 @@ public:
 	virtual int state() const;											//return tState::state
 	virtual void addTree(GrammarTree* t);								//add Tree node
 	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);			//return variable declare, use for Subs
-	virtual void extractlabel(map<string, GrammarTree*>& labels) const;	//return labels, use for declare
+	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
 	virtual Token* getToken() const;									//return tTerminator::token
 
 	virtual mType getType() const;
@@ -91,7 +91,6 @@ class tDeclVars :public GrammarTree {
 public:
 	tDeclVars(string id, int lineNo);
 	tDeclVars(string id, int lineNo, GrammarTree* inif);
-	~tDeclVars();
 	Op::NonTerm type() const override;
 	void addVar(string id, int lineNo);
 	void addVar(string id, int lineNo, GrammarTree* inif);
@@ -121,7 +120,7 @@ public:
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	void extractlabel(map<string, GrammarTree*>& labels) const override;
+	void extractlabel(map<string, GrammarTree*>& labels) override;
 	int getLineNo() const override;
 	GrammarTree* typeChange(int rank) override;
 	mVType get_mVType() const;
@@ -151,7 +150,7 @@ public:
 	Op::NonTerm type() const override;
 	// TODO: Finish tLabel.
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	void extractlabel(map<string, GrammarTree*>& l) const override;
+	void extractlabel(map<string, GrammarTree*>& l) override;
 	bool isLabel() const override;
 	string getName() const;
 	void Output(SubOutputContext& sub_ctx) const;
@@ -163,13 +162,15 @@ private:
 //stmts
 class tStmts :public GrammarTree {
 public:
+	tStmts() = default;
+	tStmts(list<GrammarTree*>& branchs);
 	~tStmts();
 	Op::NonTerm type() const override;
 	//void insertlabel(string s, int lineNo, GrammarTree* t);
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	void extractlabel(map<string, GrammarTree*>& l) const override;
+	void extractlabel(map<string, GrammarTree*>& l) override;
 	void Output(SubOutputContext& sub_ctx) const;
 private:
 	//vector<tuple<string, int, GrammarTree*>> labels;
