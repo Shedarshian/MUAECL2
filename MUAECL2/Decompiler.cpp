@@ -343,7 +343,7 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 			it_list_blk_child != blk_seq->list_blk_child.end()
 			&& (*it_list_blk_child)->block_type == Block::BlockType::JmpTarget
 			) {
-			map_blk_target[JmpTargetBlock::CastToMe(it_list_blk_child->get())->id_target] = val_blk_seq;
+			map_blk_target[JmpTargetBlock::CastToMe(it_list_blk_child->get())->id_target] = dynamic_pointer_cast<BlockSeqBlock, Block>(val_blk_seq);
 			blk_seq->list_blk_child.erase(it_list_blk_child);
 		}
 	}

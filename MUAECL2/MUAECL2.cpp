@@ -1,4 +1,4 @@
-// MUAECL2.cpp : 定义控制台应用程序的入口点。
+﻿// MUAECL2.cpp : 定义控制台应用程序的入口点。
 //
 
 #include "stdafx.h"
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 	}
 	catch (DecoderException &e) {
 		char str_offs[1024];
-		_ui64toa(e.GetOffset(), str_offs, 0x10);
+		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
 	catch (ErrDesignApp &e) {
