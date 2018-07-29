@@ -13,6 +13,7 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	Parser::initialize();
+	ReadIns::Read();
 	stack<pair<int, int*>> s;
 	for (int i = 0; i < 10; i++)
 		s.emplace(i, new int(i));

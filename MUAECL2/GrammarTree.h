@@ -9,6 +9,7 @@
 #include <tuple>
 #include <numeric>
 #include <string>
+#include <iostream>
 #include "Misc.h"
 #include "Misc2.h"
 
@@ -44,13 +45,15 @@ public:
 	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
 	virtual Token* getToken() const;									//return tTerminator::token
 
-	virtual mType getType() const;
+	virtual mType getType() const;										//return tTerminator "types" type
 	virtual int getLineNo() const;
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 	//依据rank值对Token*操作
 	virtual GrammarTree* typeChange(int rank);
 	virtual bool isLabel() const;
+protected:
+	static constexpr bool debug = true;
 };
 
 //为入栈所使用的状态标记
@@ -68,10 +71,11 @@ public:
 	explicit tTerminator(Token* t);
 	~tTerminator();
 	Token* getToken() const override;
+	mType getType() const override;
 	GrammarTree* typeChange(int rank) override;
 	int getLineNo() const override;
 private:
-	Token * t;
+	Token* t;
 };
 
 //subv

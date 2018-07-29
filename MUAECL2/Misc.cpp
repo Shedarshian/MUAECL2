@@ -74,41 +74,41 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 	}
 	for (auto tt : { Op::Negative, Op::Not }) {
 		//int = int, id+0
-		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(type_error, r), VTYPE(Int, r), (int)tt));
+		t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
 		//float = float, id+OFFSET
-		t.emplace(tt, make_tuple(VTYPE(Float, r), VTYPE(type_error, r), VTYPE(Float, r), (int)tt + OFFSET));
+		t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Float, r), VTYPE(Float, r), (int)tt + OFFSET));
 		//point = point, id+OFFSET*2
-		t.emplace(tt, make_tuple(VTYPE(Point, r), VTYPE(type_error, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
+		t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Point, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
 	}
 	//int = void l, id+0
-	t.emplace(Op::Deref, make_tuple(VTYPE(Int, r), VTYPE(type_error, r), VTYPE(Void, l), (int)Op::Deref));
+	t.emplace(Op::Deref, make_tuple(VTYPE(type_error, r), VTYPE(Int, r), VTYPE(Void, l), (int)Op::Deref));
 	//address, no
 	//midbra, no
 	//dot, TODO
 	for (auto tt : { Op::Equal, Op::PlusEqual, Op::MinusEqual }) {
 		//int = int, id+0
-		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Void, r), (int)tt));
+		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)tt));
 		//float = float, id+OFFSET
-		t.emplace(tt, make_tuple(VTYPE(Float, l), VTYPE(Float, r), VTYPE(Void, r), (int)tt + OFFSET));
+		t.emplace(tt, make_tuple(VTYPE(Float, l), VTYPE(Float, r), VTYPE(Float, l), (int)tt + OFFSET));
 		//point = point, id+2*OFFSET
-		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Point, r), VTYPE(Void, r), (int)tt + OFFSET * 2));
+		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Point, r), VTYPE(Point, l), (int)tt + OFFSET * 2));
 		//string = string, id+3*OFFSET
-		t.emplace(tt, make_tuple(VTYPE(String, l), VTYPE(String, r), VTYPE(Void, r), (int)tt + OFFSET * 3));
+		t.emplace(tt, make_tuple(VTYPE(String, l), VTYPE(String, r), VTYPE(String, l), (int)tt + OFFSET * 3));
 		//point = inilist, id+4*OFFSET, 是否需要特殊检查？
 		if (tt == Op::Equal)
-			t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(inilist, r), VTYPE(Void, r), (int)tt + OFFSET * 4));
+			t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(inilist, r), VTYPE(inilist, l), (int)tt + OFFSET * 4));
 	}
 	for (auto tt : { Op::TimesEqual, Op::DividesEqual }) {
 		//int = int, id+0
-		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Void, r), (int)tt));
+		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)tt));
 		//float = float, id+OFFSET
-		t.emplace(tt, make_tuple(VTYPE(Float, l), VTYPE(Float, r), VTYPE(Void, r), (int)tt + OFFSET));
+		t.emplace(tt, make_tuple(VTYPE(Float, l), VTYPE(Float, r), VTYPE(Float, l), (int)tt + OFFSET));
 		//point = float, id+2*OFFSET
-		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Float, r), VTYPE(Void, r), (int)tt + OFFSET * 2));
+		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Float, r), VTYPE(Point, l), (int)tt + OFFSET * 2));
 	}
 	for (auto tt : { Op::ModEqual, Op::LogicalOrEqual, Op::LogicalAndEqual, Op::BitOrEqual, Op::BitAndEqual, Op::BitXorEqual }) {
 		//int & int = int, id+0
-		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Void, r), (int)tt));
+		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)tt));
 	}
 	return t;
 }
@@ -117,10 +117,18 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> Op::mVType::typeCh
 int Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	int rank = 0;
 	//左值到右值转换
-	if (typ.valuetype == typto.valuetype || (typ.valuetype == Op::lvalue && (rank += LTOR)))
+	if (typ.valuetype == typto.valuetype || (typ.valuetype == Op::lvalue && (rank += LTOR))) {
 		//整数到浮点转换
 		if (typ.type == typto.type || (typ.type == Op::mType::Int && typto.type == Op::mType::Float && (rank += ITOF)))
 			return rank;
+		//void l到任意转换
+		if (typ == VTYPE(Void, l)) {
+			if ((int)typto.type >= (int)Op::mType::Int && (int)typto.type <= (int)Op::mType::String) {
+				rank += ((int)typto.type - 1) * VTOOTHER;
+				return rank;
+			}
+		}
+	}
 	return -1;
 }
 
@@ -196,7 +204,8 @@ void ReadIns::Read() {
 		}
 		//切换mode
 		else if (buffer[0] == '#') {
-			mode = string(buffer).substr(1, mode.rfind('#') - 1);
+			mode = buffer;
+			mode = mode.substr(1, mode.rfind('#') - 1);
 		}
 		//读取ins
 		else if (mode == "ins") {

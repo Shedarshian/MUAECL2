@@ -64,7 +64,7 @@ namespace Op {
 		/// only compare type and value type
 		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
 		/// used as rank for type changing
-		enum { LTOR = 1, ITOF = 5 };
+		enum { LTOR = 1, ITOF = 5, VTOOTHER = 25 };
 		/// saves : operator->left operand + right operand + return type + operator reload ID
 		static const multimap<TokenType, tuple<mVType, mVType, mVType, int>> typeChange;
 		/// <summary>implicit type change, return ranks</summary>

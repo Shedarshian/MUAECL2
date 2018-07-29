@@ -161,6 +161,7 @@ tRoot* Parser::analyse() {
 			}
 		}
 		saveTree = static_cast<tRoot*>(get<0>(Template::pop<1>(s)));
+		if constexpr (debug)clog << "Parsing end\n" << endl;
 		return saveTree;
 	}
 	catch (...) {
@@ -182,6 +183,7 @@ void Parser::TypeCheck() {
 			Template::pop<0>(s);
 		}
 		delete saveTree;
+		saveTree = nullptr;
 		throw;
 	}
 }
@@ -271,7 +273,7 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 	case 33: { //vdecl->id = inif
 		auto[t1, tok, t2] = pop<1, 1, 1>(s);
 		auto str = t1->getToken()->getId(); auto lineNo = t1->getToken()->getlineNo();
-		auto ta = new tNoVars(2, t2->getLineNo(), new tNoVars(26, t2->getLineNo(), t2, tok, t1));
+		auto ta = new tNoVars(2, t2->getLineNo(), new tNoVars(26, t2->getLineNo(), t2, tok, new tNoVars(22, t1->getLineNo(), t1)));
 		return new tDeclVars(str, lineNo, ta); }
 	case 34: { //vdecl->id , vdecl
 		auto[id, vdecl] = pop<1, 0, 1>(s);
@@ -282,7 +284,7 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 	case 35: { //vdecl->id = inif , vdecl
 		auto[id, tok, inif, vdecl] = pop<1, 1, 1, 0, 1>(s);
 		auto str = id->getToken()->getId(); auto lineNo = id->getToken()->getlineNo();
-		auto ta = new tNoVars(2, inif->getLineNo(), new tNoVars(26, inif->getLineNo(), inif, tok, id));
+		auto ta = new tNoVars(2, inif->getLineNo(), new tNoVars(26, inif->getLineNo(), inif, tok, new tNoVars(22, id->getLineNo(), id)));
 		static_cast<tDeclVars*>(vdecl)->addVar(str, lineNo, ta);
 		return vdecl; }
 	case 29: //inia->expr
@@ -377,7 +379,7 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 		auto[t1, t2, l] = pop<1, 0, 1, 1>(s);
 		//´æ½áÎ²ÓÒÀ¨ºÅµÄÐÐºÅ
 		auto lineNo = l->getLineNo(); delete l;
-		return new tNoVars(id - (63 - 24), lineNo, t1, t2); }
+		return new tNoVars(id - (63 - 24), lineNo, t2, t1); }
 	case 68: { //expr->( type ) expr
 		auto[type, t] = pop<0, 1, 0, 1>(s);
 		return new tNoVars(28, t->getLineNo(), t, type); }
