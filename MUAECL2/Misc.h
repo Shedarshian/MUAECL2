@@ -152,8 +152,9 @@ public:
 
 class ReadIns {
 public:
-	enum class NumType { Anything, Int, Float, String };
+	enum class NumType { Anything, Int, Float, String, Call };
 	static map<string, pair<int, vector<NumType>>> ins;			//ins表
+	static map<pair<int, vector<NumType>>, pair<int, int>> insDeltaStackptr;//直接访问堆栈的ins对堆栈指针的影响，值的first为pop数，second为push数。
 	static map<string, pair<int, vector<NumType>>> mode;		//mode表
 	static map<string, pair<int, NumType>> globalVariable;		//全局变量表
 	static map<string, int> constint;							//符号常量表
@@ -162,6 +163,8 @@ public:
 	static set<string> defaultList;								//default.ecl中的线程名表
 
 	//读取ins.ini与default.ini
+	// TODO: Fill insDeltaStackptr.
+	// TODO: Support NumType::Call.
 	static void Read();
 };
 

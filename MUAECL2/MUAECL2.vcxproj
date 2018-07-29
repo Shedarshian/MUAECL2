@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -151,6 +151,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Decompiler.h" />
+    <ClInclude Include="RawEclDecoder.h" />
     <ClInclude Include="GrammarTree.h" />
     <ClInclude Include="Misc.h" />
     <ClInclude Include="Misc2.h" />
@@ -162,6 +164,8 @@
     <ClInclude Include="Tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Decompiler.cpp" />
+    <ClCompile Include="RawEclDecoder.cpp" />
     <ClCompile Include="GrammarTree.cpp" />
     <ClCompile Include="GrammarTreeOutput.cpp" />
     <ClCompile Include="Misc.cpp" />

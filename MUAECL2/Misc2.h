@@ -14,9 +14,9 @@ struct SubSerializationContext;
 struct Parameter abstract {
 	virtual ~Parameter() {};
 	virtual Parameter* Duplicate() const = 0;
-	virtual bool is_float() const = 0;
-	virtual bool is_ref_param() const = 0;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const = 0;
+	virtual bool isFloat() const = 0;
+	virtual bool isRefParam() const = 0;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const = 0;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const = 0;
 	//输出等等？
 };
@@ -26,10 +26,10 @@ struct Parameter_int : public Parameter {
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_int(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 	int val;
 };
 struct Parameter_float : public Parameter {
@@ -37,50 +37,50 @@ struct Parameter_float : public Parameter {
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_float(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 	float val;
 };
 //变量，保证在sub的variables里有
 struct Parameter_variable : public Parameter {
-	explicit Parameter_variable(uint32_t id_var, bool isFloat) :isFloat(isFloat), id_var(id_var) {};
+	explicit Parameter_variable(uint32_t id_var, bool is_float) :is_float(is_float), id_var(id_var) {};
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_variable(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
-	bool isFloat;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+	bool is_float;
 	uint32_t id_var;
 };
 //堆栈量
 struct Parameter_stack : public Parameter {
-	Parameter_stack(int32_t id, bool isFloat) :isFloat(isFloat), id(id) {};
+	Parameter_stack(int32_t ref_id, bool is_float) :is_float(is_float), ref_id(ref_id) {};
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_stack(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
-	bool isFloat;
-	int32_t id;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+	bool is_float;
+	int32_t ref_id; //-x的整数（负）
 };
 //环境变量
 struct Parameter_env : public Parameter {
-	explicit Parameter_env(int id, bool isFloat) :isFloat(isFloat), id(id) {};
+	explicit Parameter_env(int env_id, bool is_float) :is_float(is_float), env_id(env_id) {};
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_env(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
-	bool isFloat;
-	int id; //99xx的整数（正）
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+	bool is_float;
+	uint32_t env_id; //99xx的整数（正）
 };
 //跳转的字节数
 struct Parameter_jmp : public Parameter {
@@ -88,10 +88,10 @@ struct Parameter_jmp : public Parameter {
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_jmp(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 	uint32_t id_target;
 };
 //字符串
@@ -100,10 +100,10 @@ struct Parameter_string : public Parameter {
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_string(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 	string str;
 };
 //调用的参数
@@ -115,17 +115,17 @@ struct Parameter_call : public Parameter {
 	/// </param>
 	/// <param name="isFromFloat">Whether the actual parameter (aka the object pointed to by <c>param</c>) is a floating point value.</param>
 	/// <param name="isToFloat">Whether the formal parameter is a floating point value.</param>
-	explicit Parameter_call(shared_ptr<Parameter>& param, bool isFromFloat, bool isToFloat) :param(param), isFromFloat(isFromFloat), isToFloat(isToFloat) {}
+	explicit Parameter_call(const shared_ptr<Parameter>& param, bool is_from_float, bool is_to_float) :param(param), is_from_float(is_from_float), is_to_float(is_to_float) {}
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_call(*this);
 	}
-	virtual bool is_float() const;
-	virtual bool is_ref_param() const;
-	virtual int32_t get_ref_id(const SubSerializationContext& sub_ctx) const;
-	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const;
+	virtual bool isFloat() const override;
+	virtual bool isRefParam() const override;
+	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 	shared_ptr<Parameter> param;
-	bool isFromFloat;
-	bool isToFloat;
+	bool is_from_float;
+	bool is_to_float;
 };
 
 struct fSubDataEntry abstract {

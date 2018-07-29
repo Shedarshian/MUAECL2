@@ -95,7 +95,7 @@ struct SubOutputContext final {
 		for (const Parameter* val_param : paras) {
 			const Parameter_stack* param_stack = dynamic_cast<const Parameter_stack*>(val_param);
 			if (param_stack) {
-				int32_t ref_id = param_stack->id;
+				int32_t ref_id = param_stack->ref_id;
 				if (cur_stack_ref_count > ((uint32_t)-INT32_MIN) - 1) throw(exception("Too large stack reference ID."));
 				if (ref_id < 0 && -ref_id == cur_stack_ref_count + 1) ++cur_stack_ref_count;
 			}
@@ -161,10 +161,10 @@ public:
 	virtual ~DiscardedRvalueResult() = default;
 	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {}
 	virtual shared_ptr<StackRvalueResult> ToStackRvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		throw(ErrDesignApp("DiscardedRvalueResult::ToStackRvalueResult : discarded results cannot be recovered."));
+		throw(ErrDesignApp("DiscardedRvalueResult::ToStackRvalueResult : discarded results cannot be recovered"));
 	}
 	virtual vector<shared_ptr<Parameter>> ToParameters(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, int32_t stackptr_rel_parameval) const override {
-		throw(ErrDesignApp("DiscardedRvalueResult::ToParameters : discarded results cannot be recovered."));
+		throw(ErrDesignApp("DiscardedRvalueResult::ToParameters : discarded results cannot be recovered"));
 	}
 	virtual shared_ptr<RvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
 		return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, this->type));
@@ -254,11 +254,11 @@ public:
 			break;
 		case Op::mType::Int:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (params[0]->is_float()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		case Op::mType::Float:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (!params[0]->is_float()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
@@ -360,7 +360,7 @@ public:
 	virtual ~DiscardedLvalueResult() = default;
 	virtual void DiscardResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {}
 	virtual shared_ptr<StackAddrLvalueResult> ToStackAddrLvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
-		throw(ErrDesignApp("DiscardedLvalueResult::ToStackAddrLvalueResult : discarded results cannot be recovered."));
+		throw(ErrDesignApp("DiscardedLvalueResult::ToStackAddrLvalueResult : discarded results cannot be recovered"));
 	}
 	virtual shared_ptr<LvalueResult> Duplicate(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx) override {
 		return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->type));
@@ -369,7 +369,7 @@ public:
 		return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, this->type));
 	}
 	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
-		throw(ErrDesignApp("DiscardedLvalueResult::Assign : discarded results cannot be recovered."));
+		throw(ErrDesignApp("DiscardedLvalueResult::Assign : discarded results cannot be recovered"));
 	}
 };
 
@@ -450,11 +450,11 @@ public:
 			break;
 		case Op::mType::Int:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		case Op::mType::Float:
 			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
-			if (!params[0]->is_float()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
@@ -672,38 +672,40 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	}
 	case 6:// stmt->while ( expr ) stmt
 	{
-		uint32_t id_target_loop = sub_ctx.count_target++;
+		uint32_t id_target_expr = sub_ctx.count_target++;
+		uint32_t id_target_stmt = sub_ctx.count_target++;
 		uint32_t id_target_after = sub_ctx.count_target++;
-		sub_ctx.insert_dummyins_target(id_target_loop);
-		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
-		sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, -1);
+		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_expr), new Parameter_int(0) }, 0);
+		sub_ctx.insert_dummyins_target(id_target_stmt);
 		sub_ctx.stack_id_target_break.push(id_target_after);
-		sub_ctx.stack_id_target_continue.push(id_target_loop);
+		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[0], sub_ctx);
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
-		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_loop), new Parameter_int(0) }, 0);
+		sub_ctx.insert_dummyins_target(id_target_expr);
+		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
+		sub_ctx.insert_ins(stmt_ctx, 14, { new Parameter_jmp(id_target_stmt), new Parameter_int(0) }, -1);
 		sub_ctx.insert_dummyins_target(id_target_after);
 		break;
 	}
 	case 7:// stmt->for ( exprf ) stmt
 	{
 		uint32_t id_var_loopvar = sub_ctx.count_var++;
-		uint32_t id_target_loop = sub_ctx.count_target++;
-		uint32_t id_target_cont = sub_ctx.count_target++;
+		uint32_t id_target_expr = sub_ctx.count_target++;
+		uint32_t id_target_stmt = sub_ctx.count_target++;
 		uint32_t id_target_after = sub_ctx.count_target++;
 		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_loopvar, false) }, -1);
-		sub_ctx.insert_dummyins_target(id_target_loop);
+		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_expr), new Parameter_int(0) }, 0);
+		sub_ctx.insert_dummyins_target(id_target_stmt);
 		sub_ctx.stack_id_target_break.push(id_target_after);
-		sub_ctx.stack_id_target_continue.push(id_target_cont);
+		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[0], sub_ctx);
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
-		sub_ctx.insert_dummyins_target(id_target_cont);
+		sub_ctx.insert_dummyins_target(id_target_expr);
 		sub_ctx.insert_ins(stmt_ctx, 78, { new Parameter_variable(id_var_loopvar, false) }, 1);
-		sub_ctx.insert_ins(stmt_ctx, 14, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, -1);
-		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_loop), new Parameter_int(0) }, 0);
+		sub_ctx.insert_ins(stmt_ctx, 14, { new Parameter_jmp(id_target_stmt), new Parameter_int(0) }, -1);
 		sub_ctx.insert_dummyins_target(id_target_after);
 		break;
 	}
@@ -1118,19 +1120,27 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
 				// If the parameter type specified for this instruction slot is "anything", succeed immediately.
 				if (vec_numtype->size() == 1 && vec_numtype->at(0) == ReadIns::NumType::Anything) break;
-				vector<ReadIns::NumType>::const_iterator it_numtype = vec_numtype->cbegin();
 				vector<shared_ptr<RvalueResult>>::const_reverse_iterator it_result;
-				for (it_result = vec_result.crbegin(); it_result != vec_result.crend(); ++it_result) {
+				vector<ReadIns::NumType>::const_iterator it_numtype;
+				for (
+					it_result = vec_result.crbegin(), it_numtype = vec_numtype->cbegin();
+					it_result != vec_result.crend() && it_numtype != vec_numtype->cend();
+					++it_result) {
+					if (*it_numtype == ReadIns::NumType::Call) {
+						if ((*it_result)->GetType() == Op::mType::Int
+							|| (*it_result)->GetType() == Op::mType::Float)
+							continue;
+						else
+							break;
+					}
 					// For each rvalue result returned by the exprf outputting function:
-					// If there's no more formal parameter type slots, fail immediately (for this instruction slot).
-					if (it_numtype == vec_numtype->cend()) break;
 					bool is_res_match = false;
 					switch ((*it_result)->GetType()) {
 					case Op::mType::Int:
-						is_res_match = *it_numtype == ReadIns::NumType::Int;
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Int;
 						break;
 					case Op::mType::Float:
-						is_res_match = *it_numtype == ReadIns::NumType::Float;
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
 						break;
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : unknown actual parameter type"));
@@ -1139,17 +1149,48 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					if (!is_res_match) break;
 				}
 				// If the parameters match, succeed immediately.
-				if (it_result == vec_result.crend() && it_numtype == vec_numtype->cend()) break;
+				if (it_result == vec_result.crend()) {
+					if (it_numtype == vec_numtype->cend()) break;
+					if (*it_numtype == ReadIns::NumType::Call) break;
+				}
 			}
 			if (it_ins != range_ins_id.second) {
 				if (!is_root_expr || !discard_result) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : only an expression that's a root expression and has its result discarded may be an instruction call expression"));
 				// If an instruction slot matches the call:
+				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
+				vector<ReadIns::NumType>::const_iterator it_numtype;
 				// From left to right.
 				vector<shared_ptr<Parameter>> vec_param;
+				it_numtype = vec_numtype->cbegin();
 				for_each(vec_result.crbegin(), vec_result.crend(),
-					[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
+					[&sub_ctx, &stmt_ctx, &vec_numtype, &it_numtype, &vec_param](const shared_ptr<RvalueResult>& val_result) {
+						if (it_numtype == vec_numtype->cend()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : it_numtype == vec_numtype->cend()"));
 						vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
-						vec_param.insert(vec_param.cend(), vec_param_result.cbegin(), vec_param_result.cend());
+						switch (*it_numtype) {
+						case ReadIns::NumType::Int: {
+							if (vec_param_result.size() != 1 || vec_param_result.at(0)->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_param_result.size() != 1 || vec_param_result.at(0)->isFloat()"));
+							vec_param.reserve(vec_param.size() + vec_param_result.size());
+							vec_param.insert(vec_param.cend(), vec_param_result.cbegin(), vec_param_result.cend());
+							++it_numtype;
+							break;
+						}
+						case ReadIns::NumType::Float: {
+							if (vec_param_result.size() != 1 || !vec_param_result.at(0)->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_param_result.size() != 1 || !vec_param_result.at(0)->isFloat()"));
+							vec_param.reserve(vec_param.size() + vec_param_result.size());
+							vec_param.insert(vec_param.cend(), vec_param_result.cbegin(), vec_param_result.cend());
+							++it_numtype;
+							break;
+						}
+						case ReadIns::NumType::Call: {
+							vec_param.reserve(vec_param.size() + vec_param_result.size());
+							for (const shared_ptr<Parameter>& val_param_result : vec_param_result) {
+								vec_param.push_back(shared_ptr<Parameter>(new Parameter_call(val_param_result, val_param_result->isFloat(), val_param_result->isFloat())));
+							}
+							break;
+						}
+						default:
+							throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : unknown numtype"));
+						}
 					}
 				);
 				vector<Parameter*> paras;
