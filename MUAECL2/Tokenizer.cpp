@@ -167,10 +167,8 @@ Token* Tokenizer::getToken(){
 				else
 					s = '0';
 			}
-			s += nextChar;
 			bool dotted = false;
 			while (1) {
-				nextChar = ReadStream.get();
 				if (nextChar >= '0' && nextChar <= '9')
 					s += nextChar;
 				else if (nextChar == '.')
@@ -186,6 +184,7 @@ Token* Tokenizer::getToken(){
 				}
 				else
 					break;
+				nextChar = ReadStream.get();
 			}
 			if (!dotted)
 				return new Token_Literal(lineNo, stoi(s));

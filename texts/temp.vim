@@ -3,12 +3,14 @@ syn region  Comment start="//" end="\n"
 syn match   to "->" conceal cchar=→
 syn keyword Id id
 syn match   empty "\\e" conceal cchar=ε
-syn keyword Key as_op type if elsif else while for goto
+syn keyword Key as_op type if elsif else while for goto sub break continue do thread
 syn match   dot "\\\." conceal cchar=·
 syn match   step "I\d\+"
 syn match   step "S\d\+"
 syn region  conc matchgroup=new start="%" end="%" concealends
-
+syn match   no "\\%" conceal cchar=%
+syn match   no "\\-" conceal cchar=-
+syn match   no "\\>" conceal cchar=>
 
 
 syn match   arrow1 "---"
