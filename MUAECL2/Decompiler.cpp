@@ -21,7 +21,31 @@ namespace DecompilerInternal {
 	};
 
 	struct SubDecompileContext final {
-		shared_ptr<Block> blk_root;
+		shared_ptr<BlockSeqBlock> blk_root;
+	};
+
+	struct SubDecompilePhaseCContext final {
+		/// <summary>A map from pointers to second-level sequence blocks to their iterators in <c>blk_root->list_blk_child</c>.</summary>
+		// TODO: Remove?
+		unordered_map<const BlockSeqBlock*, list<shared_ptr<Block>>::const_iterator> map_it_blk_seq;
+		/// <summary>A set containing ancestors of the block currently being iterated.</summary>
+		unordered_set<const BlockSeqBlock*> set_ance;
+	};
+
+	struct SubDecompilePhaseCYield final {
+		enum YieldType {
+			Undefined,
+			/// <summary>An exit from the subroutine is found within this iteration.</summary>
+			ExitSubFound,
+			/// <summary>A loop is found within this iteration.</summary>
+			LoopFound
+		};
+		YieldType yield_type = Undefined;
+		/// <summary>
+		/// The chain of blocks from the current block to the block that caused the yield.
+		/// Only available for <c>YieldType::LoopFound</c>.
+		/// </summary>
+		shared_ptr<list<shared_ptr<BlockSeqBlock>>> chain;
 	};
 
 	/// <summary>A <c>Block</c> represents a body of code, possibly containing control structures.</summary>
@@ -56,7 +80,9 @@ namespace DecompilerInternal {
 			/// <summary>Return to caller.</summary>
 			Return,
 			/// <summary>Exit thread.</summary>
-			ExitThread
+			ExitThread,
+			/// <summary>Multiple exits may exist. <c>vec_exit[1]</c>: The next block.</summary>
+			MultiExit
 		};
 		struct exit_def_t {
 			shared_ptr<BlockSeqBlock> blk_exit;
@@ -131,6 +157,8 @@ namespace DecompilerInternal {
 		virtual bool IsConstTime() const override { return true; }
 	};
 }
+
+const set<uint16_t> Decompiler::set_ins_controlflow = { 1, 10, 12, 13, 14 };
 
 Decompiler::Decompiler() {}
 
@@ -218,7 +246,7 @@ void Decompiler::DecompileRoot(const DecodedRoot& root, ostream& stream) {
 void Decompiler::DecompileSub(RootDecompileContext& root_ctx, const DecodedSub& sub, map<uint32_t, string>& map_var_name, ostream& stream_stmts) {
 	SubDecompileContext sub_ctx;
 	BlockSeqBlock* blk_root = new BlockSeqBlock();
-	sub_ctx.blk_root = shared_ptr<Block>(blk_root);
+	sub_ctx.blk_root = shared_ptr<BlockSeqBlock>(blk_root);
 	for (const shared_ptr<DecodedSubDataEntry>& val_data_entry : sub.data_entries) {
 		switch (val_data_entry->data_entry_type) {
 		case DecodedSubDataEntry::DataEntryType::JmpTarget: {
@@ -238,22 +266,22 @@ void Decompiler::DecompileSub(RootDecompileContext& root_ctx, const DecodedSub& 
 			throw(ErrDesignApp("Decompiler::DecompileSub : unknown data entry type"));
 		}
 	}
-	this->DecompileSubPhaseA(root_ctx, sub_ctx, blk_root);
-	for (const shared_ptr<Block>& blk_child : blk_root->list_blk_child)
-		if (!blk_child->IsConstTime()) throw(ErrDesignApp("Decompiler::DecompileSub : a child block of blk_root isn't constant-time after phase A"));
-	this->DecompileSubPhaseB(root_ctx, sub_ctx, blk_root);
-	// TODO: Implement DecompileSub.
+	this->DecompileSubPhaseA(root_ctx, sub_ctx);
+	this->DecompileSubPhaseB(root_ctx, sub_ctx);
+	this->DecompileSubPostPhaseBCheck(root_ctx, sub_ctx);
+	this->DecompileSubPhaseC(root_ctx, sub_ctx);
+	// TODO: Implement Decompiler::DecompileSub.
 }
 
-void Decompiler::DecompileSubPhaseA(RootDecompileContext& root_ctx, SubDecompileContext& sub_ctx, BlockSeqBlock* blk_root) {
+void Decompiler::DecompileSubPhaseA(RootDecompileContext& root_ctx, SubDecompileContext& sub_ctx) {
 	uint32_t time_prev = 0;
 	list<shared_ptr<Block>>::iterator it_list_blk_child_splitbegin;
 	list<shared_ptr<Block>>::iterator it_list_blk_child;
-	it_list_blk_child_splitbegin = blk_root->list_blk_child.begin();
+	it_list_blk_child_splitbegin = sub_ctx.blk_root->list_blk_child.begin();
 	bool should_split_next = false;
 	for (
-		it_list_blk_child = blk_root->list_blk_child.begin();
-		it_list_blk_child != blk_root->list_blk_child.end();
+		it_list_blk_child = sub_ctx.blk_root->list_blk_child.begin();
+		it_list_blk_child != sub_ctx.blk_root->list_blk_child.end();
 		) {
 		bool should_split = false;
 		if (should_split_next)
@@ -270,7 +298,6 @@ void Decompiler::DecompileSubPhaseA(RootDecompileContext& root_ctx, SubDecompile
 			if (blk->ins->time != time_prev)
 				should_split = true;
 			time_prev = blk->ins->time;
-			static const set<uint16_t> set_ins_controlflow = { 1, 10, 12, 13, 14 };
 			if (set_ins_controlflow.count(blk->ins->id))
 				should_split_next = true;
 			break;
@@ -281,26 +308,26 @@ void Decompiler::DecompileSubPhaseA(RootDecompileContext& root_ctx, SubDecompile
 		if (should_split) {
 			list<shared_ptr<Block>>::iterator it_list_blk_child_splitend = it_list_blk_child++;
 			BlockSeqBlock* blk_new = new BlockSeqBlock();
-			blk_new->list_blk_child.splice(blk_new->list_blk_child.end(), blk_root->list_blk_child, it_list_blk_child_splitbegin, it_list_blk_child_splitend);
-			blk_root->list_blk_child.insert(it_list_blk_child_splitend, shared_ptr<Block>(blk_new));
+			blk_new->list_blk_child.splice(blk_new->list_blk_child.end(), sub_ctx.blk_root->list_blk_child, it_list_blk_child_splitbegin, it_list_blk_child_splitend);
+			sub_ctx.blk_root->list_blk_child.insert(it_list_blk_child_splitend, shared_ptr<Block>(blk_new));
 			it_list_blk_child_splitbegin = it_list_blk_child_splitend;
 		} else {
 			++it_list_blk_child;
 		}
 	}
-	if (it_list_blk_child_splitbegin != blk_root->list_blk_child.end()) {
-		list<shared_ptr<Block>>::iterator it_list_blk_child_splitend = blk_root->list_blk_child.end();
+	if (it_list_blk_child_splitbegin != sub_ctx.blk_root->list_blk_child.end()) {
+		list<shared_ptr<Block>>::iterator it_list_blk_child_splitend = sub_ctx.blk_root->list_blk_child.end();
 		BlockSeqBlock* blk_new = new BlockSeqBlock();
-		blk_new->list_blk_child.splice(blk_new->list_blk_child.end(), blk_root->list_blk_child, it_list_blk_child_splitbegin, it_list_blk_child_splitend);
-		blk_root->list_blk_child.insert(it_list_blk_child_splitend, shared_ptr<Block>(blk_new));
+		blk_new->list_blk_child.splice(blk_new->list_blk_child.end(), sub_ctx.blk_root->list_blk_child, it_list_blk_child_splitbegin, it_list_blk_child_splitend);
+		sub_ctx.blk_root->list_blk_child.insert(it_list_blk_child_splitend, shared_ptr<Block>(blk_new));
 		it_list_blk_child_splitbegin = it_list_blk_child_splitend;
 	}
 }
 
-void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& root_ctx, DecompilerInternal::SubDecompileContext& sub_ctx, DecompilerInternal::BlockSeqBlock* blk_root) {
+void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& root_ctx, DecompilerInternal::SubDecompileContext& sub_ctx) {
 	map<uint32_t, shared_ptr<BlockSeqBlock>> map_blk_target;
 	// Eliminate jump targets and fill map_blk_target.
-	for (const shared_ptr<Block>& val_blk_seq : blk_root->list_blk_child) {
+	for (const shared_ptr<Block>& val_blk_seq : sub_ctx.blk_root->list_blk_child) {
 		BlockSeqBlock* blk_seq = BlockSeqBlock::CastToMe(val_blk_seq.get());
 		// Search for a jump target in the sequence.
 		list<shared_ptr<Block>>::iterator it_list_blk_child;
@@ -321,12 +348,12 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 		}
 	}
 	// Set exit types and exits of the BlockSeqBlock blocks.
-	for (list<shared_ptr<Block>>::iterator it_list_blk_seq = blk_root->list_blk_child.begin();
-		it_list_blk_seq != blk_root->list_blk_child.end();
+	for (list<shared_ptr<Block>>::iterator it_list_blk_seq = sub_ctx.blk_root->list_blk_child.begin();
+		it_list_blk_seq != sub_ctx.blk_root->list_blk_child.end();
 		++it_list_blk_seq) {
 		BlockSeqBlock* blk_seq = BlockSeqBlock::CastToMe(it_list_blk_seq->get());
 		shared_ptr<BlockSeqBlock> blk_seq_fallthrough;
-		if (it_list_blk_seq != blk_root->list_blk_child.end()) {
+		if (it_list_blk_seq != sub_ctx.blk_root->list_blk_child.end()) {
 			list<shared_ptr<Block>>::const_iterator it_list_blk_seq_next = it_list_blk_seq;
 			++it_list_blk_seq_next;
 			if ((*it_list_blk_seq_next)->block_type != Block::BlockType::BlockSeq) throw(ErrDesignApp("Decompiler::DecompileSubPhaseB : a child block of blk_root isn't BlockSeqBlock after phase A"));
@@ -346,7 +373,6 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 			&& (*rit_list_blk_child)->block_type == Block::BlockType::SingleIns
 			) {
 			SingleInsBlock* blk_child = SingleInsBlock::CastToMe(rit_list_blk_child->get());
-			static const set<uint16_t> set_ins_controlflow = { 1, 10, 12, 13, 14 };
 			// If the last instruction is a control flow instruction, set the exit type and exit correspondingly and delete the last instruction.
 			if (set_ins_controlflow.count(blk_child->ins->id)) {
 				if (blk_child->ins->is_rawins) throw(ErrDesignApp("Decompiler::DecompileSubPhaseB : one of the control flow instructions is raw"));
@@ -364,7 +390,6 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params->at(0).get())->id_target;
 					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params->at(1).get())->val;
 					blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(map_blk_target.at(id_target), time_exit_target);
-					// TODO: Time parameter of the instruction.
 					break;
 				}
 				case 13: {
@@ -372,7 +397,6 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params->at(0).get())->id_target;
 					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params->at(1).get())->val;
 					blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(map_blk_target.at(id_target), time_exit_target);
-					// TODO: Time parameter of the instruction.
 					blk_seq->vec_exit[1] = BlockSeqBlock::exit_def_t(blk_seq_fallthrough, blk_seq->GetEnterTime());
 					break;
 				}
@@ -381,7 +405,6 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params->at(0).get())->id_target;
 					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params->at(1).get())->val;
 					blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(map_blk_target.at(id_target), time_exit_target);
-					// TODO: Time parameter of the instruction.
 					blk_seq->vec_exit[1] = BlockSeqBlock::exit_def_t(blk_seq_fallthrough, blk_seq->GetEnterTime());
 					break;
 				}
@@ -399,5 +422,224 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 			blk_seq->exit_type = BlockSeqBlock::ExitType::Fallthrough;
 			blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(blk_seq_fallthrough, blk_seq->GetEnterTime());
 		}
+	}
+}
+
+void Decompiler::DecompileSubPostPhaseBCheck(DecompilerInternal::RootDecompileContext& root_ctx, DecompilerInternal::SubDecompileContext& sub_ctx) {
+	for (const shared_ptr<Block>& blk_seq : sub_ctx.blk_root->list_blk_child) {
+		if (!blk_seq->IsConstTime()) throw(ErrDesignApp("Decompiler::DecompileSubPostPhaseBCheck : !blk_seq->IsConstTime()"));
+		if (blk_seq->block_type != Block::BlockType::BlockSeq) throw(ErrDesignApp("Decompiler::DecompileSubPostPhaseBCheck : blk_seq->block_type != Block::BlockType::BlockSeq"));
+		for (const shared_ptr<Block>& blk_child : BlockSeqBlock::CastToMe(blk_seq.get())->list_blk_child) {
+			if (blk_child->block_type != Block::BlockType::SingleIns) throw(ErrDesignApp("Decompiler::DecompileSubPostPhaseBCheck : blk_child->block_type != Block::BlockType::SingleIns"));
+			if (set_ins_controlflow.count(SingleInsBlock::CastToMe(blk_child.get())->ins->id)) throw(ErrDesignApp("Decompiler::DecompileSubPostPhaseBCheck : set_ins_controlflow.count(SingleInsBlock::CastToMe(blk_child.get())->ins->id)"));
+		}
+	}
+}
+
+void Decompiler::DecompileSubPhaseC(DecompilerInternal::RootDecompileContext& root_ctx, DecompilerInternal::SubDecompileContext& sub_ctx) {
+	SubDecompilePhaseCContext sub_c_ctx;
+	for (
+		list<shared_ptr<Block>>::const_iterator it_blk_seq = sub_ctx.blk_root->list_blk_child.cbegin();
+		it_blk_seq != sub_ctx.blk_root->list_blk_child.cend();
+		++it_blk_seq
+		) {
+		BlockSeqBlock* blk_seq = BlockSeqBlock::CastToMe(it_blk_seq->get());
+		sub_c_ctx.map_it_blk_seq[blk_seq] = it_blk_seq;
+	}
+	if (!sub_ctx.blk_root->list_blk_child.empty()) {
+		shared_ptr<BlockSeqBlock> blk_seq_first = dynamic_pointer_cast<BlockSeqBlock, Block>(sub_ctx.blk_root->list_blk_child.front());
+		if (!blk_seq_first) throw(ErrDesignApp("Decompiler::DecompileSubPhaseC : cannot cast p to type \"BlockSeqBlock*\""));
+		sub_c_ctx.set_ance.reserve(sub_ctx.blk_root->list_blk_child.size());
+		SubDecompilePhaseCYield yield_child;
+		this->DecompileSubPhaseCIterate(root_ctx, sub_ctx, sub_c_ctx, yield_child, blk_seq_first);
+		// TODO: Process yield.
+		// TODO: Process unreachable blocks.
+	}
+}
+
+void Decompiler::DecompileSubPhaseCIterate(
+	RootDecompileContext& root_ctx,
+	SubDecompileContext& sub_ctx,
+	SubDecompilePhaseCContext& sub_c_ctx,
+	SubDecompilePhaseCYield& yield,
+	shared_ptr<BlockSeqBlock> blk
+) {
+	switch (blk->exit_type) {
+	case BlockSeqBlock::ExitType::Fallthrough:
+		[[fallthrough]];
+	case BlockSeqBlock::ExitType::Goto: {
+		if (sub_c_ctx.set_ance.count(blk->vec_exit.at(0).blk_exit.get())) {
+			// Yield reason: loop found.
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = shared_ptr<list<shared_ptr<BlockSeqBlock>>>(new list<shared_ptr<BlockSeqBlock>>());
+			yield.chain->push_front(blk);
+			return;
+		}
+		do {
+			SubDecompilePhaseCYield yield_child;
+			sub_c_ctx.set_ance.insert(blk.get());
+			this->DecompileSubPhaseCIterate(root_ctx, sub_ctx, sub_c_ctx, yield_child, blk->vec_exit.at(0).blk_exit);
+			sub_c_ctx.set_ance.erase(blk.get());
+			if (!this->DecompileSubPhaseCProcessYield(root_ctx, sub_ctx, sub_c_ctx, yield, blk, yield_child)) break;
+		} while (true);
+		return;
+	}
+										// TODO: MultiExit.
+	case BlockSeqBlock::ExitType::GotoIfZero: {
+		if (sub_c_ctx.set_ance.count(blk->vec_exit.at(0).blk_exit.get()) || sub_c_ctx.set_ance.count(blk->vec_exit.at(1).blk_exit.get())) {
+			// Yield reason: loop found.
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = shared_ptr<list<shared_ptr<BlockSeqBlock>>>(new list<shared_ptr<BlockSeqBlock>>());
+			yield.chain->push_front(blk);
+			return;
+		}
+		SubDecompilePhaseCYield yield_0;
+		SubDecompilePhaseCYield yield_1;
+		do {
+			SubDecompilePhaseCYield yield_child;
+			sub_c_ctx.set_ance.insert(blk.get());
+			this->DecompileSubPhaseCIterate(root_ctx, sub_ctx, sub_c_ctx, yield_child, blk->vec_exit.at(0).blk_exit);
+			sub_c_ctx.set_ance.erase(blk.get());
+			if (!this->DecompileSubPhaseCProcessYield(root_ctx, sub_ctx, sub_c_ctx, yield_0, blk, yield_child)) break;
+		} while (true);
+		do {
+			SubDecompilePhaseCYield yield_child;
+			sub_c_ctx.set_ance.insert(blk.get());
+			this->DecompileSubPhaseCIterate(root_ctx, sub_ctx, sub_c_ctx, yield_child, blk->vec_exit.at(0).blk_exit);
+			sub_c_ctx.set_ance.erase(blk.get());
+			if (!this->DecompileSubPhaseCProcessYield(root_ctx, sub_ctx, sub_c_ctx, yield_1, blk, yield_child)) break;
+		} while (true);
+		if (yield_0.yield_type == SubDecompilePhaseCYield::YieldType::ExitSubFound && yield_1.yield_type == SubDecompilePhaseCYield::YieldType::ExitSubFound) {
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::ExitSubFound;
+			return;
+		} else if (yield_0.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound && yield_1.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound) {
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = yield_0.chain->size() < yield_1.chain->size() ? yield_0.chain : yield_1.chain;
+			return;
+		} else if (yield_0.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound || yield_1.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound) {
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = yield_0.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound ? yield_0.chain : yield_1.chain;
+			return;
+		} else {
+			throw(ErrDesignApp("Decompiler::DecompileSubPhaseCIterate : unknown yield type combination"));
+		}
+		break;
+	}
+	case BlockSeqBlock::ExitType::GotoIfNonZero: {
+		if (sub_c_ctx.set_ance.count(blk->vec_exit.at(0).blk_exit.get()) || sub_c_ctx.set_ance.count(blk->vec_exit.at(1).blk_exit.get())) {
+			// Yield reason: loop found.
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = shared_ptr<list<shared_ptr<BlockSeqBlock>>>(new list<shared_ptr<BlockSeqBlock>>());
+			yield.chain->push_front(blk);
+			return;
+		}
+		SubDecompilePhaseCYield yield_0;
+		SubDecompilePhaseCYield yield_1;
+		do {
+			SubDecompilePhaseCYield yield_child;
+			sub_c_ctx.set_ance.insert(blk.get());
+			this->DecompileSubPhaseCIterate(root_ctx, sub_ctx, sub_c_ctx, yield_child, blk->vec_exit.at(0).blk_exit);
+			sub_c_ctx.set_ance.erase(blk.get());
+			if (!this->DecompileSubPhaseCProcessYield(root_ctx, sub_ctx, sub_c_ctx, yield_0, blk, yield_child)) break;
+		} while (true);
+		do {
+			SubDecompilePhaseCYield yield_child;
+			sub_c_ctx.set_ance.insert(blk.get());
+			this->DecompileSubPhaseCIterate(root_ctx, sub_ctx, sub_c_ctx, yield_child, blk->vec_exit.at(0).blk_exit);
+			sub_c_ctx.set_ance.erase(blk.get());
+			if (!this->DecompileSubPhaseCProcessYield(root_ctx, sub_ctx, sub_c_ctx, yield_1, blk, yield_child)) break;
+		} while (true);
+		if (yield_0.yield_type == SubDecompilePhaseCYield::YieldType::ExitSubFound && yield_1.yield_type == SubDecompilePhaseCYield::YieldType::ExitSubFound) {
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::ExitSubFound;
+			return;
+		} else if (yield_0.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound && yield_1.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound) {
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = yield_0.chain->size() < yield_1.chain->size() ? yield_0.chain : yield_1.chain;
+			return;
+		} else if (yield_0.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound || yield_1.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound) {
+			yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+			yield.chain = yield_0.yield_type == SubDecompilePhaseCYield::YieldType::LoopFound ? yield_0.chain : yield_1.chain;
+			return;
+		} else {
+			throw(ErrDesignApp("Decompiler::DecompileSubPhaseCIterate : unknown yield type combination"));
+		}
+		break;
+	}
+	case BlockSeqBlock::ExitType::Return: {
+		// Yield reason: subroutine exit found.
+		yield.yield_type = SubDecompilePhaseCYield::YieldType::ExitSubFound;
+		return;
+	}
+	case BlockSeqBlock::ExitType::ExitThread: {
+		// Yield reason: subroutine exit found.
+		yield.yield_type = SubDecompilePhaseCYield::YieldType::ExitSubFound;
+		return;
+	}
+	default:
+		throw(ErrDesignApp("Decompiler::DecompileSubPhaseCIterate : unknown exit type"));
+	}
+}
+
+bool Decompiler::DecompileSubPhaseCProcessYield(
+	DecompilerInternal::RootDecompileContext& root_ctx,
+	DecompilerInternal::SubDecompileContext& sub_ctx,
+	DecompilerInternal::SubDecompilePhaseCContext& sub_c_ctx,
+	DecompilerInternal::SubDecompilePhaseCYield& yield,
+	shared_ptr<DecompilerInternal::BlockSeqBlock> blk,
+	DecompilerInternal::SubDecompilePhaseCYield& yield_child
+) {
+	switch (yield_child.yield_type) {
+	case SubDecompilePhaseCYield::YieldType::ExitSubFound: {
+		yield.yield_type = SubDecompilePhaseCYield::YieldType::ExitSubFound;
+		yield.chain = yield_child.chain;
+		yield.chain->push_front(blk);
+		return false;
+	}
+	case SubDecompilePhaseCYield::YieldType::LoopFound: {
+		/// <summary>The last block in the chain.</summary>
+		shared_ptr<BlockSeqBlock> blk_end = yield_child.chain->back();
+		switch (blk_end->exit_type) {
+		case BlockSeqBlock::ExitType::Fallthrough:
+			[[fallthrough]];
+		case BlockSeqBlock::ExitType::Goto:
+			if (blk_end->vec_exit.at(0).blk_exit == blk) {
+				// TODO: Process loop found yield.
+			} else {
+				yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+				yield.chain = yield_child.chain;
+				yield.chain->push_front(blk);
+				return false;
+			}
+			break;
+			// TODO: MultiExit.
+		case BlockSeqBlock::ExitType::GotoIfZero: {
+			if (blk_end->vec_exit.at(0).blk_exit == blk || blk_end->vec_exit.at(1).blk_exit == blk) {
+				// TODO: Process loop found yield.
+			} else {
+				yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+				yield.chain = yield_child.chain;
+				yield.chain->push_front(blk);
+				return false;
+			}
+			break;
+		}
+		case BlockSeqBlock::ExitType::GotoIfNonZero: {
+			if (blk_end->vec_exit.at(0).blk_exit == blk || blk_end->vec_exit.at(1).blk_exit == blk) {
+				// TODO: Process loop found yield.
+			} else {
+				yield.yield_type = SubDecompilePhaseCYield::YieldType::LoopFound;
+				yield.chain = yield_child.chain;
+				yield.chain->push_front(blk);
+				return false;
+			}
+			break;
+		}
+		default:
+			throw(ErrDesignApp("Decompiler::DecompileSubPhaseCProcessYield : unknown exit type"));
+		}
+		break;
+	}
+	default:
+		throw(ErrDesignApp("Decompiler::DecompileSubPhaseCProcessYield : unknown yield type"));
 	}
 }
