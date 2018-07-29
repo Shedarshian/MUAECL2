@@ -9,6 +9,7 @@
 #include <tuple>
 #include <numeric>
 #include <string>
+#include <iostream>
 #include "Misc.h"
 #include "Misc2.h"
 
@@ -36,53 +37,46 @@ class RvalueResult;
 class GrammarTree {
 public:
 	virtual ~GrammarTree() = default;
-	virtual void changeid(int id);									//changes tNoVars::id
-	virtual Op::NonTerm type() const;										//return nonterminator's type
-	virtual int state();											//return tState::state
-	virtual void addTree(GrammarTree* t);							//add Tree node
-	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);		//return variable declare, use for Subs
+	virtual void changeid(int id);										//changes tNoVars::id
+	virtual Op::NonTerm type() const;									//return nonterminator's type
+	virtual int state() const;											//return tState::state
+	virtual void addTree(GrammarTree* t);								//add Tree node
+	virtual list<GrammarTree*>* extractdecl(vector<mVar>& v);			//return variable declare, use for Subs
 	virtual void extractlabel(map<string, GrammarTree*>& labels);	//return labels, use for declare
-	virtual Token* getToken();										//return tTerminator::token
+	virtual Token* getToken() const;									//return tTerminator::token
 
-	virtual mType getType();
-	virtual int getLineNo();
+	virtual mType getType() const;										//return tTerminator "types" type
+	virtual int getLineNo() const;
 	//类型检查，包括类型匹配，检查变量声明，处理break，计算goto标签等
 	virtual mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 	//依据rank值对Token*操作
 	virtual GrammarTree* typeChange(int rank);
 	virtual bool isLabel() const;
+protected:
+	static constexpr bool debug = true;
 };
 
 //为入栈所使用的状态标记
-class tState : public GrammarTree {
+/*class tState : public GrammarTree {
 public:
 	explicit tState(int state);
-	int state() override;
+	int state() const override;
 private:
 	const int _state;
-};
+};*/
 
 //树叶
 class tTerminator :public GrammarTree {
 public:
 	explicit tTerminator(Token* t);
 	~tTerminator();
-	Token* getToken() override;
+	Token* getToken() const override;
+	mType getType() const override;
 	GrammarTree* typeChange(int rank) override;
-	int getLineNo() override;
+	int getLineNo() const override;
 private:
-	Token * t;
+	Token* t;
 };
-
-//types
-/*class tType : public GrammarTree {
-public:
-	explicit tType(mType t);
-	Op::NonTerm type() override;
-	mType getType() override;
-private:
-	mType t;
-};*/
 
 //subv
 class tSubVars :public GrammarTree {
@@ -101,7 +95,6 @@ class tDeclVars :public GrammarTree {
 public:
 	tDeclVars(string id, int lineNo);
 	tDeclVars(string id, int lineNo, GrammarTree* inif);
-	~tDeclVars();
 	Op::NonTerm type() const override;
 	void addVar(string id, int lineNo);
 	void addVar(string id, int lineNo, GrammarTree* inif);
@@ -132,7 +125,7 @@ public:
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& labels) override;
-	int getLineNo() override;
+	int getLineNo() const override;
 	GrammarTree* typeChange(int rank) override;
 	mVType get_mVType() const;
 	void OutputStmt(SubOutputContext& sub_ctx) const;
@@ -157,30 +150,34 @@ private:
 class tLabel final :public GrammarTree {
 public:
 	~tLabel();
-	tLabel(const string& name);
+	tLabel(const string& name, int lineNo);
 	Op::NonTerm type() const override;
 	// TODO: Finish tLabel.
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
+	void extractlabel(map<string, GrammarTree*>& l) override;
 	bool isLabel() const override;
 	string getName() const;
 	void Output(SubOutputContext& sub_ctx) const;
 private:
 	string name;
+	int lineNo;
 };
 
-//stmts，因为要储存map<label, stmt*>
+//stmts
 class tStmts :public GrammarTree {
 public:
+	tStmts() = default;
+	tStmts(list<GrammarTree*>& branchs);
 	~tStmts();
 	Op::NonTerm type() const override;
-	void insertlabel(string s, int lineNo, GrammarTree* t);
+	//void insertlabel(string s, int lineNo, GrammarTree* t);
 	void addTree(GrammarTree* t) override;
 	list<GrammarTree*>* extractdecl(vector<mVar>& v) override;
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	void extractlabel(map<string, GrammarTree*>& l) override;
 	void Output(SubOutputContext& sub_ctx) const;
 private:
-	vector<tuple<string, int, GrammarTree*>> labels;
+	//vector<tuple<string, int, GrammarTree*>> labels;
 	list<GrammarTree*> branchs;		//全部逆序储存，因为产生式都是右递归的
 };
 
@@ -193,7 +190,7 @@ public:
 	void insertDecl(map<string, pair<mType, vector<mType>>>& m) const;
 	mVar* checkVar(const string& id);
 	GrammarTree* checkLabel(const string& id);
-	int getLineNo() override;
+	int getLineNo() const override;
 	string getDecoratedName() const;
 	fSub Output(const tRoot& root) const;
 private:

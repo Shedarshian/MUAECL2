@@ -7,36 +7,87 @@ using namespace std;
 using Term = Op::TokenType;
 using NonTerm = Op::NonTerm;
 
+namespace Template {
+	template<typename T, int last>
+	struct recursiveClass {
+		typedef T saveClass;
+		enum { saveNum = last };
+	};
+	template<typename T, int ...last>
+	struct unfoldClass {
+		//typedef unfoldClass<typename T::saveClass, T::saveNum, last...> saveClass;
+		static auto pop(stack<pair<int, GrammarTree*>> &s) { return unfoldClass<typename T::saveClass, T::saveNum, last...>::pop(s); }
+	};
+	template<int first, int ...count>
+	struct unfoldClass<void, first, count...> {
+		static auto pop(stack<pair<int, GrammarTree*>> &s) {
+			//static_assert
+			if constexpr (first) {
+				auto t = s.top().second; s.pop();
+				if constexpr (sizeof...(count) != 0)
+					return tuple_cat(unfoldClass<void, count...>::pop(s), make_tuple(t));
+				else
+					return make_tuple(t);
+			}
+			else {
+				delete s.top().second; s.pop();
+				if constexpr (sizeof...(count) != 0)
+					return unfoldClass<void, count...>::pop(s);
+				else
+					return tuple<>();
+			}
+		}
+	};
+
+	template<int first, int ...count>
+	struct inverseClass {
+		typedef recursiveClass<typename inverseClass<count...>::saveClass, first> saveClass;
+		static auto pop(stack<pair<int, GrammarTree*>> &s) { return unfoldClass<recursiveClass<typename inverseClass<count...>::saveClass, first>>::pop(s); }
+	};
+	template<int first>
+	struct inverseClass<first> {
+		typedef recursiveClass<void, first> saveClass;
+		static auto pop(stack<pair<int, GrammarTree*>> &s) { return unfoldClass<recursiveClass<void, first>>::pop(s); }
+	};
+
+	template<int ...count>
+	static auto pop(stack<pair<int, GrammarTree*>> &s) {
+		return inverseClass<count...>::pop(s);
+	}
+}
+
 map<int, map<Op::TokenType, int>*> Parser::Action;
 
 const map<Op::NonTerm, map<int, int>> Parser::Goto = {
-	{ NonTerm::stmt, map<int, int>({ { 7, 7 },{ 8, 79 },{ 9, 7 },{ 58, 60 },{ 70, 71 },{ 73, 74 },{ 75, 76 },{ 77, 7 },{ 79, 7 } }) },
-	{ NonTerm::stmts, map<int, int>({ { 7, 17 },{ 9, 49 },{ 77, 78 },{ 79, 18 } }) },
-	{ NonTerm::subs, map<int, int>({ { 0, 255 },{ 50, 51 } }) },
+	{ NonTerm::stmt, map<int, int>({ { 7, 7 }, { 9, 7 }, { 58, 60 }, { 70, 71 }, { 73, 74 }, { 75, 76 }, { 77, 7 }, { 160, 161 } }) },
+	{ NonTerm::stmts, map<int, int>({ { 7, 17 }, { 9, 49 }, { 77, 78 } }) },
+	{ NonTerm::subs, map<int, int>({ { 0, 255 }, { 50, 51 } }) },
 	{ NonTerm::subv, map<int, int>({ { 61, 69 }, { 64, 68 } }) },
-	{ NonTerm::vdecl, map<int, int>({ { 2, 12 },{ 54, 55 },{ 59, 48 } }) },
-	{ NonTerm::insv, map<int, int>({ { 10, 46 },{ 43, 45 } }) },
-	{ NonTerm::ini, map<int, int>({ { 28, 29 },{ 30, 31 },{ 32, 33 },{ 53, 21 } }) },
+	{ NonTerm::vdecl, map<int, int>({ { 2, 12 }, { 54, 55 }, { 59, 48 } }) },
+	{ NonTerm::insv, map<int, int>({ { 10, 46 }, { 43, 45 }, { 156, 157 } }) },
+	{ NonTerm::ini, map<int, int>({ { 28, 29 }, { 30, 31 }, { 32, 33 }, { 53, 21 } }) },
 	{ NonTerm::inif, map<int, int>({ { 53, 80 } }) },
-	{ NonTerm::inia, map<int, int>({ { 20, 26 },{ 23, 25 } }) },
-	{ NonTerm::exprf, map<int, int>({ { 5, 16 },{ 10, 42 },{ 43, 42 },{ 121, 122 } }) },
-	{ NonTerm::expr, map<int, int>({ { 3, 13 },{ 4, 14 },{ 5, 15 },{ 7, 87 },{ 8, 87 },{ 9, 87 },{ 10, 15 },{ 20, 22 },{ 23, 22 },{ 28, 19 },{ 30, 19 },{ 32, 19 },{ 36, 37 },{ 38, 39 },{ 40, 41 },{ 43, 15 },{ 53, 19 },{ 58, 87 },{ 70, 87 },{ 77, 87 },{ 82, 88 },{ 83, 89 },{ 84, 92 },{ 85, 90 },{ 86, 91 },{ 101, 131 },{ 102, 132 },{ 103, 133 },{ 104, 134 },{ 105, 135 },{ 106, 136 },{ 107, 137 },{ 108, 138 },{ 109, 139 },{ 110, 140 },{ 111, 141 },{ 112, 142 },{ 113, 143 },{ 114, 144 },{ 115, 145 },{ 116, 146 },{ 117, 147 },{ 118, 148 },{ 119, 149 },{ 120, 150 },{ 121, 15 } }) }
+	{ NonTerm::inia, map<int, int>({ { 20, 26 }, { 23, 25 } }) },
+	{ NonTerm::exprf, map<int, int>({ { 5, 16 }, { 10, 42 }, { 43, 42 }, { 121, 122 }, { 156, 42 } }) },
+	{ NonTerm::expr, map<int, int>({ { 3, 13 }, { 4, 14 }, { 5, 15 }, { 7, 87 }, { 9, 87 }, { 10, 15 }, { 20, 22 }, { 23, 22 }, { 28, 19 }, { 30, 19 }, { 32, 19 }, { 36, 37 }, { 38, 39 }, { 40, 41 }, { 43, 15 }, { 53, 19 }, { 58, 87 }, { 70, 87 }, { 73, 87 }, { 75, 87 }, { 77, 87 }, { 82, 88 }, { 83, 89 }, { 84, 92 }, { 85, 90 }, { 86, 91 }, { 101, 131 }, { 102, 132 }, { 103, 133 }, { 104, 134 }, { 105, 135 }, { 106, 136 }, { 107, 137 }, { 108, 138 }, { 109, 139 }, { 110, 140 }, { 111, 141 }, { 112, 142 }, { 113, 143 }, { 114, 144 }, { 115, 145 }, { 116, 146 }, { 117, 147 }, { 118, 148 }, { 119, 149 }, { 120, 150 }, { 121, 15 }, { 152, 153 }, { 156, 15 }, { 160, 87 }, { 163, 164 } }) },
+	{ NonTerm::data, map<int, int>({ { 168, 170 }, { 176, 177 } }) },
+	{ NonTerm::insdata, map<int, int>({ { 169, 173 }, { 172, 174 } }) }
 };
 
 set<int> Parser::ptr;
 
-template<typename _Ty, typename _Container>
-void popd(stack<_Ty, _Container> &s, int n = 1) {
+/*template<typename T1, typename T2, typename _Container>
+inline void popd(stack<pair<T1, T2*>, _Container> &s, int n = 1) {
 	for (int i = 0; i < n; i++) {
-		delete s.top(); s.pop();
+		delete s.top().second; s.pop();
 	}
-}
+}*/
 
-Parser::Parser(Tokenizer &tokenizer, bool debug) :tokenizer(tokenizer), saveTree(nullptr), debug(debug) {}
+Parser::Parser(Tokenizer &tokenizer) :tokenizer(tokenizer), saveTree(nullptr) {}
 
 Parser::~Parser() {
 	while (!s.empty()) {
-		popd(s);
+		Template::pop<0>(s);
 	}
 	delete saveTree;
 }
@@ -83,10 +134,10 @@ void Parser::clear() {
 
 tRoot* Parser::analyse() {
 	try {
-		s.push(new tState(0));
+		s.push(make_pair(0, nullptr));
 		while (1) {
 			Token* t = tokenizer.peekToken();
-			int n = action(s.top()->state(), t->type());
+			int n = action(s.top().first, t->type());
 			if (n < 0) {
 				//Error
 				throw(ErrParsing(t->getlineNo(), n, t->debug_out()));
@@ -97,29 +148,26 @@ tRoot* Parser::analyse() {
 			}
 			else if (n < 1000) {
 				//移动状态n进栈
-				if (debug) clog << "Token " << t->debug_out() << " Push " << n << " to stack" << endl;
-				s.push(new tTerminator(t));
-				s.push(new tState(n));
+				if constexpr (debug) clog << "Token " << t->debug_out() << " Push " << n << " to stack" << endl;
+				s.push(make_pair(n, new tTerminator(t)));
 				tokenizer.popToken();
 			}
 			else {
 				//按产生式n-1000规约
-				if (debug) clog << "Reading token " << t->debug_out() << " return state " << n - 1000 << endl;
+				if constexpr (debug) clog << "Reading token " << t->debug_out() << " return state " << n - 1000 << endl;
 				auto tree = mergeTree(n - 1000, s);
-				int state = s.top()->state();
-				s.push(tree);
-				s.push(new tState(gotostat(state, tree->type())));
+				int state = s.top().first;
+				s.push(make_pair(gotostat(state, tree->type()), tree));
 			}
 		}
-		popd(s);
-		saveTree = static_cast<tRoot*>(s.top()); s.pop();
-		popd(s);
+		saveTree = static_cast<tRoot*>(get<0>(Template::pop<1>(s)));
+		if constexpr (debug)clog << "Parsing end\n" << endl;
 		return saveTree;
 	}
 	catch (...) {
 		//析构
 		while (!s.empty()) {
-			popd(s);
+			Template::pop<0>(s);
 		}
 		throw;
 	}
@@ -132,150 +180,113 @@ void Parser::TypeCheck() {
 	catch (...) {
 		//析构
 		while (!s.empty()) {
-			popd(s);
+			Template::pop<0>(s);
 		}
 		delete saveTree;
+		saveTree = nullptr;
 		throw;
 	}
 }
 
 //依据产生式id号由stack构造tree
-GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
+GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
+	using namespace Template;
 	switch (id) {
 	case 12: //subs->\e
 		return new tRoot();
 	case 13: { //subs->sub id ( subv ) { stmts } subs
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s, 3);
-		auto stmts = s.top(); s.pop();
-		popd(s, 5);
-		auto subv = s.top(); s.pop();
-		popd(s, 3);
-		auto tok = s.top()->getToken();
-		auto str = tok->getId(); auto lineNo = tok->getlineNo(); popd(s);
-		popd(s, 2);
-		static_cast<tRoot*>(t)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts));
+		auto[tok, subv, stmts, subs] = pop<0, 1, 0, 1, 0, 0, 1, 0, 1>(s);
+		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
+		delete tok;
+		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts));
 		//构造函数中提取所有label与var，存到sub里
-		return t; }
+		return subs; }
 	case 14: //subv->\e
 		return new tSubVars();
 	case 15: { //subv->type id
-		popd(s);
-		auto str = s.top()->getToken()->getId(); popd(s);
-		popd(s);
-		auto typ = s.top()->getToken()->getType(); popd(s);
-		return new tSubVars(typ, str); }
+		auto[type, id] = pop<1, 1>(s);
+		auto t = new tSubVars(type->getToken()->getType(), id->getToken()->getId());
+		delete type, id;
+		return t; }
 	case 16: { //subv->type id, subv
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s, 3);
-		auto tok = s.top()->getToken();
-		auto str = tok->getId(); auto lineNo = tok->getlineNo(); popd(s);
-		popd(s);
-		auto typ = s.top()->getToken()->getType(); popd(s);
-		static_cast<tSubVars*>(t)->emplaceVar(typ, str, lineNo);
-		//查重在此发生
-		return t; }
+		auto[type, id, subv] = pop<1, 1, 0, 1>(s);
+		static_cast<tSubVars*>(subv)->emplaceVar(type->getToken()->getType(), id->getToken()->getId(), id->getToken()->getlineNo());
+		delete type, id;
+		return subv; }
 	case 1: { //stmts->stmt stmts
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s);
-		t->addTree(s.top()); s.pop();
-		return t; }
-	case 2: { //stmts->id : stmt stmts
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s);
-		auto t2 = s.top(); t->addTree(t2); s.pop();
-		popd(s, 3);
-		auto tok = s.top()->getToken();
-		static_cast<tStmts*>(t)->insertlabel(tok->getId(), tok->getlineNo(), t2); popd(s);
-		return t; }
+		auto[stmt, stmts] = pop<1, 1>(s);
+		stmts->addTree(stmt);
+		return stmts; }
 	case 3: //stmts->\e
 		return new tStmts();
 	case 4: { //stmt->expr ;
-		popd(s, 3);
-		auto t = new tNoVars(2, s.top()->getLineNo(), s.top()); s.pop();
-		return t; }
+		auto[expr] = pop<1, 0>(s);
+		return new tNoVars(2, expr->getLineNo(), expr); }
 	case 5: { //stmt->type vdecl ;
-		popd(s, 3);
-		auto t = s.top(); s.pop();
-		popd(s);
-		auto typ = s.top()->getToken()->getType(); popd(s);
-		static_cast<tDeclVars*>(t)->setDeclType(typ);
-		return new tNoVars(3, -1, t); }
+		auto[type, vdecl] = pop<1, 1, 0>(s);
+		static_cast<tDeclVars*>(vdecl)->setDeclType(type->getToken()->getType());
+		delete type;
+		return new tNoVars(3, -1, vdecl); }
 	case 18: { //stmt->if ( expr ) stmt else stmt
-		popd(s);
-		auto t1 = s.top(); s.pop();
-		popd(s, 3);
-		auto t2 = s.top(); s.pop();
-		popd(s, 3);
-		auto t3 = s.top(); s.pop();
-		popd(s, 4);
-		return new tNoVars(4, -1, t1, t2, t3); }
+		auto[expr, stmt1, stmt2] = pop<0, 0, 1, 0, 1, 0, 1>(s);
+		return new tNoVars(4, -1, stmt2, stmt1, expr); }
+	case 6: { //stmt->id :
+		auto[id] = pop<1, 0>(s);
+		auto t = new tLabel(id->getToken()->getId(), id->getToken()->getlineNo());
+		delete id;
+		return t; }
 	case 7: //stmt->if ( expr ) stmt
 		[[fallthrough]];
 	case 8: //stmt->while ( expr ) stmt
 		[[fallthrough]];
 	case 9: { //stmt->for ( exprf ) stmt
-		popd(s);
-		auto t1 = s.top(); s.pop();
-		popd(s, 3);
-		auto t2 = s.top(); s.pop();
-		popd(s, 4);
-		return new tNoVars(id - 2, -1, t1, t2); }
+		auto[expr, stmt] = pop<0, 0, 1, 0, 1>(s);
+		return new tNoVars(id - 2, -1, stmt, expr); }
 	case 10: //stmt->goto id ;
 		//[0]还存指向的label对应的stmt
 		[[fallthrough]];
 	case 11: { //stmt->{ stmts }
-		popd(s, 3);
-		auto t = s.top(); s.pop();
-		popd(s, 2);
+		auto[t] = pop<0, 1, 0>(s);
 		return new tNoVars(id - 2, -1, t); }
 	case 19: //stmt->break ;
 		[[fallthrough]];
 	case 20: { //stmt->continue ;
 		//[0]存指向的for块
-		popd(s, 3);
-		auto lineNo = s.top()->getLineNo(); popd(s);
+		auto[t] = pop<1, 0>(s);
+		auto lineNo = t->getLineNo();
+		delete t;
 		return new tNoVars(id - 9, lineNo); }
+	case 21: { //stmt->thread id ( insv ) ;
+		auto[id, insv] = pop<0, 1, 0, 1, 0, 0>(s);
+		return new tNoVars(29, -1, insv, id); }
+	case 22: { //stmt->do stmt while ( expr ) ;
+		auto[stmt, expr] = pop<0, 1, 0, 0, 1, 0, 0>(s);
+		return new tNoVars(30, -1, expr, stmt); }
+	case 23: { //stmt->__rawins { data }
+		auto[data] = pop<0, 0, 1, 0>(s);
+		return new tNoVars(31, -1, data); }
 	case 32: { //vdecl->id
-		popd(s);
-		auto tok = s.top()->getToken();
-		auto str = tok->getId(); auto lineNo = tok->getlineNo(); s.pop();
+		auto[id] = pop<1>(s);
+		auto str = id->getToken()->getId(); auto lineNo = id->getToken()->getlineNo();
+		delete id;
 		return new tDeclVars(str, lineNo); }
 	case 33: { //vdecl->id = inif
-		popd(s);
-		auto t1 = s.top(); s.pop();
-		popd(s);
-		auto tok = s.top(); s.pop();
-		popd(s);
-		auto t2 = s.top();
-		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
-		auto ta = new tNoVars(26, t1->getLineNo(), t1, tok, t2);
+		auto[t1, tok, t2] = pop<1, 1, 1>(s);
+		auto str = t1->getToken()->getId(); auto lineNo = t1->getToken()->getlineNo();
+		auto ta = new tNoVars(2, t2->getLineNo(), new tNoVars(26, t2->getLineNo(), t2, tok, new tNoVars(22, t1->getLineNo(), t1)));
 		return new tDeclVars(str, lineNo, ta); }
 	case 34: { //vdecl->id , vdecl
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s, 3);
-		auto tok = s.top()->getToken();
-		auto str = tok->getId(); auto lineNo = tok->getlineNo(); s.pop();
-		static_cast<tDeclVars*>(t)->addVar(str, lineNo);
-		return t; }
+		auto[id, vdecl] = pop<1, 0, 1>(s);
+		auto str = id->getToken()->getId(); auto lineNo = id->getToken()->getlineNo();
+		delete id;
+		static_cast<tDeclVars*>(vdecl)->addVar(str, lineNo);
+		return vdecl; }
 	case 35: { //vdecl->id = inif , vdecl
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s, 3);
-		auto t1 = s.top(); s.pop();
-		popd(s);
-		auto tok = s.top(); s.pop();
-		popd(s);
-		auto t2 = s.top();
-		auto str = t2->getToken()->getId(); auto lineNo = t2->getToken()->getlineNo(); s.pop();
-		auto ta = new tNoVars(26, t1->getLineNo(), t1, tok, t2);
-		static_cast<tDeclVars*>(t)->addVar(str, lineNo, ta);
-		return t; }
+		auto[id, tok, inif, vdecl] = pop<1, 1, 1, 0, 1>(s);
+		auto str = id->getToken()->getId(); auto lineNo = id->getToken()->getlineNo();
+		auto ta = new tNoVars(2, inif->getLineNo(), new tNoVars(26, inif->getLineNo(), inif, tok, new tNoVars(22, id->getLineNo(), id)));
+		static_cast<tDeclVars*>(vdecl)->addVar(str, lineNo, ta);
+		return vdecl; }
 	case 29: //inia->expr
 		[[fallthrough]];
 	case 36: //insv->exprf
@@ -283,17 +294,14 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 39: //expr->id
 		[[fallthrough]];
 	case 40: { //expr->num
-		popd(s);
-		auto t = new tNoVars(id - 17, s.top()->getLineNo(), s.top()); s.pop();
-		return t; }
+		auto[t] = pop<1>(s);
+		return new tNoVars(id - 17, t->getLineNo(), t); }
 	case 28: //inia->expr , inia
 		[[fallthrough]];
 	case 37: { //insv->exprf , insv
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s, 3);
-		t->addTree(s.top()); s.pop();
-		return t; }
+		auto[t1, t2] = pop<1, 0, 1>(s);
+		t2->addTree(t1);
+		return t2; }
 	case 38: //insv->\e
 		return new tNoVars(19, -1);
 	case 24: //inif->ini
@@ -301,22 +309,15 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 26: //ini->expr
 		[[fallthrough]];
 	case 30: { //exprf->expr
-		popd(s);
-		auto t = s.top(); s.pop();
+		auto[t] = pop<1>(s);
 		return new tNoVars(id - 10, t->getLineNo(), t); }
 	case 25: //inif->ini:ini:ini:ini
 		[[fallthrough]];
 	case 31: { //exprf->expr:expr:expr:expr
-		GrammarTree* t[4];
-		for (int i = 0; i < 4; i++) {
-			popd(s, i ? 3 : 1);
-			t[i] = s.top(); s.pop();
-		}
-		return new tNoVars(id - 10, t[0]->getLineNo(), t[0], t[1], t[2], t[3]); }
+		auto t = pop<1, 0, 1, 0, 1, 0, 1>(s);
+		return new tNoVars(id - 10, get<3>(t)->getLineNo(), get<3>(t), get<2>(t), get<1>(t), get<0>(t)); }
 	case 27: { //ini->{ inia }
-		popd(s, 3);
-		auto t = s.top(); s.pop();
-		popd(s, 2);
+		auto[t] = pop<0, 1, 0>(s);
 		t->changeid(id - 10);
 		return t; }
 	case 41: //expr->expr || expr
@@ -358,17 +359,10 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 61: //expr->expr . expr
 		[[fallthrough]];
 	case 67: { //expr->expr as_op exprf
-		popd(s);
-		auto t1 = s.top(); s.pop();
-		popd(s);
-		auto tok = s.top(); s.pop();
-		popd(s);
-		auto t2 = s.top(); s.pop();
-		return new tNoVars(26, t1->getLineNo(), t1, tok, t2); }
+		auto[t1, tok, t2] = pop<1, 1, 1>(s);
+		return new tNoVars(26, t1->getLineNo(), t2, tok, t1); }
 	case 62: { //expr->( expr )
-		popd(s, 3);
-		auto t = s.top(); s.pop();
-		popd(s, 2);
+		auto[t] = pop<0, 1, 0>(s);
 		return t; }
 	case 59: //expr->(-) expr
 		[[fallthrough]];
@@ -377,29 +371,30 @@ GrammarTree* Parser::mergeTree(int id, stack<GrammarTree*>& s) {
 	case 64: //expr->(*) expr
 		[[fallthrough]];
 	case 65: { //expr->(&) expr
-		popd(s);
-		auto t1 = s.top(); s.pop();
-		popd(s);
-		auto tok = s.top(); s.pop();
-		return new tNoVars(25, t1->getLineNo(), t1, tok); }
+		auto[tok, t] = pop<1, 1>(s);
+		return new tNoVars(25, t->getLineNo(), t, tok); }
 	case 63: //expr->id ( insv )
 		[[fallthrough]];
 	case 66: { //expr->expr [ expr ]
-		popd(s);
+		auto[t1, t2, l] = pop<1, 0, 1, 1>(s);
 		//存结尾右括号的行号
-		auto lineNo = s.top()->getLineNo();
-		popd(s, 2);
-		auto t1 = s.top(); s.pop();
-		popd(s, 3);
-		auto t2 = s.top(); s.pop();
-		return new tNoVars(id - (63 - 24), lineNo, t1, t2); }
+		auto lineNo = l->getLineNo(); delete l;
+		return new tNoVars(id - (63 - 24), lineNo, t2, t1); }
 	case 68: { //expr->( type ) expr
-		popd(s);
-		auto t = s.top(); s.pop();
-		popd(s, 3);
-		auto t2 = s.top(); s.pop();
-		popd(s, 2);
-		return new tNoVars(28, t->getLineNo(), t, t2); }
+		auto[type, t] = pop<0, 1, 0, 1>(s);
+		return new tNoVars(28, t->getLineNo(), t, type); }
+	case 69://data->\e
+		return new tNoVars(32, -1);
+	case 70: { //data->{ insdata } ; data
+		auto[insdata, data] = pop<0, 1, 0, 0, 1>(s);
+		data->addTree(insdata);
+		return data; }
+	case 71://insdata->\e
+		return new tNoVars(33, -1);
+	case 72: { //insdata->num insdata
+		auto[num, insdata] = pop<1, 1>(s);
+		insdata->addTree(num);
+		return insdata; }
 	default:
 		return nullptr;
 	}
@@ -409,10 +404,14 @@ int Parser::action(int s, Op::TokenType t) {
 	auto m = Action.find(s)->second;
 	auto it = m->find(t);
 	if (it == m->end())
-		throw(ErrDesignApp(("Parser::action("s + to_string(s) + ", "s + Op::Ch::ToString(t)).c_str()));//TODO
+		throw(ErrDesignApp("Parser::action("s + to_string(s) + ", "s + Op::Ch::ToString(t)));
 	return it->second;
 }
 
 int Parser::gotostat(int s, Op::NonTerm t) {
-	return Goto.find(t)->second.find(s)->second;
+	const auto& i = Goto.find(t)->second;
+	const auto& it = i.find(s);
+	if (it == i.end())
+		throw(ErrDesignApp("Parser::gotostat("s + to_string(s) + ", "s + to_string((int)t)));
+	return it->second;
 }

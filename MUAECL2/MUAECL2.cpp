@@ -1,4 +1,4 @@
-// MUAECL2.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+// MUAECL2.cpp : å®šä¹‰æ§åˆ¶å°åº”ç”¨ç¨‹åºçš„å…¥å£ç‚¹ã€‚
 //
 
 #include "stdafx.h"
@@ -15,13 +15,18 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	Parser::initialize();
+	ReadIns::Read();
+	stack<pair<int, int*>> s;
+	for (int i = 0; i < 10; i++)
+		s.emplace(i, new int(i));
 	try {
-		//µ÷ÊÔÖĞ
+		//è°ƒè¯•ä¸­
 		ifstream in(argv[1]);
-		//ifstream in("D:\\A.Ñ§Ï°¡¾Learning¡¿\\A2.Mathematics\\VC\\C++workspace\\MUAECL2\\in.txt");
+		//ifstream in("D:\\A.å­¦ä¹ ã€Learningã€‘\\A2.Mathematics\\VC\\C++workspace\\MUAECL2\\in.txt");
 		Tokenizer tokenizer(in);
-		Parser parser(tokenizer, true);
+		Parser parser(tokenizer);
 		tRoot* tree = parser.analyse();
+		parser.TypeCheck();
 		RawEclGenerator raw_ecl_generator(tree->Output());
 		raw_ecl_generator.generate(cout);
 	}
@@ -33,6 +38,9 @@ int main(int argc, char* argv[])
 		_ui64toa(e.GetOffset(), str_offs, 0x10);
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
+	catch (ErrDesignApp &e) {
+		cerr << e.what() << endl;
+	}// */
 	catch (exception &e) {
 		cerr << e.what() << endl;
 	}
