@@ -272,7 +272,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		raw_ecl_ins_hdr.param_mask = 0;
 		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
 		//raw_ecl_ins_hdr.param_count;
-		//raw_ecl_ins_hdr.cur_stack_ref_count;
+		//raw_ecl_ins_hdr.post_pop_count;
 		ptr_raw_ecl_ins_hdr = APPEND_DATA(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
 	}
 
@@ -302,6 +302,55 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		if (size > UINT16_MAX) throw(exception("Too large instruction."));
 		raw_ecl_ins_hdr.size = size & ~(uint16_t)0;
 		if (ptr_raw_ecl_ins_hdr) memcpy(ptr_raw_ecl_ins_hdr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
+	}
+
+	return size;
+}
+
+RawIns::RawIns(uint16_t id, uint8_t difficulty_mask, uint32_t post_pop_count, uint8_t param_count, uint16_t param_mask, const string& str_raw_params)
+	: id(id), difficulty_mask(difficulty_mask), post_pop_count(post_pop_count), param_count(param_count), param_mask(param_mask), str_raw_params(str_raw_params) {}
+
+RawIns::~RawIns() {}
+
+size_t RawIns::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	size_t size = 0;
+
+	struct {
+		__pragma(pack(push, 1));
+		uint32_t time;
+		uint16_t id;
+		uint16_t size;
+		uint16_t param_mask;
+		/* The difficulty bitmask.
+		*   1111LHNE
+		* Bits mean: easy, normal, hard, lunatic. The rest are always set to 1. */
+		uint8_t diff_mask;
+		/* There doesn't seem to be a way of telling how many parameters there are
+		* from the additional data. */
+		uint8_t param_count;
+		/* From TH13 on, this field stores the number of current stack references
+		* in the parameter list. */
+		uint32_t post_pop_count;
+		__pragma(pack(pop));
+	} raw_ecl_ins_hdr;
+	char* ptr_raw_ecl_ins_hdr = nullptr;
+	size += sizeof(raw_ecl_ins_hdr);
+	if (ptr && size_buf >= size) {
+		raw_ecl_ins_hdr.time = 0;
+		raw_ecl_ins_hdr.id = this->id;
+		raw_ecl_ins_hdr.size = sizeof(raw_ecl_ins_hdr) + this->str_raw_params.size();
+		raw_ecl_ins_hdr.param_mask = this->param_mask;
+		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
+		raw_ecl_ins_hdr.param_count = this->param_count;
+		raw_ecl_ins_hdr.post_pop_count = this->post_pop_count;
+		ptr_raw_ecl_ins_hdr = APPEND_DATA(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
+	}
+
+	size += this->str_raw_params.size();
+	if (ptr && size_buf >= size) {
+		for (char val_param_byte : this->str_raw_params) {
+			APPEND_DATA(ptr, &val_param_byte, sizeof(char));
+		}
 	}
 
 	return size;

@@ -739,6 +739,113 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(sub_ctx.stack_id_target_continue.top()), new Parameter_int(0) }, 0);
 		break;
 	}
+	case 29:// stmt->thread id ( insv ) ;
+	{
+		const tNoVars* insv = cast_to_insv(this->branchs[0]);
+		// From right to left.
+		vector<shared_ptr<RvalueResult>> vec_result;
+		for_each(insv->branchs.cbegin(), insv->branchs.cend(),
+			[&sub_ctx, &stmt_ctx, &vec_result](const GrammarTree* val_branch) {
+				const tNoVars* exprf = cast_to_exprf(val_branch);
+				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false));
+			}
+		);
+		string subname_decorated;
+		try {
+			subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId());
+		} catch (out_of_range&) {
+			subname_decorated.clear();
+		}
+		if (!subname_decorated.empty()) {
+			// From left to right.
+			vector<Parameter_call> vec_param;
+			for_each(vec_result.crbegin(), vec_result.crend(),
+				[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
+					vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
+					switch (val_result->GetType()) {
+					case Op::mType::Void: {
+						if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+						break;
+					}
+					case Op::mType::Int: {
+						if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+						vec_param.emplace_back(vec_param_result[0], false, false);
+						break;
+					}
+					case Op::mType::Float: {
+						if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+						vec_param.emplace_back(vec_param_result[0], true, true);
+						break;
+					}
+					default:
+						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
+					}
+				}
+			);
+			vector<Parameter*> paras({ new Parameter_string(subname_decorated) });
+			for (const Parameter_call& val_param : vec_param) {
+				paras.push_back(val_param.Duplicate());
+			}
+			sub_ctx.insert_ins(stmt_ctx, 15, paras, 0);
+			paras.clear();
+			break;
+		}
+	}
+	case 30:// stmt->do stmt while (expr);
+	{
+		uint32_t id_target_expr = sub_ctx.count_target++;
+		uint32_t id_target_stmt = sub_ctx.count_target++;
+		uint32_t id_target_after = sub_ctx.count_target++;
+		sub_ctx.insert_dummyins_target(id_target_stmt);
+		sub_ctx.stack_id_target_break.push(id_target_after);
+		sub_ctx.stack_id_target_continue.push(id_target_expr);
+		stmt_output(this->branchs[1], sub_ctx);
+		sub_ctx.stack_id_target_continue.pop();
+		sub_ctx.stack_id_target_break.pop();
+		sub_ctx.insert_dummyins_target(id_target_expr);
+		stack_rvalue_int_expr_output(this->branchs[0], sub_ctx, stmt_ctx, false, true);
+		sub_ctx.insert_ins(stmt_ctx, 14, { new Parameter_jmp(id_target_stmt), new Parameter_int(0) }, -1);
+		sub_ctx.insert_dummyins_target(id_target_after);
+		break;
+	}
+	case 31:// stmt->__rawins { data }
+	{
+		if (this->branchs[0]->type() != Op::NonTerm::data) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : this->branchs[0]->type() != Op::NonTerm::data"));
+		tNoVars* data = dynamic_cast<tNoVars*>(this->branchs[0]);
+		if (!data) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : cannot cast this->branchs[0] to type \"tNoVars*\""));
+		for_each(data->branchs.crbegin(), data->branchs.crend(),
+			[&sub_ctx, &stmt_ctx](GrammarTree* val_branch) {
+				if (val_branch->type() != Op::NonTerm::insdata) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : val_branch->type() != Op::NonTerm::insdata"));
+				tNoVars* insdata = dynamic_cast<tNoVars*>(val_branch);
+				if (!insdata) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : cannot cast val_branch to type \"tNoVars*\""));
+				if (insdata->branchs.size() < 5) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : too few numbers in insdata"));
+				// From left to right.
+				vector<Token*> vec_num;
+				vec_num.reserve(insdata->branchs.size());
+				for_each(insdata->branchs.crbegin(), insdata->branchs.crend(),
+					[&vec_num](GrammarTree* val_branch_insdata) {
+						vec_num.push_back(val_branch_insdata->getToken());
+					}
+				);
+				if (*vec_num[0]->getInt() < 0 || *vec_num[0]->getInt() > UINT16_MAX) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : invalid id"));
+				uint16_t id = *vec_num[0]->getInt() & ~(uint16_t)0;
+				if (*vec_num[1]->getInt() < 0 || *vec_num[1]->getInt() > UINT8_MAX) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : invalid difficulty mask"));
+				uint8_t difficulty_mask = *vec_num[1]->getInt() & ~(uint8_t)0;
+				uint32_t post_pop_count = *vec_num[2]->getInt();
+				if (*vec_num[3]->getInt() < 0 || *vec_num[3]->getInt() > UINT8_MAX) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : invalid parameter count"));
+				uint8_t param_count = *vec_num[3]->getInt() & ~(uint8_t)0;
+				if (*vec_num[4]->getInt() < 0 || *vec_num[4]->getInt() > UINT16_MAX) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : invalid parameter mask"));
+				uint16_t param_mask = *vec_num[4]->getInt() & ~(uint16_t)0;
+				string str_raw_params;
+				for (size_t i_num_param = 5; i_num_param < vec_num.size(); ++i_num_param) {
+					if (*vec_num[i_num_param]->getInt() < 0 || *vec_num[i_num_param]->getInt() > UCHAR_MAX) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=31 : invalid parameter byte"));
+					str_raw_params.push_back(*vec_num[i_num_param]->getInt() & ~(unsigned char)0);
+				}
+				sub_ctx.list_data_entry.insert(sub_ctx.it_list_data_entry_curpos, shared_ptr<fSubDataEntry>(new RawIns(id, difficulty_mask, post_pop_count, param_count, param_mask, str_raw_params)));
+			}
+		);
+		break;
+	}
 	default:
 		throw(ErrDesignApp("tNoVars::OutputStmt : unknown stmt id"));
 	}
@@ -1589,9 +1696,13 @@ fSub tSub::Output(const tRoot& root) const {
 }
 
 string tRoot::getSubDecoratedName(const string& id) const {
-	pair<mType, vector<mType>> val_subdecl;
-	val_subdecl = this->subdecl.at(id);
-	return NameDecorator::decorateSubName(id, val_subdecl.first, val_subdecl.second);
+	if (ReadIns::defaultList.count(id)) {
+		return id;
+	} else {
+		pair<mType, vector<mType>> val_subdecl;
+		val_subdecl = this->subdecl.at(id);
+		return NameDecorator::decorateSubName(id, val_subdecl.first, val_subdecl.second);
+	}
 }
 
 fRoot tRoot::Output() const {

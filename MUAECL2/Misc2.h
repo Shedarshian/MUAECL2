@@ -154,6 +154,17 @@ struct Ins :public fSubDataEntry {
 	vector<Parameter*> paras;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 };
+struct RawIns :public fSubDataEntry {
+	RawIns(uint16_t id, uint8_t difficulty_mask, uint32_t post_pop_count, uint8_t param_count, uint16_t param_mask, const string& str_raw_params);
+	virtual ~RawIns();
+	uint16_t id;
+	uint8_t difficulty_mask;
+	uint32_t post_pop_count;
+	uint8_t param_count = 0;
+	uint16_t param_mask = 0;
+	string str_raw_params;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+};
 
 //后端用Sub类型
 struct fSub {
