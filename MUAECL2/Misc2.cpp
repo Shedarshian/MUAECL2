@@ -338,7 +338,8 @@ size_t RawIns::serialize(char* ptr, size_t size_buf, const SubSerializationConte
 	if (ptr && size_buf >= size) {
 		raw_ecl_ins_hdr.time = 0;
 		raw_ecl_ins_hdr.id = this->id;
-		raw_ecl_ins_hdr.size = sizeof(raw_ecl_ins_hdr) + this->str_raw_params.size();
+		if (sizeof(raw_ecl_ins_hdr) + this->str_raw_params.size() > UINT16_MAX) throw(exception("Too large instruction."));
+		raw_ecl_ins_hdr.size = (sizeof(raw_ecl_ins_hdr) + this->str_raw_params.size()) & ~(uint16_t)0;
 		raw_ecl_ins_hdr.param_mask = this->param_mask;
 		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
 		raw_ecl_ins_hdr.param_count = this->param_count;

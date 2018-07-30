@@ -227,7 +227,8 @@ RawEclDecoder::~RawEclDecoder() {}
 
 shared_ptr<DecodedRoot> RawEclDecoder::DecodeRawEclRoot(istream& stream) const {
 	stream.seekg(0, std::ios_base::end);
-	intptr_t length = stream.tellg();
+	if (stream.tellg() > INTPTR_MAX || stream.tellg() < INTPTR_MIN) throw(exception("RawEclDecoder::DecodeRawEclRoot : too large input stream"));
+	intptr_t length = stream.tellg() & ~(uintptr_t)0;
 	stream.seekg(0, std::ios_base::beg);
 	if (length < 0) throw(exception("RawEclDecoder::DecodeRawEclRoot : failed to get input stream size"));
 	unique_ptr<char[]> buf(new char[length]());
