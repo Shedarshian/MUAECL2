@@ -947,23 +947,23 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 		switch (this->branchs[1]->getToken()->type()) {
 		case Op::TokenType::Equal: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+			if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
 			if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type)));
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 		}
 		case Op::TokenType::PlusEqual:[[fallthrough]];
 		case Op::TokenType::MinusEqual: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+			if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
 			if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
 			lvres_l->Duplicate(sub_ctx, stmt_ctx)->ToRvalueResult(sub_ctx, stmt_ctx)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			shared_ptr<RvalueResult> rvres;
 			switch (this->_type.type) {
 			case Op::mType::Int:
@@ -985,15 +985,15 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
 			if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
 			lvres_l->Duplicate(sub_ctx, stmt_ctx)->ToRvalueResult(sub_ctx, stmt_ctx)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			shared_ptr<RvalueResult> rvres;
 			switch (this->_type.type) {
 			case Op::mType::Int:
-				if (cast_to_expr(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 			case Op::mType::Float:
-				if (cast_to_expr(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 			default:
@@ -1007,13 +1007,13 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 		case Op::TokenType::BitAndEqual:[[fallthrough]];
 		case Op::TokenType::BitXorEqual: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+			if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (this->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : this->_type.type != Op::mType::Int"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
 			if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
 			lvres_l->Duplicate(sub_ctx, stmt_ctx)->ToRvalueResult(sub_ctx, stmt_ctx)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 			shared_ptr<RvalueResult> rvres(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 			lvres_assign->Assign(sub_ctx, stmt_ctx, rvres);
@@ -1021,7 +1021,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 		}
 		case Op::TokenType::LogicalOrEqual: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+			if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (this->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : this->_type.type != Op::mType::Int"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
@@ -1034,7 +1034,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(1) }, 1);
 			sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, 0);
 			sub_ctx.insert_dummyins_target(id_target_check_r);
-			stack_rvalue_int_expr_output(this->branchs[0], sub_ctx, stmt_ctx);
+			stack_rvalue_int_exprf_output(this->branchs[0], sub_ctx, stmt_ctx);
 			sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_f), new Parameter_int(0) }, -1);
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(1) }, 1);
 			sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, 0);
@@ -1047,7 +1047,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 		}
 		case Op::TokenType::LogicalAndEqual: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+			if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (this->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : this->_type.type != Op::mType::Int"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
@@ -1056,7 +1056,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			uint32_t id_target_after = sub_ctx.count_target++;
 			lvres_l->Duplicate(sub_ctx, stmt_ctx)->ToRvalueResult(sub_ctx, stmt_ctx)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_f), new Parameter_int(0) }, -1);
-			stack_rvalue_int_expr_output(this->branchs[0], sub_ctx, stmt_ctx);
+			stack_rvalue_int_exprf_output(this->branchs[0], sub_ctx, stmt_ctx);
 			sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_f), new Parameter_int(0) }, -1);
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(1) }, 1);
 			sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, 0);
