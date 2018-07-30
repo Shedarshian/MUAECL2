@@ -18,6 +18,7 @@ using namespace std;
 
 class Token;
 class tNoVars;
+enum class ReadIns::NumType;
 namespace Op {
 	template<typename T1, typename T2>
 	inline constexpr static const pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
@@ -42,11 +43,15 @@ namespace Op {
 		static const map<string, TokenType> StringToOperator;
 		static const map<string, mType> StringToType;
 		static const map<mType, string> TypeToString;
+		static const map<ReadIns::NumType, mType> NumTypeToType;
+		static const map<mType, ReadIns::NumType> TypeToNumType;
 
 		static string ToString(TokenType op);
 		static TokenType ToOperator(string s);
 		static string ToString(mType op);
 		static mType ToType(string s);
+		static mType ToType(ReadIns::NumType t);
+		static ReadIns::NumType ToNumType(mType t);
 		static NonTerm ToType(int id);
 	};
 

@@ -87,7 +87,7 @@ tNoVars::~tNoVars() {
 			delete i;
 }
 
-tNoVars::tNoVars(int id, int lineNo) :id(id), lineNo(lineNo) {}
+tNoVars::tNoVars(int id, int lineNo) :id(id), lineNo(lineNo), opID(0) {}
 void tNoVars::changeid(int id) { this->id = id; }
 Op::NonTerm tNoVars::type() const { return Op::Ch::ToType(id); }
 void tNoVars::addTree(GrammarTree* t) { branchs.push_back(t); }
@@ -239,13 +239,18 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		break;
 	case 22: { //expr->id
 		auto tok = branchs[0]->getToken();
-		auto var = sub->checkVar(tok->getId());
-		if (var == nullptr)
-			throw(ErrVarNotFound(tok->getlineNo(), tok->getId()));
-		//TODO 环境变量
-		_type = mVType{ var->type, Op::LRvalue::lvalue };
-		if constexpr (debug) clog << tok->getId() << " ";
-		break;
+		if (auto var = sub->checkVar(tok->getId()); var != nullptr) {
+			_type = mVType{ var->type, Op::LRvalue::lvalue };
+			if constexpr (debug)clog << tok->getId() << " ";
+			break;
+		}
+		if (auto globalVarit = ReadIns::globalVariable.find(tok->getId()); globalVarit != ReadIns::globalVariable.end()) {
+			opID = globalVarit->second.first;
+			_type = mVType{ Op::Ch::ToType(globalVarit->second.second), Op::LRvalue::rvalue };
+			if constexpr (debug)clog << tok->getId() << " " << opID << " ";
+			break;
+		}
+		throw(ErrVarNotFound(tok->getlineNo(), tok->getId()));
 	}
 	case 23: { //expr->num
 		if (branchs[0]->getToken()->getInt() != nullptr) {
@@ -292,7 +297,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 				auto it1 = insv->branchs.begin();
 				for (auto it2 = declTypes.begin(); it2 != declTypes.end(); it1++, it2++) {
 					auto insvtyp = (*it1)->TypeCheck(sub, subs, whileBlock);
-					auto typ = (*it2 == ReadIns::NumType::Int ? mType::Int : *it2 == ReadIns::NumType::Float ? mType::Float : mType::String);
+					auto typ = Op::Ch::ToType(*it2);
 					if (int rank = mVType::canChangeTo(insvtyp, mVType{ typ, Op::rvalue, false }); rank < 0)
 						throw(ErrTypeChangeLoss((*it1)->getLineNo(), insvtyp, mVType{ typ, Op::rvalue, false }));
 					else
