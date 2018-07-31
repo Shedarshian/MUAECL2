@@ -15,6 +15,7 @@ const map<string, TokenType> Op::Ch::StringToOperator = Op::swap_map(Op::Ch::Ope
 const map<string, mType> Op::Ch::StringToType = { { "type_error", BT::type_error }, { "void", BT::Void }, { "int", BT::Int }, { "float", BT::Float }, { "point", BT::Point }, { "string", BT::String }, { "initializer_list", BT::inilist } };
 const map<mType, string> Op::Ch::TypeToString = Op::swap_map(Op::Ch::StringToType);
 const map<ReadIns::NumType, mType> Op::Ch::NumTypeToType = { { ReadIns::NumType::Int, mType::Int }, { ReadIns::NumType::Float, mType::Float }, { ReadIns::NumType::String, mType::String } };
+const map<mType, ReadIns::NumType> Op::Ch::TypeToNumType = Op::swap_map(Op::Ch::NumTypeToType);
 
 string Op::Ch::ToString(TokenType op) { return OperatorToString.find(op)->second; }
 TokenType Op::Ch::ToOperator(string s) { return StringToOperator.find(s)->second; }
@@ -33,6 +34,22 @@ NonTerm Op::Ch::ToType(int id) {
 	if (id == 32) return NonTerm::data;
 	if (id == 33) return NonTerm::insdata;
 	throw(ErrDesignApp("Op::ToType(int)"));
+}
+
+Rank Op::operator+(const Rank& rankL, const Rank& rankR) {
+	return Rank{ rankL.rank | rankR.rank };
+}
+
+Rank& Op::Rank::operator+=(const Rank & operand) {
+	rank |= operand.rank;
+	return *this;
+}
+
+bool Op::operator<(const Rank& rankL, const Rank& rankR) {
+	for (int i = declval<Rank>().rank.size() - 1; i >= 0; i--)
+		if (rankL.rank[i] != rankR.rank[i])
+			return !rankL.rank[i] && rankR.rank[i];
+	return false;
 }
 
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
@@ -117,22 +134,31 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 }
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> Op::mVType::typeChange = makeTypeChange();
 
-int Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
-	int rank = 0;
+Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
+	Rank rank;
 	//左值到右值转换
-	if (typ.valuetype == typto.valuetype || (typ.valuetype == Op::lvalue && (rank += LTOR))) {
-		//整数到浮点转换
-		if (typ.type == typto.type || (typ.type == Op::mType::Int && typto.type == Op::mType::Float && (rank += ITOF)))
-			return rank;
-		//void l到任意转换
-		if (typ == VTYPE(Void, l)) {
-			if ((int)typto.type >= (int)Op::mType::Int && (int)typto.type <= (int)Op::mType::String) {
-				rank += ((int)typto.type - 1) * VTOOTHER;
-				return rank;
-			}
-		}
+	if (typ.valuetype == Op::rvalue && typto.valuetype == Op::lvalue)
+		return rank.set(Rank::DISABLE);
+	if (typ.valuetype == Op::lvalue && typto.valuetype == Op::rvalue)
+		rank.set(Rank::LTOR);
+	//整数到浮点转换
+	if (typ.type == Op::mType::Int && typto.type == Op::mType::Float)
+		rank.set(Rank::ITOF);
+	//void l到任意转换
+	else if (typ == VTYPE(Void, l)) {
+		if (typto.type == Op::mType::Int)
+			rank.set(Rank::VTOI);
+		else if (typto.type == Op::mType::Float)
+			rank.set(Rank::VTOF);
+		else if (typto.type == Op::mType::String)
+			rank.set(Rank::VTOSTR);
+		else if (typto.type == Op::mType::Point)
+			rank.set(Rank::VTOPOINT);
+		else
+			return rank.set(Rank::DISABLE);
 	}
-	return -1;
+	else
+		return rank.set(Rank::DISABLE);
 }
 
 Token::Token(int lineNo) :lineNo(lineNo) {}
@@ -187,7 +213,7 @@ Token_End::Token_End(int lineNo) :Token(lineNo) {}
 Op::TokenType Token_End::type() const { return Op::TokenType::End; }
 string Token_End::debug_out() const { return ""; }
 
-map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::ins{};
+multimap<string, tuple<int, int, int, vector<ReadIns::NumType>>> ReadIns::ins{};
 map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::mode{};
 map<string, pair<int, ReadIns::NumType>> ReadIns::globalVariable{};
 map<string, int> ReadIns::constint{};
@@ -213,16 +239,16 @@ void ReadIns::Read() {
 		//读取ins
 		else if (mode == "ins") {
 			stringstream s = stringstream(buffer);
-			int n; string name;
-			s >> n >> name;
+			int n, stack_consume, stack_produce; string name;
+			s >> n >> name >> stack_consume >> stack_produce;
 			string c;
 			vector<NumType> lnt; //输入参数类型表
 			while (!s.eof()) {
 				s >> c;
 				lnt.push_back(c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
-					c == "float" ? NumType::Float : NumType::Anything)));
+					c == "float" ? NumType::Float : (c == "call" ? NumType::Call : NumType::Anything))));
 			}
-			ReadIns::ins.emplace(name, make_pair(n, lnt));
+			ReadIns::ins.emplace(name, make_tuple(n, stack_consume, stack_produce, lnt));
 		}
 		//读取全局变量
 		else if (mode == "variable") {

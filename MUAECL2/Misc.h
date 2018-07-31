@@ -11,6 +11,7 @@
 #include <optional>
 #include <variant>
 #include <functional>
+#include <bitset>
 #define TYPE(name) Op::mType::name
 #define VTYPE(name, lr, ...) Op::mVType{ TYPE(name), Op::LRvalue::lr##value, ##__VA_ARGS__ }
 #define OFFSET 128
@@ -18,7 +19,22 @@ using namespace std;
 
 class Token;
 class tNoVars;
-enum class ReadIns::NumType;
+
+class ReadIns {
+public:
+	enum class NumType { Anything, Int, Float, String, Call };
+	static multimap<string, tuple<int, int, int, vector<NumType>>> ins;			//ins表
+	static map<string, pair<int, vector<NumType>>> mode;		//mode表
+	static map<string, pair<int, NumType>> globalVariable;		//全局变量表
+	static map<string, int> constint;							//符号常量表
+	static map<string, float> constfloat;
+	static set<string> integratedFunction;						//集成函数表
+	static set<string> defaultList;								//default.ecl中的线程名表
+
+	//读取ins.ini与default.ini
+	static void Read();
+};
+
 namespace Op {
 	template<typename T1, typename T2>
 	inline constexpr static const pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
@@ -57,6 +73,21 @@ namespace Op {
 
 	/// value type, l and r
 	enum LRvalue { lvalue, rvalue };
+	struct Rank {
+		enum { DISABLE = 0, LTOR = 1, ITOF = 2, VTOI = 3, VTOF = 4, VTOSTR = 5, VTOPOINT = 6 };
+		bitset<7> rank;
+		Rank& set(size_t pos, bool value = true) { rank.set(pos, value); return *this; }
+		bool incorrect() { return rank.test(DISABLE); }
+		bool correct() { return !rank.test(DISABLE); }
+		bool test(size_t pos) const { return rank.test(pos); }
+		static const Rank RANK_MAX;
+
+		friend Rank operator+(const Rank& rankL, const Rank& rankR);
+		Rank& operator+=(const Rank& operand);
+		friend bool operator<(const Rank& rankL, const Rank& rankR);
+		Rank& operator=(const Rank& operand) = default;
+	};
+	const Rank Rank::RANK_MAX = Rank{ bitset<7>(0xFF) };
 	struct mVType {
 		/// <summary>full type object, contains value type and literal type</summary>
 		mVType() = default;
@@ -68,13 +99,11 @@ namespace Op {
 		}
 		/// only compare type and value type
 		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
-		/// used as rank for type changing
-		enum { LTOR = 1, ITOF = 5, VTOOTHER = 25 };
 		/// saves : operator->left operand + right operand + return type + operator reload ID
 		static const multimap<TokenType, tuple<mVType, mVType, mVType, int>> typeChange;
 		/// <summary>implicit type change, return ranks</summary>
-		/// <returns>return rank for changes, saves what changes are done. can change to object if needs</returns>
-		static int canChangeTo(const mVType& typ, const mVType& typto);
+		/// <returns>return rank for changes, saves what changes are done.</returns>
+		static Rank canChangeTo(const mVType& typ, const mVType& typto);
 	};
 };
 
@@ -154,21 +183,6 @@ public:
 	explicit Token_End(int lineNo);
 	Op::TokenType type() const override;
 	string debug_out() const override;
-};
-
-class ReadIns {
-public:
-	enum class NumType { Anything, Int, Float, String };
-	static map<string, pair<int, vector<NumType>>> ins;			//ins表
-	static map<string, pair<int, vector<NumType>>> mode;		//mode表
-	static map<string, pair<int, NumType>> globalVariable;		//全局变量表
-	static map<string, int> constint;							//符号常量表
-	static map<string, float> constfloat;
-	static set<string> integratedFunction;						//集成函数表
-	static set<string> defaultList;								//default.ecl中的线程名表
-
-	//读取ins.ini与default.ini
-	static void Read();
 };
 
 //error-type
@@ -342,6 +356,14 @@ public:
 		default: break;
 		}
 	}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrNoOverloadFunction :public ExceptionWithLineNo {
+public:
+	ErrNoOverloadFunction(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("no overload function "s + name + " found."s) {}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
 	string id;
