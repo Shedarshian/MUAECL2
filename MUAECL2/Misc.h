@@ -23,15 +23,17 @@ class tNoVars;
 class ReadIns {
 public:
 	enum class NumType { Anything, Int, Float, String, Call };
-	static multimap<string, tuple<int, int, int, vector<NumType>>> ins;			//ins±í
-	static map<string, pair<int, vector<NumType>>> mode;		//mode±í
-	static map<string, pair<int, NumType>> globalVariable;		//È«¾Ö±äÁ¿±í
-	static map<string, int> constint;							//·ûºÅ³£Á¿±í
+	static multimap<string, tuple<int, int, int, vector<NumType>>> ins;			//insè¡¨
+	static map<pair<int, vector<NumType>>, pair<int, int>> insDeltaStackptr;//ç›´æ¥è®¿é—®å †æ ˆçš„inså¯¹å †æ ˆæŒ‡é’ˆçš„å½±å“ï¼Œå€¼çš„firstä¸ºpopæ•°ï¼Œsecondä¸ºpushæ•°ã€‚
+	static map<string, pair<int, vector<NumType>>> mode;		//modeè¡¨
+	static map<string, pair<int, NumType>> globalVariable;		//å…¨å±€å˜é‡è¡¨
+	static map<string, int> constint;							//ç¬¦å·å¸¸é‡è¡¨
 	static map<string, float> constfloat;
-	static set<string> integratedFunction;						//¼¯³Éº¯Êı±í
-	static set<string> defaultList;								//default.eclÖĞµÄÏß³ÌÃû±í
+	static set<string> integratedFunction;						//é›†æˆå‡½æ•°è¡¨
+	static set<string> defaultList;								//default.eclä¸­çš„çº¿ç¨‹åè¡¨
 
-	//¶ÁÈ¡ins.iniÓëdefault.ini
+	//è¯»å–ins.iniä¸default.ini
+	// TODO: Fill insDeltaStackptr.
 	static void Read();
 };
 
@@ -111,19 +113,19 @@ class Token {
 public:
 	explicit Token(int lineNo);
 	virtual ~Token() = default;
-	//ÀàĞÍ
+	//ç±»å‹
 	virtual Op::TokenType type() const = 0;
-	//¼ìÑé
+	//æ£€éªŒ
 	virtual bool isExprFollow() const;
-	//È¡ĞĞºÅ
+	//å–è¡Œå·
 	int getlineNo() const;
-	//È¡Êı
+	//å–æ•°
 	virtual int* getInt();
 	virtual float* getFloat();
 	virtual string* getString();
 	virtual string getId() const;
 	virtual Op::mType getType() const;
-	//debugÊä³ö
+	//debugè¾“å‡º
 	virtual string debug_out() const;
 	friend ostream& operator<< (ostream& stream, Token& token);
 private:
@@ -144,7 +146,7 @@ private:
 	variant<int, float, string> val;
 };
 
-//±êÊ¶·û£¬°üÀ¨±äÁ¿º¯ÊıÏß³ÌÒÔ¼°ins
+//æ ‡è¯†ç¬¦ï¼ŒåŒ…æ‹¬å˜é‡å‡½æ•°çº¿ç¨‹ä»¥åŠins
 class Token_Identifier :public Token {
 public:
 	Token_Identifier(int lineNo, string val);
@@ -156,7 +158,7 @@ private:
 	string val;
 };
 
-//¹Ø¼ü×Ö,ÔËËã·û,¸³ÖµÔËËã·û,¶ººÅ·ÖºÅÃ°ºÅ´óĞ¡À¨ºÅ
+//å…³é”®å­—,è¿ç®—ç¬¦,èµ‹å€¼è¿ç®—ç¬¦,é€—å·åˆ†å·å†’å·å¤§å°æ‹¬å·
 class Token_Operator :public Token {
 public:
 	Token_Operator(int lineNo, Op::TokenType val);
@@ -167,7 +169,7 @@ private:
 	Op::TokenType val;
 };
 
-//ÄÚ½¨ÀàĞÍ
+//å†…å»ºç±»å‹
 class Token_KeywordType :public Token_Operator {
 public:
 	Token_KeywordType(int lineNo, Op::mType type);
@@ -177,7 +179,7 @@ private:
 	Op::mType val;
 };
 
-//ÎÄµµ½áÊø
+//æ–‡æ¡£ç»“æŸ
 class Token_End :public Token {
 public:
 	explicit Token_End(int lineNo);

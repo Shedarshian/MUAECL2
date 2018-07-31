@@ -10,7 +10,7 @@ using namespace std;
 /// <summary>Raw ECL file generator.</summary>
 class RawEclGenerator final {
 public:
-	/// <summary>Create an RawEclGenerator object.</summary>
+	/// <summary>Create a RawEclGenerator object.</summary>
 	/// <param name="root">The <c>fRoot</c> structure from which to generate the raw ECL file.</param>
 	RawEclGenerator(const fRoot& root);
 	~RawEclGenerator();
