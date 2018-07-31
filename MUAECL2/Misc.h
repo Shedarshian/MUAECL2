@@ -11,6 +11,7 @@
 #include <optional>
 #include <variant>
 #include <functional>
+#include <bitset>
 #define TYPE(name) Op::mType::name
 #define VTYPE(name, lr, ...) Op::mVType{ TYPE(name), Op::LRvalue::lr##value, ##__VA_ARGS__ }
 #define OFFSET 128
@@ -18,6 +19,24 @@ using namespace std;
 
 class Token;
 class tNoVars;
+
+class ReadIns {
+public:
+	enum class NumType { Anything, Int, Float, String, Call };
+	static multimap<string, tuple<int, int, int, vector<NumType>>> ins;			//insè¡¨
+	static map<pair<int, vector<NumType>>, pair<int, int>> insDeltaStackptr;//ç›´æ¥è®¿é—®å †æ ˆçš„inså¯¹å †æ ˆæŒ‡é’ˆçš„å½±å“ï¼Œå€¼çš„firstä¸ºpopæ•°ï¼Œsecondä¸ºpushæ•°ã€‚
+	static map<string, pair<int, vector<NumType>>> mode;		//modeè¡¨
+	static map<string, pair<int, NumType>> globalVariable;		//å…¨å±€å˜é‡è¡¨
+	static map<string, int> constint;							//ç¬¦å·å¸¸é‡è¡¨
+	static map<string, float> constfloat;
+	static set<string> integratedFunction;						//é›†æˆå‡½æ•°è¡¨
+	static set<string> defaultList;								//default.eclä¸­çš„çº¿ç¨‹åè¡¨
+
+	//è¯»å–ins.iniä¸default.ini
+	// TODO: Fill insDeltaStackptr.
+	static void Read();
+};
+
 namespace Op {
 	template<typename T1, typename T2>
 	inline constexpr static const pair<T2, T1> swap_pair(const pair<T1, T2>& p) { return pair<T2, T1>(p.second, p.first); }
@@ -42,16 +61,35 @@ namespace Op {
 		static const map<string, TokenType> StringToOperator;
 		static const map<string, mType> StringToType;
 		static const map<mType, string> TypeToString;
+		static const map<ReadIns::NumType, mType> NumTypeToType;
+		static const map<mType, ReadIns::NumType> TypeToNumType;
 
 		static string ToString(TokenType op);
 		static TokenType ToOperator(string s);
 		static string ToString(mType op);
 		static mType ToType(string s);
+		static mType ToType(ReadIns::NumType t);
+		static ReadIns::NumType ToNumType(mType t);
 		static NonTerm ToType(int id);
 	};
 
 	/// value type, l and r
 	enum LRvalue { lvalue, rvalue };
+	struct Rank {
+		enum { DISABLE = 0, LTOR = 1, ITOF = 2, VTOI = 3, VTOF = 4, VTOSTR = 5, VTOPOINT = 6 };
+		bitset<7> rank;
+		Rank& set(size_t pos, bool value = true) { rank.set(pos, value); return *this; }
+		bool incorrect() { return rank.test(DISABLE); }
+		bool correct() { return !rank.test(DISABLE); }
+		bool test(size_t pos) const { return rank.test(pos); }
+		static const Rank RANK_MAX;
+
+		friend Rank operator+(const Rank& rankL, const Rank& rankR);
+		Rank& operator+=(const Rank& operand);
+		friend bool operator<(const Rank& rankL, const Rank& rankR);
+		Rank& operator=(const Rank& operand) = default;
+	};
+	const Rank Rank::RANK_MAX = Rank{ bitset<7>(0xFF) };
 	struct mVType {
 		/// <summary>full type object, contains value type and literal type</summary>
 		mVType() = default;
@@ -63,13 +101,11 @@ namespace Op {
 		}
 		/// only compare type and value type
 		bool operator==(const mVType& tr) const { return type == tr.type && valuetype == tr.valuetype; }
-		/// used as rank for type changing
-		enum { LTOR = 1, ITOF = 5, VTOOTHER = 25 };
 		/// saves : operator->left operand + right operand + return type + operator reload ID
 		static const multimap<TokenType, tuple<mVType, mVType, mVType, int>> typeChange;
 		/// <summary>implicit type change, return ranks</summary>
-		/// <returns>return rank for changes, saves what changes are done. can change to object if needs</returns>
-		static int canChangeTo(const mVType& typ, const mVType& typto);
+		/// <returns>return rank for changes, saves what changes are done.</returns>
+		static Rank canChangeTo(const mVType& typ, const mVType& typto);
 	};
 };
 
@@ -77,19 +113,19 @@ class Token {
 public:
 	explicit Token(int lineNo);
 	virtual ~Token() = default;
-	//ÀàĞÍ
+	//ç±»å‹
 	virtual Op::TokenType type() const = 0;
-	//¼ìÑé
+	//æ£€éªŒ
 	virtual bool isExprFollow() const;
-	//È¡ĞĞºÅ
+	//å–è¡Œå·
 	int getlineNo() const;
-	//È¡Êı
+	//å–æ•°
 	virtual int* getInt();
 	virtual float* getFloat();
 	virtual string* getString();
 	virtual string getId() const;
 	virtual Op::mType getType() const;
-	//debugÊä³ö
+	//debugè¾“å‡º
 	virtual string debug_out() const;
 	friend ostream& operator<< (ostream& stream, Token& token);
 private:
@@ -110,7 +146,7 @@ private:
 	variant<int, float, string> val;
 };
 
-//±êÊ¶·û£¬°üÀ¨±äÁ¿º¯ÊıÏß³ÌÒÔ¼°ins
+//æ ‡è¯†ç¬¦ï¼ŒåŒ…æ‹¬å˜é‡å‡½æ•°çº¿ç¨‹ä»¥åŠins
 class Token_Identifier :public Token {
 public:
 	Token_Identifier(int lineNo, string val);
@@ -122,7 +158,7 @@ private:
 	string val;
 };
 
-//¹Ø¼ü×Ö,ÔËËã·û,¸³ÖµÔËËã·û,¶ººÅ·ÖºÅÃ°ºÅ´óĞ¡À¨ºÅ
+//å…³é”®å­—,è¿ç®—ç¬¦,èµ‹å€¼è¿ç®—ç¬¦,é€—å·åˆ†å·å†’å·å¤§å°æ‹¬å·
 class Token_Operator :public Token {
 public:
 	Token_Operator(int lineNo, Op::TokenType val);
@@ -133,7 +169,7 @@ private:
 	Op::TokenType val;
 };
 
-//ÄÚ½¨ÀàĞÍ
+//å†…å»ºç±»å‹
 class Token_KeywordType :public Token_Operator {
 public:
 	Token_KeywordType(int lineNo, Op::mType type);
@@ -143,30 +179,12 @@ private:
 	Op::mType val;
 };
 
-//ÎÄµµ½áÊø
+//æ–‡æ¡£ç»“æŸ
 class Token_End :public Token {
 public:
 	explicit Token_End(int lineNo);
 	Op::TokenType type() const override;
 	string debug_out() const override;
-};
-
-class ReadIns {
-public:
-	enum class NumType { Anything, Int, Float, String, Call };
-	static map<string, pair<int, vector<NumType>>> ins;			//ins±í
-	static map<pair<int, vector<NumType>>, pair<int, int>> insDeltaStackptr;//Ö±½Ó·ÃÎÊ¶ÑÕ»µÄins¶Ô¶ÑÕ»Ö¸ÕëµÄÓ°Ïì£¬ÖµµÄfirstÎªpopÊı£¬secondÎªpushÊı¡£
-	static map<string, pair<int, vector<NumType>>> mode;		//mode±í
-	static map<string, pair<int, NumType>> globalVariable;		//È«¾Ö±äÁ¿±í
-	static map<string, int> constint;							//·ûºÅ³£Á¿±í
-	static map<string, float> constfloat;
-	static set<string> integratedFunction;						//¼¯³Éº¯Êı±í
-	static set<string> defaultList;								//default.eclÖĞµÄÏß³ÌÃû±í
-
-	//¶ÁÈ¡ins.iniÓëdefault.ini
-	// TODO: Fill insDeltaStackptr.
-	// TODO: Support NumType::Call.
-	static void Read();
 };
 
 //error-type
@@ -340,6 +358,14 @@ public:
 		default: break;
 		}
 	}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrNoOverloadFunction :public ExceptionWithLineNo {
+public:
+	ErrNoOverloadFunction(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("no overload function "s + name + " found."s) {}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
 	string id;
