@@ -46,10 +46,14 @@ Rank& Op::Rank::operator+=(const Rank & operand) {
 }
 
 bool Op::operator<(const Rank& rankL, const Rank& rankR) {
-	for (int i = declval<Rank>().rank.size() - 1; i >= 0; i--)
+	for (size_t i = Rank::SIZE - 1; i >= 0; i--)
 		if (rankL.rank[i] != rankR.rank[i])
 			return !rankL.rank[i] && rankR.rank[i];
 	return false;
+}
+
+bool Op::operator==(const Rank& rankL, const Rank& rankR) {
+	return rankL.rank == rankR.rank;
 }
 
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
@@ -134,7 +138,7 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 }
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> Op::mVType::typeChange = makeTypeChange();
 
-Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
+Op::Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	Rank rank;
 	//左值到右值转换
 	if (typ.valuetype == Op::rvalue && typto.valuetype == Op::lvalue)
@@ -156,7 +160,10 @@ Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 			rank.set(Rank::VTOPOINT);
 		else
 			return rank.set(Rank::DISABLE);
+		return rank;
 	}
+	else if (typ.type == typto.type)
+		return rank;
 	else
 		return rank.set(Rank::DISABLE);
 }
@@ -213,7 +220,8 @@ Token_End::Token_End(int lineNo) :Token(lineNo) {}
 Op::TokenType Token_End::type() const { return Op::TokenType::End; }
 string Token_End::debug_out() const { return ""; }
 
-multimap<string, tuple<int, int, int, vector<ReadIns::NumType>>> ReadIns::ins{};
+multimap<string, pair<int, vector<ReadIns::NumType>>> ReadIns::ins{};
+map<pair<int, vector<ReadIns::NumType>>, pair<int, int>> ReadIns::insDeltaStackptr{};
 map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::mode{};
 map<string, pair<int, ReadIns::NumType>> ReadIns::globalVariable{};
 map<string, int> ReadIns::constint{};
@@ -248,7 +256,8 @@ void ReadIns::Read() {
 				lnt.push_back(c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
 					c == "float" ? NumType::Float : (c == "call" ? NumType::Call : NumType::Anything))));
 			}
-			ReadIns::ins.emplace(name, make_tuple(n, stack_consume, stack_produce, lnt));
+			ReadIns::ins.emplace(name, make_pair(n, lnt));
+			ReadIns::insDeltaStackptr.emplace(make_pair(n, lnt), make_pair(stack_consume, stack_produce));
 		}
 		//读取全局变量
 		else if (mode == "variable") {

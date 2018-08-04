@@ -188,6 +188,10 @@ void Parser::TypeCheck() {
 	}
 }
 
+fRoot Parser::Output() {
+	return saveTree->Output();
+}
+
 //依据产生式id号由stack构造tree
 GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 	using namespace Template;

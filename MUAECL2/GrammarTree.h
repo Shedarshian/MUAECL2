@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <iterator>
+#include <type_traits>
 #include "Misc.h"
 #include "Misc2.h"
 
@@ -76,7 +77,7 @@ public:
 	GrammarTree* typeChange(Op::Rank rank) override;
 	int getLineNo() const override;
 private:
-	Token* t;
+	Token * t;
 };
 
 //subv
@@ -144,33 +145,46 @@ private:
 	vector<GrammarTree*> branchs;	//全部逆序储存，因为产生式都是右递归的
 	void LiteralCal();				//字面量计算优化
 	template<typename type_saved, typename _ConstIterator, typename _SequenceContainer>
-	pair<Op::mVType, type_saved> OverloadCheck(_SequenceContainer& CheckObjects, function<Op::mVType(GrammarTree*)> TypeCheckFunction, function<tuple<type_saved, Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction, _ConstIterator& begin_it, const _ConstIterator& end_it = begin_it + 1);
-	template<typename _ConstIterator, typename _SequenceContainer>
-	Op::mVType OverloadCheck(_SequenceContainer& CheckObjects, function<Op::mVType(GrammarTree*)> TypeCheckFunction, function<pair<Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction, _ConstIterator& begin_it, const _ConstIterator& end_it = begin_it + 1);
-	void exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock);
+	typename conditional<is_void<type_saved>::value, Op::mVType, pair<Op::mVType, type_saved*>>::type OverloadCheck(
+		_SequenceContainer CheckObjects,
+		function<Op::mVType(typename remove_reference<_SequenceContainer>::type::value_type)> TypeCheckFunction,
+		function<tuple<type_saved*, Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction,
+		function<void(Op::Rank, typename remove_reference<_SequenceContainer>::type::iterator&)> TypeChangeFunction,
+		_ConstIterator& begin_it, const _ConstIterator& end_it);
+	//void exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock);
 };
 
-//_ConstIterator requires InputIterator<T> && const???
+//_ConstIterator requires InputIterator<T>
 //_SequenceContainer requires SequenceContainer<T> && is_same<typename T::value_type, GrammarTree*>
+//	namely: vector<GrammarTree*>& or vector<GrammarTree**>
 //type_saved requires DefaultConstructible<T> || is_void<T>
 template<typename type_saved, typename _ConstIterator, typename _SequenceContainer>
-pair<Op::mVType, type_saved> tNoVars::OverloadCheck(_SequenceContainer& CheckObjects, function<Op::mVType(GrammarTree*)> TypeCheckFunction, function<tuple<type_saved, Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction, _ConstIterator& begin_it, const _ConstIterator& end_it = begin_it + 1) {
-	vector<Op::Rank> ranks, ranksmin; Op::Rank rankmin = Rank::RANK_MAX;
+typename conditional<is_void<type_saved>::value, Op::mVType, pair<Op::mVType, type_saved*>>::type tNoVars::OverloadCheck(
+	_SequenceContainer CheckObjects,
+	function<Op::mVType(typename remove_reference<_SequenceContainer>::type::value_type)> TypeCheckFunction,
+	function<tuple<type_saved*, Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction,
+	function<void(Op::Rank, typename remove_reference<_SequenceContainer>::type::iterator&)> TypeChangeFunction,
+	_ConstIterator& begin_it, const _ConstIterator& end_it) {
+	vector<Op::Rank> ranks, ranksmin; Op::Rank rankmin = RANK_MAX;
 	ranks.resize(CheckObjects.size());
-	type_saved savedObjects;
+	type_saved* savedObjectPtr;
 	Op::mVType returnType;
+	vector<Op::mVType> insvtyp;
+	for (auto it = CheckObjects.begin(); it != CheckObjects.end(); ++it)
+		insvtyp.push_back(TypeCheckFunction(*it));
 	for (; begin_it != end_it; begin_it++) {
 		Op::Rank ranksum;
-		auto&[dataSaved, _returnType, inputTypes] = GetContainmentsFunction(begin_it);
+		auto&&[dataSavedPtr, _returnType, inputTypes] = GetContainmentsFunction(begin_it);
 		if (inputTypes.size() != CheckObjects.size())
 			continue;
 		auto it = ranks.begin();
 		auto it1 = inputTypes.cbegin();
 		Op::Rank rankSaved;
-		for (auto it2 = CheckObjects.cbegin(); it2 != CheckObjects.cend(); it++, it1++, it2++) {
-			Op::mVType insvtyp = TypeCheckFunction(*it2);
-			if (Op::Rank rank = Op::mVType::canChangeTo(insvtyp, *it1); rank.incorrect())
-				continue;
+		for (auto it2 = insvtyp.begin(); it2 != insvtyp.end(); it++, it1++, it2++) {
+			Op::Rank rank = Op::mVType::canChangeTo(*it2, *it1);
+			if (rank.incorrect()) {
+				goto for_end;
+			}
 			else {
 				*it = rank;
 				ranksum += rank;
@@ -178,12 +192,60 @@ pair<Op::mVType, type_saved> tNoVars::OverloadCheck(_SequenceContainer& CheckObj
 		}
 		if (ranksum < rankmin) {
 			rankmin = ranksum; ranksmin = ranks;
-			savedObjects = dataSaved; returnType = _returnType;
+			savedObjectPtr = dataSavedPtr; returnType = _returnType;
 		}
+for_end:;
 	}
 	//无法应用运算符到此类型操作数
-	if (rankmin == Rank::RANK_MAX) {
-		return make_pair(VTYPE(type_error, r), savedObjects);
+	if (rankmin == RANK_MAX) {
+		if constexpr(is_void<type_saved>::value)
+			return VTYPE(type_error, r);
+		else
+			return pair<mVType, type_saved*>(VTYPE(type_error, r), savedObjectPtr);
+	}
+	//依据rank值确定做了些什么变换
+	auto rank_it = ranksmin.begin();
+	for (auto it = CheckObjects.begin(); it != CheckObjects.end(); rank_it++, it++) {
+		TypeChangeFunction(*rank_it, it);
+		//*it = (*it)->typeChange(*rank_it);
+	}
+	if constexpr(is_void<type_saved>::value)
+		return returnType;
+	else
+		return pair<mVType, type_saved*>(returnType, savedObjectPtr);
+}
+
+/*template<typename type_saved, typename _ConstIterator>
+pair<Op::mVType, type_saved> tNoVars::OverloadCheck(const vector<GrammarTree*>& CheckObjects, function<Op::mVType(GrammarTree*)> TypeCheckFunction, function<tuple<type_saved, Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction, _ConstIterator& begin_it) {
+	vector<Op::Rank> ranks, ranksmin; Op::Rank rankmin = RANK_MAX;
+	ranks.resize(CheckObjects.size());
+	type_saved savedObjects;
+	Op::mVType returnType;
+	Op::Rank ranksum;
+	auto&&[dataSaved, _returnType, inputTypes] = GetContainmentsFunction(begin_it);
+	if (inputTypes.size() != CheckObjects.size()) {
+		return make_pair<mVType, type_saved>(VTYPE(type_error, r), savedObjects);
+	}
+	auto it = ranks.begin();
+	auto it1 = inputTypes.cbegin();
+	Op::Rank rankSaved;
+	for (auto it2 = CheckObjects.cbegin(); it2 != CheckObjects.cend(); it++, it1++, it2++) {
+		Op::mVType insvtyp = TypeCheckFunction(*it2);
+		if (Op::Rank rank = Op::mVType::canChangeTo(insvtyp, *it1); rank.incorrect()) {
+			return make_pair<mVType, type_saved>(VTYPE(type_error, r), savedObjects);
+		}
+		else {
+			*it = rank;
+			ranksum += rank;
+		}
+	}
+	if (ranksum < rankmin) {
+		rankmin = ranksum; ranksmin = ranks;
+		savedObjects = dataSaved; returnType = _returnType;
+	}
+	//无法应用运算符到此类型操作数
+	if (rankmin == RANK_MAX) {
+		return make_pair<mVType, type_saved>(VTYPE(type_error, r), savedObjects);
 	}
 	//依据rank值确定做了些什么变换
 	auto rank_it = ranksmin.begin();
@@ -193,46 +255,7 @@ pair<Op::mVType, type_saved> tNoVars::OverloadCheck(_SequenceContainer& CheckObj
 	return make_pair(returnType, savedObjects);
 }
 
-template<typename _ConstIterator, typename _SequenceContainer>
-Op::mVType tNoVars::OverloadCheck(_SequenceContainer& CheckObjects, function<Op::mVType(GrammarTree*)> TypeCheckFunction, function<pair<Op::mVType, vector<Op::mVType>>(const _ConstIterator&)> GetContainmentsFunction, _ConstIterator& begin_it, const _ConstIterator& end_it = begin_it + 1) {
-	vector<Op::Rank> ranks, ranksmin; Op::Rank rankmin = Rank::RANK_MAX;
-	ranks.resize(CheckObjects.size());
-	Op::mVType returnType;
-	for (; begin_it != end_it; begin_it++) {
-		Op::Rank ranksum;
-		auto&[_returnType, inputTypes] = GetContainmentsFunction(begin_it);
-		if (inputTypes.size() != CheckObjects.size())
-			continue;
-		auto it = ranks.begin();
-		auto it1 = inputTypes.cbegin();
-		Op::Rank rankSaved;
-		for (auto it2 = CheckObjects.cbegin(); it2 != CheckObjects.cend(); it++, it1++, it2++) {
-			Op::mVType insvtyp = TypeCheckFunction(*it2);
-			if (Op::Rank rank = Op::mVType::canChangeTo(insvtyp, *it1); rank.incorrect())
-				continue;
-			else {
-				*it = rank;
-				ranksum += rank;
-			}
-		}
-		if (ranksum < rankmin) {
-			rankmin = ranksum; ranksmin = ranks;
-			returnType = _returnType;
-		}
-	}
-	//无法应用运算符到此类型操作数
-	if (rankmin == Rank::RANK_MAX) {
-		return VTYPE(type_error, r);
-	}
-	//依据rank值确定做了些什么变换
-	auto rank_it = ranksmin.begin();
-	for (auto it = CheckObjects.begin(); it != CheckObjects.end(); rank_it++, it++) {
-		*it = (*it)->typeChange(*rank_it);
-	}
-	return returnType;
-}
-
-void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
+/*void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	auto rtype = branchs[0]->TypeCheck(sub, subs, whileBlock);
 	decltype(rtype) ltype;
 	bool isLiteral = rtype.isLiteral;
@@ -288,7 +311,8 @@ void tNoVars::exprTypeCheck(Op::TokenType typ, tSub* sub, tRoot* subs, GrammarTr
 	//处理字面量计算优化，需要排除字面量指针的情况（在里面处理）
 	if (isLiteral)
 		LiteralCal();
-}
+}*/
+
 
 /// <summary>
 /// Label statement node in the grammar tree.

@@ -23,7 +23,7 @@ class tNoVars;
 class ReadIns {
 public:
 	enum class NumType { Anything, Int, Float, String, Call };
-	static multimap<string, tuple<int, int, int, vector<NumType>>> ins;			//ins表
+	static multimap<string, pair<int, vector<NumType>>> ins;			//ins表
 	static map<pair<int, vector<NumType>>, pair<int, int>> insDeltaStackptr;//直接访问堆栈的ins对堆栈指针的影响，值的first为pop数，second为push数。
 	static map<string, pair<int, vector<NumType>>> mode;		//mode表
 	static map<string, pair<int, NumType>> globalVariable;		//全局变量表
@@ -33,7 +33,6 @@ public:
 	static set<string> defaultList;								//default.ecl中的线程名表
 
 	//读取ins.ini与default.ini
-	// TODO: Fill insDeltaStackptr.
 	static void Read();
 };
 
@@ -76,20 +75,21 @@ namespace Op {
 	/// value type, l and r
 	enum LRvalue { lvalue, rvalue };
 	struct Rank {
-		enum { DISABLE = 0, LTOR = 1, ITOF = 2, VTOI = 3, VTOF = 4, VTOSTR = 5, VTOPOINT = 6 };
+		enum { DISABLE = 0, LTOR = 1, ITOF = 2, VTOI = 3, VTOF = 4, VTOSTR = 5, VTOPOINT = 6, SIZE = 7 };
 		bitset<7> rank;
 		Rank& set(size_t pos, bool value = true) { rank.set(pos, value); return *this; }
-		bool incorrect() { return rank.test(DISABLE); }
-		bool correct() { return !rank.test(DISABLE); }
+		bool incorrect() const { return rank.test(DISABLE); }
+		bool correct() const { return !rank.test(DISABLE); }
 		bool test(size_t pos) const { return rank.test(pos); }
-		static const Rank RANK_MAX;
+		//static const Rank RANK_MAX;
+		#define RANK_MAX Op::Rank{ bitset<7>(0xFF) }
 
 		friend Rank operator+(const Rank& rankL, const Rank& rankR);
 		Rank& operator+=(const Rank& operand);
 		friend bool operator<(const Rank& rankL, const Rank& rankR);
 		Rank& operator=(const Rank& operand) = default;
+		friend bool operator==(const Rank& rankL, const Rank& rankR);
 	};
-	const Rank Rank::RANK_MAX = Rank{ bitset<7>(0xFF) };
 	struct mVType {
 		/// <summary>full type object, contains value type and literal type</summary>
 		mVType() = default;

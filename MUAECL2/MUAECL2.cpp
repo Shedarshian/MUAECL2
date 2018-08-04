@@ -16,9 +16,6 @@ int main(int argc, char* argv[])
 {
 	Parser::initialize();
 	ReadIns::Read();
-	stack<pair<int, int*>> s;
-	for (int i = 0; i < 10; i++)
-		s.emplace(i, new int(i));
 	try {
 		//调试中
 		ifstream in(argv[1]);
@@ -27,7 +24,7 @@ int main(int argc, char* argv[])
 		Parser parser(tokenizer);
 		tRoot* tree = parser.analyse();
 		parser.TypeCheck();
-		RawEclGenerator raw_ecl_generator(tree->Output());
+		RawEclGenerator raw_ecl_generator(parser.Output());
 		raw_ecl_generator.generate(cout);
 	}
 	catch (ExceptionWithLineNo &e) {
@@ -40,7 +37,7 @@ int main(int argc, char* argv[])
 	}
 	catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
-	}// */
+	}
 	catch (exception &e) {
 		cerr << e.what() << endl;
 	}

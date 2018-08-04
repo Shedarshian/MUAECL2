@@ -192,13 +192,14 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		auto name = branchs[1]->getToken()->getId();
 		//此为函数调用,same as function
 		if (auto[begin_it, end_it] = subs->checkSub(name); begin_it != end_it) {
-			_type = OverloadCheck<decltype(begin_it)>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
+			_type = OverloadCheck<void, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
 				[](const decltype(begin_it)& it) {
 					vector<mVType> vTypes;
 					transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
 						[](const mType& t) { return mVType{ t, Op::LRvalue::rvalue, false }; });
-					return make_pair(mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes);
-			}, begin_it, end_it);
+					return make_tuple((void*)nullptr, mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes); },
+				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
+				begin_it, end_it);
 			if (_type.type == Op::mType::type_error)
 				throw(ErrNoOverloadFunction(lineNo, name));
 			break;
@@ -231,9 +232,18 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		break;
 	case 15: //inif->ini : ini : ini : ini
 		[[fallthrough]];
-	case 21: //exprf->expr : expr : expr : expr
-		exprTypeCheck(Op::TokenType::Colon, sub, subs, whileBlock);
-		break;
+	case 21: { //exprf->expr : expr : expr : expr
+		auto[begin_it, end_it] = Op::mVType::typeChange.equal_range(Op::TokenType::Colon);
+		auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(branchs,
+			[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
+			[](const decltype(begin_it)& it) { return make_tuple(new int(get<3>(it->second)), get<2>(it->second), vector<Op::mVType>{ get<0>(it->second), get<1>(it->second), get<1>(it->second), get<1>(it->second) }); },
+			[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
+			begin_it, end_it);
+		if (typ.type == Op::mType::type_error)
+			throw(ErrNoOverloadFunction(lineNo, Op::Ch::ToString(Op::TokenType::Colon)));
+		_type = typ; opID = *opIDPtr; delete opIDPtr;
+		if constexpr (debug)clog << Op::Ch::ToString(Op::TokenType::Colon) << " ";
+		break; }
 	case 22: { //expr->id
 		auto tok = branchs[0]->getToken();
 		if (auto var = sub->checkVar(tok->getId()); var != nullptr) {
@@ -270,66 +280,57 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		auto name = branchs[1]->getToken()->getId();
 		//此为函数调用,same as function
 		if (auto[begin_it, end_it] = subs->checkSub(name); begin_it != end_it) {
-			_type = OverloadCheck<decltype(begin_it)>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
+			_type = OverloadCheck<void, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
 				[](const decltype(begin_it)& it) {
 				vector<mVType> vTypes;
 				transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
 					[](const mType& t) { return mVType{ t, Op::LRvalue::rvalue, false }; });
-				return make_pair(mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes);
-			}, begin_it, end_it);
+				return make_tuple((void*)nullptr, mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes); },
+				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
+				begin_it, end_it);
 			if (_type.type == Op::mType::type_error)
 				throw(ErrNoOverloadFunction(lineNo, name));
 			break;
 		}
 		//此为弹幕变换
-		if (auto[begin_it, end_it] = subs->checkSub(name); begin_it != end_it) {
-			_type = OverloadCheck<decltype(begin_it)>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
+		if (auto[begin_it, end_it] = ReadIns::mode.equal_range(name); begin_it != end_it) {
+			auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs,
+				[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
 				[](const decltype(begin_it)& it) {
-				vector<mVType> vTypes;
-				transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
-					[](const mType& t) { return mVType{ t, Op::LRvalue::rvalue, false }; });
-				return make_pair(mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes);
-			}, begin_it, end_it);
-			if (_type.type == Op::mType::type_error)
+					vector<mVType> vTypes;
+					transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
+						[](const ReadIns::NumType& t) { return mVType{ Op::Ch::ToType(t), Op::LRvalue::rvalue, false }; });
+					return make_tuple(new int(get<0>(it->second)), VTYPE(Void, r), vTypes); },
+				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
+					begin_it, end_it);
+			if (typ.type == Op::mType::type_error)
 				throw(ErrNoOverloadFunction(lineNo, name));
+			_type = VTYPE(Void, r); opID = *opIDPtr; delete opIDPtr;
+			this->id = 34;
 			break;
 		}
-		if (auto it = ReadIns::mode.find(name); it != ReadIns::mode.end()) {
+		//此为ins调用
+		if (auto[begin_it, end_it] = ReadIns::ins.equal_range(name); begin_it != end_it) {
 			//if "anything" or "str call" then no typecheck
-			auto declTypes = it->second.second;
+			auto declTypes = begin_it->second.second;
 			if (declTypes == decltype(declTypes){ ReadIns::NumType::String, ReadIns::NumType::Call }) {
 				//TODO only check "str"
 			}
 			else if (declTypes != decltype(declTypes){ ReadIns::NumType::Anything }) {
-				auto[typ, _opID] = OverloadCheck<int, decltype(it)>(insv->branchs,
+				auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs,
 					[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
-					[](const decltype(it)& it) {
+					[](const decltype(begin_it)& it) {
 						vector<mVType> vTypes;
 						transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
 							[](const ReadIns::NumType& t) { return mVType{ Op::Ch::ToType(t), Op::LRvalue::rvalue, false }; });
-						return make_tuple(it->second.first, VTYPE(Void, r), vTypes);
-				}, it);
+						return make_tuple(new int(it->second.first), VTYPE(Void, r), vTypes); },
+					[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
+					begin_it, end_it);
 				if (typ.type == Op::mType::type_error)
 					throw(ErrNoOverloadFunction(lineNo, name));
 			}
 			_type = VTYPE(Void, r);
 			this->id = 35;
-			break;
-		}
-		//此为ins调用
-		if (auto[begin_it, end_it] = ReadIns::ins.equal_range(name); begin_it != end_it) {
-			auto[typ, _opID] = OverloadCheck<int, decltype(begin_it)>(insv->branchs,
-				[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
-				[](const decltype(begin_it)& it) {
-				vector<mVType> vTypes;
-				transform(get<3>(it->second).cbegin(), get<3>(it->second).cend(), inserter(vTypes, vTypes.begin()),
-					[](const mType& t) { return mVType{ t, Op::LRvalue::rvalue, false }; });
-				return make_tuple(get<0>(it->second), VTYPE(Void, r), vTypes);
-			}, begin_it, end_it);
-			if (typ.type == Op::mType::type_error)
-				throw(ErrNoOverloadFunction(lineNo, name));
-			_type = VTYPE(Void, r); opID = _opID;
-			this->id = 34;
 			break;
 		}
 		if constexpr (debug) clog << "ins " << name << " ";
@@ -338,32 +339,47 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 25: { //expr->Unary_op expr
 		Op::TokenType tok = branchs[1]->getToken()->type();
 		auto[begin_it, end_it] = Op::mVType::typeChange.equal_range(tok);
-		auto[typ, _opID] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>>(vector<GrammarTree*>{ branchs[0] },
-			[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
-			[](const decltype(begin_it)& it) { return make_tuple(get<3>(it->second), get<2>(it->second), vector<Op::mVType>{ get<1>(it->second) }); },
+		auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it)>(vector<GrammarTree**>{ &branchs[0] },
+			[sub, subs, whileBlock](GrammarTree** tree) { return (*tree)->TypeCheck(sub, subs, whileBlock); },
+			[](const decltype(begin_it)& it) { return make_tuple(new int(get<3>(it->second)), get<2>(it->second), vector<Op::mVType>{ get<1>(it->second) }); },
+			[](Op::Rank rank, vector<GrammarTree**>::iterator& it) { **it = (**it)->typeChange(rank); },
 			begin_it, end_it);
 		if (typ.type == Op::mType::type_error)
 			throw(ErrNoOverloadFunction(lineNo, Op::Ch::ToString(tok)));
-		_type = VTYPE(Void, r); opID = _opID;
-		//exprTypeCheck(typ, sub, subs, whileBlock);
-		if constexpr (debug)clog << Op::Ch::ToString(typ) << " ";
+		_type = typ; opID = *opIDPtr; delete opIDPtr;
+		if (static_cast<tNoVars*>(branchs[0])->get_mVType().isLiteral)
+			LiteralCal();
+		if constexpr (debug)clog << Op::Ch::ToString(tok) << " ";
 		break; }
 	case 26: { //expr->expr Binary_op expr/exprf/inif
 		auto tok = branchs[1]->getToken()->type();
 		auto[begin_it, end_it] = Op::mVType::typeChange.equal_range(tok);
-		auto[typ, _opID] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>>(vector<GrammarTree*>{ branchs[0], branchs[2] } ,
-			[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
-			[](const decltype(begin_it)& it) { return make_tuple(get<3>(it->second), get<2>(it->second), vector<Op::mVType>{ get<0>(it->second), get<1>(it->second) }); },
+		auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it)>(vector<GrammarTree**>{ &branchs[0], &branchs[2] } ,
+			[sub, subs, whileBlock](GrammarTree** tree) { return (*tree)->TypeCheck(sub, subs, whileBlock); },
+			[](const decltype(begin_it)& it) { return make_tuple(new int(get<3>(it->second)), get<2>(it->second), vector<Op::mVType>{ get<1>(it->second), get<0>(it->second) }); },
+			[](Op::Rank rank, vector<GrammarTree**>::iterator& it) { **it = (**it)->typeChange(rank); },
 			begin_it, end_it);
 		if (typ.type == Op::mType::type_error)
 			throw(ErrNoOverloadFunction(lineNo, Op::Ch::ToString(tok)));
-		_type = VTYPE(Void, r); opID = _opID;
-		//exprTypeCheck(typ, sub, subs, whileBlock);
-		if constexpr (debug)clog << Op::Ch::ToString(typ) << " ";
+		_type = typ; opID = *opIDPtr; delete opIDPtr;
+		if (static_cast<tNoVars*>(branchs[0])->get_mVType().isLiteral && static_cast<tNoVars*>(branchs[2])->get_mVType().isLiteral)
+			LiteralCal();
+		if constexpr (debug)clog << Op::Ch::ToString(tok) << " ";
 		break; }
-	case 27: //expr->expr [ expr ]
-		exprTypeCheck(Op::TokenType::MidBra, sub, subs, whileBlock);
+	case 27: { //expr->expr [ expr ]
+		auto[begin_it, end_it] = Op::mVType::typeChange.equal_range(Op::TokenType::MidBra);
+		auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it)>(vector<GrammarTree**>{ &branchs[0], &branchs[2] },
+			[sub, subs, whileBlock](GrammarTree** tree) { return (*tree)->TypeCheck(sub, subs, whileBlock); },
+			[](const decltype(begin_it)& it) { return make_tuple(new int(get<3>(it->second)), get<2>(it->second), vector<Op::mVType>{ get<1>(it->second), get<0>(it->second) }); },
+			[](Op::Rank rank, vector<GrammarTree**>::iterator& it) { **it = (**it)->typeChange(rank); },
+			begin_it, end_it);
+		if (typ.type == Op::mType::type_error)
+			throw(ErrNoOverloadFunction(lineNo, Op::Ch::ToString(Op::TokenType::MidBra)));
+		_type = typ; opID = *opIDPtr; delete opIDPtr;
+		if (static_cast<tNoVars*>(branchs[0])->get_mVType().isLiteral && static_cast<tNoVars*>(branchs[2])->get_mVType().isLiteral)
+			LiteralCal();
 		if constexpr (debug)clog << Op::Ch::ToString(Op::TokenType::MidBra) << " ";
+		break; }
 		break;
 	case 28: { //expr->( types ) expr
 		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
@@ -389,25 +405,36 @@ void tNoVars::extractlabel(map<string, GrammarTree*>& labels) {
 int tNoVars::getLineNo() const { return lineNo; }
 
 GrammarTree* tNoVars::typeChange(Op::Rank rank) {
-	if (rank % mVType::ITOF == mVType::LTOR) {
+	if (rank.test(Op::Rank::LTOR)) {
 		//左值到右值直接赋值进去
 		_type.valuetype = Op::LRvalue::rvalue;
-		rank -= mVType::LTOR;
 	}
-	if (rank == mVType::ITOF) {
+	if (rank.test(Op::Rank::ITOF)) {
 		//整数转浮点
 		if (_type.isLiteral) {
 			//如果是字面量，说明一定是expr->num
-			branchs[0]->typeChange(rank);
+			branchs[0] = branchs[0]->typeChange(rank);
 			_type.type = TYPE(Float);
 			return this;
 		}
 		return new tNoVars(VTYPE(Float, r, _type.isLiteral), 28, -1, this, new tTerminator(new Token_KeywordType(-1, Op::mType::Float)));
 	}
-	if (rank % mVType::VTOOTHER == 0) {
-		//void转other
-		Op::mType target = (Op::mType)(rank / mVType::VTOOTHER + 1);
-		_type.type = target;
+	//void转other，并且一定是(*ptr)，赋值进去
+	if (rank.test(Op::Rank::VTOI)) {
+		_type.type = TYPE(Int);
+		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(Int);
+	}
+	else if (rank.test(Op::Rank::VTOF)) {
+		_type.type = TYPE(Float);
+		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(Float);
+	}
+	else if (rank.test(Op::Rank::VTOSTR)) {
+		_type.type = TYPE(String);
+		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(String);
+	}
+	else if (rank.test(Op::Rank::VTOPOINT)) {
+		_type.type = TYPE(Point);
+		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(Point);
 	}
 	return this;
 }
@@ -734,7 +761,7 @@ void tRoot::addSub(tSub* s) {
 	s->insertDecl(subdecl);
 }
 
-auto tRoot::checkSub(const string& id) {
+decltype(declval<multimap<string, pair<mType, vector<mType>>>>().equal_range(declval<string>())) tRoot::checkSub(const string& id) {
 	return subdecl.equal_range(id);
 }
 

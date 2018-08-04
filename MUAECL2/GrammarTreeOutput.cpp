@@ -1700,8 +1700,10 @@ string tRoot::getSubDecoratedName(const string& id) const {
 		return id;
 	} else {
 		pair<mType, vector<mType>> val_subdecl;
-		val_subdecl = this->subdecl.at(id);
-		return NameDecorator::decorateSubName(id, val_subdecl.first, val_subdecl.second);
+		// TODO: subdecl change to multimap
+		//val_subdecl = this->subdecl.at(id);
+		//return NameDecorator::decorateSubName(id, val_subdecl.first, val_subdecl.second);
+		return id;
 	}
 }
 
