@@ -558,6 +558,34 @@ static inline const tNoVars* cast_to_insv(const GrammarTree* p) {
 	return insv;
 }
 
+static inline tNoVars* cast_to_ini(GrammarTree* p) {
+	if (p->type() != Op::NonTerm::ini) throw(ErrDesignApp("cast_to_ini : p->type() != Op::NonTerm::ini"));
+	tNoVars* ini = dynamic_cast<tNoVars*>(p);
+	if (!ini) throw(ErrDesignApp("cast_to_ini : cannot cast p to type \"tNoVars*\""));
+	return ini;
+}
+
+static inline const tNoVars* cast_to_ini(const GrammarTree* p) {
+	if (p->type() != Op::NonTerm::ini) throw(ErrDesignApp("cast_to_ini : p->type() != Op::NonTerm::ini"));
+	const tNoVars* ini = dynamic_cast<const tNoVars*>(p);
+	if (!ini) throw(ErrDesignApp("cast_to_ini : cannot cast p to type \"const tNoVars*\""));
+	return ini;
+}
+
+static inline tNoVars* cast_to_inif(GrammarTree* p) {
+	if (p->type() != Op::NonTerm::inif) throw(ErrDesignApp("cast_to_inif : p->type() != Op::NonTerm::inif"));
+	tNoVars* inif = dynamic_cast<tNoVars*>(p);
+	if (!inif) throw(ErrDesignApp("cast_to_inif : cannot cast p to type \"tNoVars*\""));
+	return inif;
+}
+
+static inline const tNoVars* cast_to_inif(const GrammarTree* p) {
+	if (p->type() != Op::NonTerm::inif) throw(ErrDesignApp("cast_to_inif : p->type() != Op::NonTerm::inif"));
+	const tNoVars* inif = dynamic_cast<const tNoVars*>(p);
+	if (!inif) throw(ErrDesignApp("cast_to_inif : cannot cast p to type \"const tNoVars*\""));
+	return inif;
+}
+
 static inline tNoVars* cast_to_normal_stmt(GrammarTree* p) {
 	if (p->type() != Op::NonTerm::stmt) throw(ErrDesignApp("cast_to_normal_stmt : p->type() != Op::NonTerm::stmt"));
 	if (p->isLabel()) throw(ErrDesignApp("cast_to_normal_stmt : p->isLabel() returns true"));
@@ -694,7 +722,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		uint32_t id_target_expr = sub_ctx.count_target++;
 		uint32_t id_target_stmt = sub_ctx.count_target++;
 		uint32_t id_target_after = sub_ctx.count_target++;
-		stack_rvalue_int_expr_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
+		stack_rvalue_int_exprf_output(this->branchs[1], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_loopvar, false) }, -1);
 		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_expr), new Parameter_int(0) }, 0);
 		sub_ctx.insert_dummyins_target(id_target_stmt);
@@ -946,14 +974,29 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			});
 		switch (this->branchs[1]->getToken()->type()) {
 		case Op::TokenType::Equal: {
-			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
-			shared_ptr<LvalueResult> lvres_assign = lvres_l;
-			if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
-			cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-			lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type)));
-			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
+			switch (this->branchs[0]->type()) {
+			case Op::NonTerm::exprf: {
+				if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
+				shared_ptr<LvalueResult> lvres_assign = lvres_l;
+				if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
+				cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+				lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type)));
+				return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
+			}
+			case Op::NonTerm::inif: {
+				if (cast_to_inif(this->branchs[0])->_type.type != Op::mType::inilist) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
+				shared_ptr<LvalueResult> lvres_assign = lvres_l;
+				if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
+				cast_to_inif(this->branchs[0])->OutputRvalueInif(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+				lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type)));
+				return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
+			}
+			default:
+				throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown nonterm type"s).c_str()));
+			}
 		}
 		case Op::TokenType::PlusEqual:[[fallthrough]];
 		case Op::TokenType::MinusEqual: {
@@ -1121,6 +1164,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExprf(SubOutputContext& sub_ctx, S
 		if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputLvalueExprf : id=21 : cast_to_expr(this->branchs[3])->_type.type != this->_type.type"));
 		cast_to_expr(this->branchs[0])->OutputLvalueExpr(sub_ctx, stmt_ctx, discard_result)->ToStackAddrLvalueResult(sub_ctx, stmt_ctx);
 		sub_ctx.stack_difficulty_mask.pop();
+		// Decrease the current relative stack pointer to account for difficulty-masked stack pushes.
+		stmt_ctx.stackptr_rel_current -= 3;
 		return shared_ptr<LvalueResult>(new StackAddrLvalueResult(sub_ctx, stmt_ctx, this->_type.type));
 	}
 	default:
@@ -1153,7 +1198,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 			} else {
 				float val = *this->branchs[0]->getToken()->getFloat();
-				return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int, vector<shared_ptr<Parameter>>({ shared_ptr<Parameter>(new Parameter_float(val)) })));
+				return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float, vector<shared_ptr<Parameter>>({ shared_ptr<Parameter>(new Parameter_float(val)) })));
 			}
 		default:
 			throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=23 : unknown type"));
@@ -1640,10 +1685,82 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExprf(SubOutputContext& sub_ctx, S
 		if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : id=21 : cast_to_expr(this->branchs[0])->_type.type != this->_type.type"));
 		cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 		sub_ctx.stack_difficulty_mask.pop();
+		// Decrease the current relative stack pointer to account for difficulty-masked stack pushes.
+		stmt_ctx.stackptr_rel_current -= 3;
 		return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
 	}
 	default:
 		throw(ErrDesignApp("tNoVars::OutputRvalueExprf : unknown exprf id"));
+	}
+}
+
+shared_ptr<RvalueResult> tNoVars::OutputRvalueIni(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
+	if (this->type() != Op::NonTerm::ini) throw(ErrDesignApp("tNoVars::OutputRvalueIni : this->type() != Op::NonTerm::ini"));
+	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueIni : this->_type.valuetype != Op::LRvalue::rvalue"));
+	switch (this->branchs.size()) {
+	case 1: {
+		if (discard_result) {
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->DiscardResult(sub_ctx, stmt_ctx);
+			return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, cast_to_expr(this->branchs[0])->getType()));
+		} else {
+			// Push from right to left.
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, cast_to_expr(this->branchs[0])->getType()));
+		}
+		break;
+	}
+	case 2: {
+		if (cast_to_expr(this->branchs[1])->getType() != Op::mType::Float) throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown expr type"));
+		if (cast_to_expr(this->branchs[0])->getType() != Op::mType::Float) throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown expr type"));
+		if (discard_result) {
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->DiscardResult(sub_ctx, stmt_ctx);
+			cast_to_expr(this->branchs[1])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->DiscardResult(sub_ctx, stmt_ctx);
+			return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+		} else {
+			// Push from right to left.
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_expr(this->branchs[1])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+		}
+		break;
+	}
+	default:
+		throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown initializer list size"));
+	}
+}
+
+shared_ptr<RvalueResult> tNoVars::OutputRvalueInif(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
+	if (this->type() != Op::NonTerm::inif) throw(ErrDesignApp("tNoVars::OutputRvalueInif : this->type() != Op::NonTerm::inif"));
+	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueInif : this->_type.valuetype != Op::LRvalue::rvalue"));
+	switch (this->id) {
+	case 20:// inif->ini
+	{
+		return cast_to_ini(this->branchs[0])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result);
+	}
+	case 21:// inif->ini : ini : ini : ini
+	{
+		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF1);
+		if (cast_to_ini(this->branchs[3])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[3])->_type.type != this->_type.type"));
+		cast_to_ini(this->branchs[3])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		sub_ctx.stack_difficulty_mask.pop();
+		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF2);
+		if (cast_to_ini(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[2])->_type.type != this->_type.type"));
+		cast_to_ini(this->branchs[2])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		sub_ctx.stack_difficulty_mask.pop();
+		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF4);
+		if (cast_to_ini(this->branchs[1])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[1])->_type.type != this->_type.type"));
+		cast_to_ini(this->branchs[1])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		sub_ctx.stack_difficulty_mask.pop();
+		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF8);
+		if (cast_to_ini(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[0])->_type.type != this->_type.type"));
+		cast_to_ini(this->branchs[0])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		sub_ctx.stack_difficulty_mask.pop();
+		// Decrease the current relative stack pointer to account for difficulty-masked stack pushes.
+		stmt_ctx.stackptr_rel_current -= 3;
+		return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
+	}
+	default:
+		throw(ErrDesignApp("tNoVars::OutputRvalueInif : unknown inif id"));
 	}
 }
 

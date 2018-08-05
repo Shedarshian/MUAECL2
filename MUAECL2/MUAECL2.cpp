@@ -25,7 +25,8 @@ int main(int argc, char* argv[])
 		tRoot* tree = parser.analyse();
 		parser.TypeCheck();
 		RawEclGenerator raw_ecl_generator(parser.Output());
-		raw_ecl_generator.generate(cout);
+		ofstream out("out.ecl");
+		raw_ecl_generator.generate(out);
 	}
 	catch (ExceptionWithLineNo &e) {
 		cerr << e.lineNo << " " << e.what() << endl;
@@ -35,13 +36,14 @@ int main(int argc, char* argv[])
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
-	catch (ErrDesignApp &e) {
+	/*catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
 	}
 	catch (exception &e) {
 		cerr << e.what() << endl;
-	}
+	}*/
 	Parser::clear();
+	system("pause");
     return 0;
 }
 
