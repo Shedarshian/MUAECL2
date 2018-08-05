@@ -36,13 +36,14 @@ int main(int argc, char* argv[])
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
-	catch (ErrDesignApp &e) {
+	/*catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
 	}
 	catch (exception &e) {
 		cerr << e.what() << endl;
-	}
+	}*/
 	Parser::clear();
+	system("pause");
     return 0;
 }
 

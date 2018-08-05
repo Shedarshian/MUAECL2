@@ -137,6 +137,8 @@ public:
 	shared_ptr<RvalueResult> OutputRvalueExpr(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
 	shared_ptr<LvalueResult> OutputLvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
 	shared_ptr<RvalueResult> OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<RvalueResult> OutputRvalueIni(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
+	shared_ptr<RvalueResult> OutputRvalueInif(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype = false, bool is_root_expr = false) const;
 private:
 	int id;
 	int lineNo;
