@@ -25,7 +25,7 @@ mType Op::Ch::ToType(ReadIns::NumType t) { return NumTypeToType.find(t)->second;
 ReadIns::NumType Op::Ch::ToNumType(mType t) { return TypeToNumType.find(t)->second; }
 NonTerm Op::Ch::ToType(int id) {
 	if (id >= 2 && id <= 11 || id >= 29 && id <= 31) return NonTerm::stmt;
-	if (id >= 22 && id <= 28) return NonTerm::expr;
+	if (id >= 22 && id <= 28 || id == 34 || id == 35) return NonTerm::expr;
 	if (id == 12) return NonTerm::inia;
 	if (id == 14 || id == 15) return NonTerm::inif;
 	if (id == 16 || id == 17) return NonTerm::ini;
