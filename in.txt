@@ -1,3 +1,12 @@
+sub test_1(){}
+sub test_2(int a){}
+sub test_3(float a){}
+sub test_4(int a, float b){}
+//sub test_4_error(int a, float a){}
+sub test_5(int a, float b, point c){}
+sub test_6(){}
+
+
 sub A(int a, string b){
 	//zhushi
 	/*zhushi*/
@@ -20,8 +29,8 @@ sub B(){
 	int d=1:2:3:*d;
 	if(d)
 		for(8:10:15:0x20){
-			C(1.:2:3:4);
-			thread C(10);
+			//C(1.:2:3:4);
+		//	thread C(10);
 			if(0)
 				break;
 			else {
