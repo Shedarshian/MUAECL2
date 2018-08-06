@@ -423,18 +423,34 @@ GrammarTree* tNoVars::typeChange(Op::Rank rank) {
 	if (rank.test(Op::Rank::VTOI)) {
 		_type.type = TYPE(Int);
 		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(Int);
+		if (rank.test(Op::Rank::LTOR)) {
+			//(*ptr)，赋值进去
+			static_cast<tNoVars*>(branchs[0])->_type.valuetype = Op::LRvalue::rvalue;
+		}
 	}
 	else if (rank.test(Op::Rank::VTOF)) {
 		_type.type = TYPE(Float);
 		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(Float);
+		if (rank.test(Op::Rank::LTOR)) {
+			//(*ptr)，赋值进去
+			static_cast<tNoVars*>(branchs[0])->_type.valuetype = Op::LRvalue::rvalue;
+		}
 	}
 	else if (rank.test(Op::Rank::VTOSTR)) {
 		_type.type = TYPE(String);
 		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(String);
+		if (rank.test(Op::Rank::LTOR)) {
+			//(*ptr)，赋值进去
+			static_cast<tNoVars*>(branchs[0])->_type.valuetype = Op::LRvalue::rvalue;
+		}
 	}
 	else if (rank.test(Op::Rank::VTOPOINT)) {
 		_type.type = TYPE(Point);
 		static_cast<tNoVars*>(branchs[0])->_type.type = TYPE(Point);
+		if (rank.test(Op::Rank::LTOR)) {
+			//(*ptr)，赋值进去
+			static_cast<tNoVars*>(branchs[0])->_type.valuetype = Op::LRvalue::rvalue;
+		}
 	}
 	return this;
 }
