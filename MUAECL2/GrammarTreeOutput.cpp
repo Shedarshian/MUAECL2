@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <stack>
+#include <queue>
 #include <algorithm>
 #include "GrammarTree.h"
 #include "NameDecorator.h"
@@ -120,7 +121,7 @@ public:
 	RvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : type(type) {}
 	virtual ~RvalueResult() = default;
 	/// <summary>Get the type of the result.</summary>
-	virtual Op::mType GetType() const { return this->type; }
+	virtual Op::mType GetMType() const { return this->type; }
 	/// <summary>
 	/// Output instructions that discard this result.
 	/// This consumes the result.
@@ -313,7 +314,7 @@ public:
 	LvalueResult(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, Op::mType type) : type(type) {}
 	virtual ~LvalueResult() = default;
 	/// <summary>Get the type of the result.</summary>
-	virtual Op::mType GetType() const { return this->type; }
+	virtual Op::mType GetMType() const { return this->type; }
 	/// <summary>
 	/// Output instructions that discard this result.
 	/// This consumes the result.
@@ -411,7 +412,7 @@ public:
 		}
 	}
 	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
-		if (rvres->GetType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetType() != this->type"));
+		if (rvres->GetMType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetMType() != this->type"));
 		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 		switch (this->type) {
 		case Op::mType::Void:
@@ -473,7 +474,7 @@ public:
 		return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, this->type, this->params));
 	}
 	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
-		if (rvres->GetType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetType() != this->type"));
+		if (rvres->GetMType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetMType() != this->type"));
 		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 		switch (this->type) {
 		case Op::mType::Void:
@@ -790,7 +791,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 			for_each(vec_result.crbegin(), vec_result.crend(),
 				[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
 					vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
-					switch (val_result->GetType()) {
+					switch (val_result->GetMType()) {
 					case Op::mType::Void: {
 						if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
 						break;
@@ -986,7 +987,6 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 			}
 			case Op::NonTerm::inif: {
-				if (cast_to_inif(this->branchs[0])->_type.type != Op::mType::inilist) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 				shared_ptr<LvalueResult> lvres_assign = lvres_l;
 				if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
@@ -1205,7 +1205,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		}
 		break;
 	}
-	case 24:// expr->id ( insv )
+	case 24:// expr->id ( insv )//call
 	{
 		if (this->_type.type != Op::mType::Void) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : unknown type"));
 		const tNoVars* insv = cast_to_insv(this->branchs[0]);
@@ -1231,7 +1231,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				for_each(vec_result.crbegin(), vec_result.crend(),
 					[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
 						vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
-						switch (val_result->GetType()) {
+						switch (val_result->GetMType()) {
 						case Op::mType::Void: {
 							if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
 							break;
@@ -1260,101 +1260,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
 			}
 		}
-		{
-			// Directly call ECL instruction.
-			pair<
-				multimap<string, pair<int, vector<ReadIns::NumType>>>::const_iterator,
-				multimap<string, pair<int, vector<ReadIns::NumType>>>::const_iterator
-			> range_ins_id(ReadIns::ins.equal_range(this->branchs[1]->getToken()->getId()));
-			multimap<string, pair<int, vector<ReadIns::NumType>>>::const_iterator it_ins;
-			for (it_ins = range_ins_id.first; it_ins != range_ins_id.second; ++it_ins) {
-				// For each instruction slot whose ID is equal to the ID of the call:
-				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
-				// If the parameter type specified for this instruction slot is "anything", succeed immediately.
-				if (vec_numtype->size() == 1 && vec_numtype->at(0) == ReadIns::NumType::Anything) break;
-				vector<shared_ptr<RvalueResult>>::const_reverse_iterator it_result;
-				vector<ReadIns::NumType>::const_iterator it_numtype;
-				for (
-					it_result = vec_result.crbegin(), it_numtype = vec_numtype->cbegin();
-					it_result != vec_result.crend() && it_numtype != vec_numtype->cend();
-					++it_result) {
-					if (*it_numtype == ReadIns::NumType::Call) {
-						if ((*it_result)->GetType() == Op::mType::Int
-							|| (*it_result)->GetType() == Op::mType::Float)
-							continue;
-						else
-							break;
-					}
-					// For each rvalue result returned by the exprf outputting function:
-					bool is_res_match = false;
-					switch ((*it_result)->GetType()) {
-					case Op::mType::Int:
-						is_res_match = *(it_numtype++) == ReadIns::NumType::Int;
-						break;
-					case Op::mType::Float:
-						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
-						break;
-					default:
-						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : unknown actual parameter type"));
-					}
-					// If the actual parameter doesn't match the formal parameter(s), fail immediately (for this instruction slot).
-					if (!is_res_match) break;
-				}
-				// If the parameters match, succeed immediately.
-				if (it_result == vec_result.crend()) {
-					if (it_numtype == vec_numtype->cend()) break;
-					if (*it_numtype == ReadIns::NumType::Call) break;
-				}
-			}
-			if (it_ins != range_ins_id.second) {
-				if (!is_root_expr || !discard_result) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : only an expression that's a root expression and has its result discarded may be an instruction call expression"));
-				// If an instruction slot matches the call:
-				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
-				vector<ReadIns::NumType>::const_iterator it_numtype;
-				// From left to right.
-				vector<shared_ptr<Parameter>> vec_param;
-				it_numtype = vec_numtype->cbegin();
-				for_each(vec_result.crbegin(), vec_result.crend(),
-					[&sub_ctx, &stmt_ctx, &vec_numtype, &it_numtype, &vec_param](const shared_ptr<RvalueResult>& val_result) {
-						if (it_numtype == vec_numtype->cend()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : it_numtype == vec_numtype->cend()"));
-						vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
-						switch (*it_numtype) {
-						case ReadIns::NumType::Int: {
-							if (vec_param_result.size() != 1 || vec_param_result.at(0)->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_param_result.size() != 1 || vec_param_result.at(0)->isFloat()"));
-							vec_param.reserve(vec_param.size() + vec_param_result.size());
-							vec_param.insert(vec_param.cend(), vec_param_result.cbegin(), vec_param_result.cend());
-							++it_numtype;
-							break;
-						}
-						case ReadIns::NumType::Float: {
-							if (vec_param_result.size() != 1 || !vec_param_result.at(0)->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_param_result.size() != 1 || !vec_param_result.at(0)->isFloat()"));
-							vec_param.reserve(vec_param.size() + vec_param_result.size());
-							vec_param.insert(vec_param.cend(), vec_param_result.cbegin(), vec_param_result.cend());
-							++it_numtype;
-							break;
-						}
-						case ReadIns::NumType::Call: {
-							vec_param.reserve(vec_param.size() + vec_param_result.size());
-							for (const shared_ptr<Parameter>& val_param_result : vec_param_result) {
-								vec_param.push_back(shared_ptr<Parameter>(new Parameter_call(val_param_result, val_param_result->isFloat(), val_param_result->isFloat())));
-							}
-							break;
-						}
-						default:
-							throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : unknown numtype"));
-						}
-					}
-				);
-				vector<Parameter*> paras;
-				for (const shared_ptr<Parameter>& val_param : vec_param) {
-					paras.push_back(val_param->Duplicate());
-				}
-				sub_ctx.insert_ins(stmt_ctx, it_ins->second.first, paras, 0);
-				paras.clear();
-				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
-			}
-		}
-		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : subroutine or instruction not found"));
+		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : subroutine not found"));
 	}
 	case 25:// expr->Unary_op expr
 	{
@@ -1654,6 +1560,227 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		}
 		break;
 	}
+	case 34:// expr->id ( insv )//ins
+	{
+		if (this->_type.type != Op::mType::Void) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown type"));
+		const tNoVars* insv = cast_to_insv(this->branchs[0]);
+		// From right to left.
+		vector<shared_ptr<RvalueResult>> vec_result;
+		for_each(insv->branchs.cbegin(), insv->branchs.cend(),
+			[&sub_ctx, &stmt_ctx, &vec_result](const GrammarTree* val_branch) {
+				const tNoVars* exprf = cast_to_exprf(val_branch);
+				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false));
+			}
+		);
+		{
+			// Directly call ECL instruction.
+			pair<
+				multimap<string, pair<int, vector<ReadIns::NumType>>>::const_iterator,
+				multimap<string, pair<int, vector<ReadIns::NumType>>>::const_iterator
+			> range_ins_id(ReadIns::ins.equal_range(this->branchs[1]->getToken()->getId()));
+			multimap<string, pair<int, vector<ReadIns::NumType>>>::const_iterator it_ins;
+			for (it_ins = range_ins_id.first; it_ins != range_ins_id.second; ++it_ins) {
+				// For each instruction slot whose ID is equal to the ID of the call:
+				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
+				// If the parameter type specified for this instruction slot is "anything", succeed immediately.
+				if (vec_numtype->size() == 1 && vec_numtype->at(0) == ReadIns::NumType::Anything) break;
+				vector<shared_ptr<RvalueResult>>::const_reverse_iterator it_result;
+				vector<ReadIns::NumType>::const_iterator it_numtype;
+				for (
+					it_result = vec_result.crbegin(), it_numtype = vec_numtype->cbegin();
+					it_result != vec_result.crend() && it_numtype != vec_numtype->cend();
+					++it_result) {
+					if (*it_numtype == ReadIns::NumType::Call) {
+						if ((*it_result)->GetMType() == Op::mType::Int
+							|| (*it_result)->GetMType() == Op::mType::Float)
+							continue;
+						else
+							break;
+					}
+					// For each rvalue result returned by the exprf outputting function:
+					bool is_res_match = false;
+					switch ((*it_result)->GetMType()) {
+					case Op::mType::Int:
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Int;
+						break;
+					case Op::mType::Float:
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
+						break;
+					default:
+						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown actual parameter type"));
+					}
+					// If the actual parameter doesn't match the formal parameter(s), fail immediately (for this instruction slot).
+					if (!is_res_match) break;
+				}
+				// If the parameters match, succeed immediately.
+				if (it_result == vec_result.crend()) {
+					if (it_numtype == vec_numtype->cend()) break;
+					if (*it_numtype == ReadIns::NumType::Call) break;
+				}
+			}
+			if (it_ins != range_ins_id.second) {
+				// If an instruction slot matches the call:
+				if (!is_root_expr || !discard_result) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : only an expression that's a root expression and has its result discarded may be an instruction call expression"));
+				// From left to right.
+				queue<shared_ptr<Parameter>> queue_param_result;
+				for_each(vec_result.crbegin(), vec_result.crend(),
+					[&sub_ctx, &stmt_ctx, &queue_param_result](const shared_ptr<RvalueResult>& val_result) {
+						vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
+						for (const shared_ptr<Parameter>& val_param_result : vec_param_result) {
+							queue_param_result.push(val_param_result);
+						}
+					}
+				);
+				// From left to right.
+				const vector<ReadIns::NumType>* vec_numtype = &it_ins->second.second;
+				vector<ReadIns::NumType>::const_iterator it_numtype;
+				vector<shared_ptr<Parameter>> vec_param;
+				for (
+					it_numtype = vec_numtype->cbegin();
+					it_numtype != vec_numtype->cend();
+					++it_numtype) {
+					switch (*it_numtype) {
+					case ReadIns::NumType::Int: {
+						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
+						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
+						vec_param.push_back(queue_param_result.front());
+						queue_param_result.pop();
+						break;
+					}
+					case ReadIns::NumType::Float: {
+						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
+						if (!queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : !queue_param_result.front()->isFloat()"));
+						vec_param.push_back(queue_param_result.front());
+						queue_param_result.pop();
+						break;
+					}
+					case ReadIns::NumType::Call: {
+						vec_param.reserve(vec_param.size() + queue_param_result.size());
+						for (; !queue_param_result.empty(); queue_param_result.pop()) {
+							vec_param.push_back(shared_ptr<Parameter>(new Parameter_call(queue_param_result.front(), queue_param_result.front()->isFloat(), queue_param_result.front()->isFloat())));
+						}
+						break;
+					}
+					default:
+						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown numtype"));
+					}
+				}
+				if (!queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : !queue_param_result.empty()"));
+				vector<Parameter*> paras;
+				for (const shared_ptr<Parameter>& val_param : vec_param) {
+					paras.push_back(val_param->Duplicate());
+				}
+				sub_ctx.insert_ins(stmt_ctx, it_ins->second.first, paras, 0);
+				paras.clear();
+				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
+			}
+		}
+		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : instruction not found"));
+	}
+	case 35:// expr->id ( insv )//mode
+	{
+		if (!is_root_expr || !discard_result) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : only an expression that's a root expression and has its result discarded may be a danmaku transformation call expression"));
+		const tNoVars* insv = cast_to_insv(this->branchs[0]);
+		// From right to left.
+		vector<shared_ptr<RvalueResult>> vec_result;
+		for_each(insv->branchs.cbegin(), insv->branchs.cend(),
+			[&sub_ctx, &stmt_ctx, &vec_result](const GrammarTree* val_branch) {
+				const tNoVars* exprf = cast_to_exprf(val_branch);
+				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false));
+			}
+		);
+		{
+			// From left to right.
+			queue<shared_ptr<Parameter>> queue_param_result;
+			for_each(vec_result.crbegin(), vec_result.crend(),
+				[&sub_ctx, &stmt_ctx, &queue_param_result](const shared_ptr<RvalueResult>& val_result) {
+					vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
+					for (const shared_ptr<Parameter>& val_param_result : vec_param_result) {
+						queue_param_result.push(val_param_result);
+					}
+				}
+			);
+			// From left to right.
+			const vector<ReadIns::NumType>* vec_numtype = &ReadIns::mode.at(this->branchs[1]->getToken()->getId()).second;
+			// From left to right.
+			vector<shared_ptr<Parameter>> vec_param;
+			bool has_xform_id;
+			if (queue_param_result.size() == vec_numtype->size() + 2) {
+				// danmaku_id, channel
+				has_xform_id = false;
+				for (uint8_t i = 0; i < 2; ++i) {
+					if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.empty()"));
+					if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.front()->isFloat()"));
+					vec_param.push_back(queue_param_result.front());
+					queue_param_result.pop();
+				}
+			} else if (queue_param_result.size() == vec_numtype->size() + 3) {
+				// danmaku_id, xform_id, channel
+				has_xform_id = true;
+				for (uint8_t i = 0; i < 3; ++i) {
+					if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.empty()"));
+					if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.front()->isFloat()"));
+					vec_param.push_back(queue_param_result.front());
+					queue_param_result.pop();
+				}
+			} else {
+				throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : wrong actual parameter count"));
+			}
+			int id_mode = ReadIns::mode.at(this->branchs[1]->getToken()->getId()).first;
+			vec_param.push_back(std::shared_ptr<Parameter>(new Parameter_int(id_mode)));
+			vector<ReadIns::NumType>::const_iterator it_numtype;
+			// From left to right.
+			vector<shared_ptr<Parameter>> vec_param_abcd;
+			for (
+				it_numtype = vec_numtype->cbegin();
+				it_numtype != vec_numtype->cend() && (*it_numtype) == ReadIns::NumType::Int;
+				++it_numtype
+				) {
+				if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.empty()"));
+				if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.front()->isFloat()"));
+				vec_param_abcd.push_back(queue_param_result.front());
+				queue_param_result.pop();
+			}
+			// From left to right.
+			vector<shared_ptr<Parameter>> vec_param_rsmn;
+			for (
+				;
+				it_numtype != vec_numtype->cend() && (*it_numtype) == ReadIns::NumType::Float;
+				++it_numtype
+				) {
+				if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.empty()"));
+				if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.front()->isFloat()"));
+				vec_param_rsmn.push_back(queue_param_result.front());
+				queue_param_result.pop();
+			}
+			if (it_numtype != vec_numtype->cend()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : it_numtype != vec_numtype->cend()"));
+			if (!queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : !queue_param_result.empty()"));
+			if (vec_param_abcd.size() > 4) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : vec_param_abcd.size() > 4"));
+			if (vec_param_rsmn.size() > 4) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : vec_param_rsmn.size() > 4"));
+			bool is_8param = (vec_param_abcd.size() > 2 || vec_param_rsmn.size() > 2);
+			if (is_8param) {
+				for (; vec_param_abcd.size() < 4; vec_param_abcd.emplace_back(new Parameter_int(-999999)));
+				for (; vec_param_rsmn.size() < 4; vec_param_abcd.emplace_back(new Parameter_float(-999999.0)));
+			} else {
+				for (; vec_param_abcd.size() < 2; vec_param_abcd.emplace_back(new Parameter_int(-999999)));
+				for (; vec_param_rsmn.size() < 2; vec_param_abcd.emplace_back(new Parameter_float(-999999.0)));
+			}
+			vec_param.insert(vec_param.cend(), vec_param_abcd.cbegin(), vec_param_abcd.cend());
+			vec_param.insert(vec_param.cend(), vec_param_rsmn.cbegin(), vec_param_rsmn.cend());
+			vector<Parameter*> paras;
+			for (const shared_ptr<Parameter>& val_param : vec_param) {
+				paras.push_back(val_param->Duplicate());
+			}
+			int id_ins =
+				has_xform_id
+				? (is_8param ? 610 : 609)
+				: (is_8param ? 612 : 611);
+			sub_ctx.insert_ins(stmt_ctx, id_ins, paras, 0);
+			paras.clear();
+			return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
+		}
+		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : danmaku transformation mode not found"));
+	}
 	default:
 		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : unknown expr id"));
 	}
@@ -1700,26 +1827,26 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueIni(SubOutputContext& sub_ctx, Stm
 	switch (this->branchs.size()) {
 	case 1: {
 		if (discard_result) {
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->DiscardResult(sub_ctx, stmt_ctx);
-			return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, cast_to_expr(this->branchs[0])->getType()));
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
+			return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, cast_to_expr(this->branchs[0])->_type.type));
 		} else {
 			// Push from right to left.
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, cast_to_expr(this->branchs[0])->getType()));
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, cast_to_expr(this->branchs[0])->_type.type));
 		}
 		break;
 	}
 	case 2: {
-		if (cast_to_expr(this->branchs[1])->getType() != Op::mType::Float) throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown expr type"));
-		if (cast_to_expr(this->branchs[0])->getType() != Op::mType::Float) throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown expr type"));
+		if (cast_to_expr(this->branchs[1])->_type.type != Op::mType::Float) throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown expr type"));
+		if (cast_to_expr(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp("tNoVars::OutputRvalueIni : unknown expr type"));
 		if (discard_result) {
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->DiscardResult(sub_ctx, stmt_ctx);
-			cast_to_expr(this->branchs[1])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->DiscardResult(sub_ctx, stmt_ctx);
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
+			cast_to_expr(this->branchs[1])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
 			return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 		} else {
 			// Push from right to left.
-			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-			cast_to_expr(this->branchs[1])->OutputRvalueExpr(sub_ctx, stmt_ctx, false, false, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+			cast_to_expr(this->branchs[1])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 		}
 		break;
@@ -1733,11 +1860,11 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueInif(SubOutputContext& sub_ctx, St
 	if (this->type() != Op::NonTerm::inif) throw(ErrDesignApp("tNoVars::OutputRvalueInif : this->type() != Op::NonTerm::inif"));
 	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueInif : this->_type.valuetype != Op::LRvalue::rvalue"));
 	switch (this->id) {
-	case 20:// inif->ini
+	case 14:// inif->ini
 	{
 		return cast_to_ini(this->branchs[0])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result);
 	}
-	case 21:// inif->ini : ini : ini : ini
+	case 15:// inif->ini : ini : ini : ini
 	{
 		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF1);
 		if (cast_to_ini(this->branchs[3])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[3])->_type.type != this->_type.type"));
