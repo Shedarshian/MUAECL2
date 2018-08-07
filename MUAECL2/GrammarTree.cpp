@@ -306,7 +306,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 			if (typ.type == Op::mType::type_error)
 				throw(ErrNoOverloadFunction(lineNo, name));
 			_type = VTYPE(Void, r); opID = *opIDPtr; delete opIDPtr;
-			this->id = 34;
+			this->id = 35;
 			break;
 		}
 		//此为ins调用
@@ -330,7 +330,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 					throw(ErrNoOverloadFunction(lineNo, name));
 			}
 			_type = VTYPE(Void, r);
-			this->id = 35;
+			this->id = 34;
 			break;
 		}
 		if constexpr (debug) clog << "ins " << name << " ";
