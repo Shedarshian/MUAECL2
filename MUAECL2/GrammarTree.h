@@ -384,7 +384,8 @@ public:
 	void addSub(tSub* s);
 	decltype(declval<multimap<string, pair<mType, vector<mType>>>>().equal_range(declval<string>())) checkSub(const string& id);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	string getSubDecoratedName(const string& id) const;
+	/// <param name="types_param">From right to left.</param>
+	string getSubDecoratedName(const string& id, const vector<mType>& types_params) const;
 	fRoot Output() const;
 private:
 	multimap<string, pair<mType, vector<mType>>> subdecl;

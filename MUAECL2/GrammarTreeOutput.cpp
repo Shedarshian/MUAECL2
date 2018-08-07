@@ -834,9 +834,15 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false));
 			}
 		);
+		// From right to left.
+		vector<mType> vec_type_result;
+		vec_type_result.reserve(vec_result.size());
+		for (const shared_ptr<RvalueResult>& val_result : vec_result) {
+			vec_type_result.push_back(val_result->GetMType());
+		}
 		string subname_decorated;
 		try {
-			subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId());
+			subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId(), vec_type_result);
 		} catch (out_of_range&) {
 			subname_decorated.clear();
 		}
@@ -1066,16 +1072,16 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 				shared_ptr<LvalueResult> lvres_assign = lvres_l;
 				if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
-				cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-				lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type)));
+				mType mtype_res = cast_to_exprf(this->branchs[0])->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx)->GetMType();
+				lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, mtype_res)));
 				return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 			}
 			case Op::NonTerm::inif: {
 				shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 				shared_ptr<LvalueResult> lvres_assign = lvres_l;
 				if (!discard_result) lvres_assign = lvres_l->Duplicate(sub_ctx, stmt_ctx);
-				cast_to_inif(this->branchs[0])->OutputRvalueInif(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-				lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type)));
+				mType mtype_res = cast_to_inif(this->branchs[0])->OutputRvalueInif(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx)->GetMType();
+				lvres_assign->Assign(sub_ctx, stmt_ctx, shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, mtype_res)));
 				return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 			}
 			default:
@@ -1316,9 +1322,15 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		);
 		{
 			// Call subroutine.
+			// From right to left.
+			vector<mType> vec_type_result;
+			vec_type_result.reserve(vec_result.size());
+			for (const shared_ptr<RvalueResult>& val_result : vec_result) {
+				vec_type_result.push_back(val_result->GetMType());
+			}
 			string subname_decorated;
 			try {
-				subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId());
+				subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId(), vec_type_result);
 			} catch (out_of_range&) {
 				subname_decorated.clear();
 			}
@@ -1936,7 +1948,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExprf(SubOutputContext& sub_ctx, S
 		cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 		sub_ctx.stack_difficulty_mask.pop();
 		// Decrease the current relative stack pointer to account for difficulty-masked stack pushes.
-		stmt_ctx.stackptr_rel_current -= 3;
+		stmt_ctx.stackptr_rel_current -= 3 * get_count_id_var(this->_type.type);
 		return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
 	}
 	default:
@@ -1990,24 +2002,24 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueInif(SubOutputContext& sub_ctx, St
 	case 15:// inif->ini : ini : ini : ini
 	{
 		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF1);
-		if (cast_to_ini(this->branchs[3])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[3])->_type.type != this->_type.type"));
-		cast_to_ini(this->branchs[3])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		if (cast_to_ini(this->branchs[3])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : cast_to_ini(this->branchs[3])->_type.type != this->_type.type"));
+		mType mtype_res = cast_to_ini(this->branchs[3])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx)->GetMType();
 		sub_ctx.stack_difficulty_mask.pop();
 		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF2);
-		if (cast_to_ini(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[2])->_type.type != this->_type.type"));
-		cast_to_ini(this->branchs[2])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		if (cast_to_ini(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : cast_to_ini(this->branchs[2])->_type.type != this->_type.type"));
+		if (cast_to_ini(this->branchs[2])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx)->GetMType() != mtype_res) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : type mismatch"));
 		sub_ctx.stack_difficulty_mask.pop();
 		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF4);
-		if (cast_to_ini(this->branchs[1])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[1])->_type.type != this->_type.type"));
-		cast_to_ini(this->branchs[1])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		if (cast_to_ini(this->branchs[1])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : cast_to_ini(this->branchs[1])->_type.type != this->_type.type"));
+		if (cast_to_ini(this->branchs[1])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx)->GetMType() != mtype_res) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : type mismatch"));
 		sub_ctx.stack_difficulty_mask.pop();
 		sub_ctx.stack_difficulty_mask.push(sub_ctx.stack_difficulty_mask.top() & 0xF8);
-		if (cast_to_ini(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=21 : cast_to_ini(this->branchs[0])->_type.type != this->_type.type"));
-		cast_to_ini(this->branchs[0])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+		if (cast_to_ini(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : cast_to_ini(this->branchs[0])->_type.type != this->_type.type"));
+		if (cast_to_ini(this->branchs[0])->OutputRvalueIni(sub_ctx, stmt_ctx, discard_result)->ToStackRvalueResult(sub_ctx, stmt_ctx)->GetMType() != mtype_res) throw(ErrDesignApp("tNoVars::OutputRvalueInif : id=15 : type mismatch"));
 		sub_ctx.stack_difficulty_mask.pop();
 		// Decrease the current relative stack pointer to account for difficulty-masked stack pushes.
-		stmt_ctx.stackptr_rel_current -= 3;
-		return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
+		stmt_ctx.stackptr_rel_current -= 3 * get_count_id_var(mtype_res);
+		return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, mtype_res));
 	}
 	default:
 		throw(ErrDesignApp("tNoVars::OutputRvalueInif : unknown inif id"));
@@ -2034,13 +2046,8 @@ void tStmts::Output(SubOutputContext& sub_ctx) const {
 }
 
 string tSub::getDecoratedName() const {
-	vector<mType> types_param;
-	for_each(this->varpara.crbegin(), this->varpara.crend(),
-		[&types_param](mType val_varpara) {
-			types_param.push_back(val_varpara);
-		}
-	);
-	return NameDecorator::decorateSubName(this->name, this->typeReturn, types_param);
+	vector<mType> vec_type_param_lr(this->varpara.crbegin(), this->varpara.crend());
+	return NameDecorator::decorateSubName(this->name, this->typeReturn, vec_type_param_lr);
 }
 
 fSub tSub::Output(const tRoot& root) const {
@@ -2062,15 +2069,26 @@ fSub tSub::Output(const tRoot& root) const {
 	return fSub(this->getDecoratedName(), sub_ctx.count_var, vec_data_entry);
 }
 
-string tRoot::getSubDecoratedName(const string& id) const {
+string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_params) const {
 	if (ReadIns::defaultList.count(id)) {
 		return id;
 	} else {
-		pair<mType, vector<mType>> val_subdecl;
-		// TODO: subdecl change to multimap
-		//val_subdecl = this->subdecl.at(id);
-		//return NameDecorator::decorateSubName(id, val_subdecl.first, val_subdecl.second);
-		return id;
+		pair<
+			multimap<string, pair<mType, vector<mType>>>::const_iterator,
+			multimap<string, pair<mType, vector<mType>>>::const_iterator
+		> range_subdecl_id(this->subdecl.equal_range(id));
+		for (
+			multimap<string, pair<mType, vector<mType>>>::const_iterator it_subdecl = range_subdecl_id.first;
+			it_subdecl != range_subdecl_id.second;
+			++it_subdecl
+			) {
+			if (it_subdecl->second.second == types_params) {
+				// From left to right.
+				vector<mType> vec_type_param_lr(it_subdecl->second.second.crbegin(), it_subdecl->second.second.crend());
+				return NameDecorator::decorateSubName(id, it_subdecl->second.first, vec_type_param_lr);
+			}
+		}
+		throw(ErrDesignApp("tRoot::getSubDecoratedName : subroutine not found"));
 	}
 }
 
