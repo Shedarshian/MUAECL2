@@ -216,6 +216,8 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 17: //ini->{ inia } inia = vector<expr>
 		//类型检查时直接由id = inif访问ini内部寻找???
 		_type = VTYPE(inilist, r);
+		for (auto i : branchs)
+			i->TypeCheck(sub, subs, whileBlock);
 		break;
 	case 19: //insv = vector<exprf>
 		//类型检查时直接由id(insv)访问insv内部寻找
