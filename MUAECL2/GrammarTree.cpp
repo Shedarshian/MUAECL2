@@ -214,7 +214,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	case 12: //inia = vector<expr>
 		throw(ErrDesignApp("GrammarTree::TypeCheck.12"));
 	case 17: //ini->{ inia } inia = vector<expr>
-		//类型检查时直接由id = inif访问ini内部寻找???
+		//TODO : 类型检查时直接由id = inif访问ini内部寻找
 		_type = VTYPE(inilist, r);
 		for (auto i : branchs)
 			i->TypeCheck(sub, subs, whileBlock);
@@ -354,6 +354,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		if constexpr (debug)clog << Op::Ch::ToString(tok) << " ";
 		break; }
 	case 26: { //expr->expr Binary_op expr/exprf/inif
+		//TODO: for point = inilist, check things in inilist
 		auto tok = branchs[1]->getToken()->type();
 		auto[begin_it, end_it] = Op::mVType::typeChange.equal_range(tok);
 		auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it)>(vector<GrammarTree**>{ &branchs[0], &branchs[2] } ,
@@ -387,6 +388,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		_type = branchs[0]->TypeCheck(sub, subs, whileBlock);
 		if constexpr (debug) clog << "typechange from " << _type.debug_out() << " ";
 		_type = mVType{ branchs[1]->getType(), Op::rvalue, false };
+		branchs[0]->typeChange(Op::Rank().set(Op::Rank::LTOR));
 		break; }
 	default:
 		throw(ErrDesignApp("GrammarTree::TypeCheck.unknown"));

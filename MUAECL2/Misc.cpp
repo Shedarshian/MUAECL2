@@ -146,7 +146,7 @@ Op::Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	if (typ.valuetype == Op::lvalue && typto.valuetype == Op::rvalue)
 		rank.set(Rank::LTOR);
 	//整数到浮点转换
-	if (typ.type == Op::mType::Int && typto.type == Op::mType::Float) {
+	if (typ.type == Op::mType::Int && typto.type == Op::mType::Float && !(typ.valuetype == Op::lvalue && typto.valuetype == Op::lvalue)) {
 		rank.set(Rank::ITOF);
 		return rank;
 	}
