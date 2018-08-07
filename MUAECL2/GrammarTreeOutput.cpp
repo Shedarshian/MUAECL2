@@ -18,6 +18,8 @@ class DiscardedLvalueResult;
 class StackAddrLvalueResult;
 class ParametersLvalueResult;
 
+static inline uint32_t get_count_id_var(Op::mType type);
+
 struct StmtOutputContext final {
 	StmtOutputContext();
 	~StmtOutputContext();
@@ -186,13 +188,19 @@ public:
 		case Op::mType::Void:
 			break;
 		case Op::mType::Int: {
-			uint32_t id_var_dummy = sub_ctx.count_var++;
+			uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(this->type)) - get_count_id_var(this->type);
 			sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_dummy, false) }, -1);
 			break;
 		}
 		case Op::mType::Float: {
-			uint32_t id_var_dummy = sub_ctx.count_var++;
+			uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(this->type)) - get_count_id_var(this->type);
 			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy, true) }, -1);
+			break;
+		}
+		case Op::mType::Point: {
+			uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(this->type)) - get_count_id_var(this->type);
+			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy, true) }, -1);
+			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy + 1, true) }, -1);
 			break;
 		}
 		default:
@@ -213,6 +221,12 @@ public:
 		case Op::mType::Float: {
 			return { shared_ptr<Parameter>(new Parameter_stack(this->GetStackId(sub_ctx, stmt_ctx, stackptr_rel_parameval), true)) };
 		}
+		case Op::mType::Point: {
+			return {
+				shared_ptr<Parameter>(new Parameter_stack(this->GetStackId(sub_ctx, stmt_ctx, stackptr_rel_parameval), true)),
+				shared_ptr<Parameter>(new Parameter_stack(this->GetStackId(sub_ctx, stmt_ctx, stackptr_rel_parameval) - 1, true))
+			};
+		}
 		default:
 			throw(ErrDesignApp("StackRvalueResult::ToParameters : unknown type"));
 		}
@@ -228,6 +242,11 @@ public:
 		case Op::mType::Float: {
 			sub_ctx.insert_ins(stmt_ctx, 2005, { new Parameter_int(-this->GetStackId(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current)) }, 1);
 			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+		}
+		case Op::mType::Point: {
+			sub_ctx.insert_ins(stmt_ctx, 2005, { new Parameter_int(-this->GetStackId(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current)) - 1 }, 1);
+			sub_ctx.insert_ins(stmt_ctx, 2005, { new Parameter_int(-this->GetStackId(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current)) }, 1);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 		}
 		default:
 			throw(ErrDesignApp("StackRvalueResult::Duplicate : unknown type"));
@@ -254,12 +273,17 @@ public:
 			if (params.size() != 0) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
 			break;
 		case Op::mType::Int:
-			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Int : wrong parameter count"));
 			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		case Op::mType::Float:
-			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Float : wrong parameter count"));
 			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			break;
+		case Op::mType::Point:
+			if (params.size() != 2) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : Point : wrong parameter count"));
+			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			if (!params[1]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
@@ -279,6 +303,11 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 44, { this->params[0]->Duplicate() }, 1);
 			return shared_ptr<StackRvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 		}
+		case Op::mType::Point: {
+			sub_ctx.insert_ins(stmt_ctx, 44, { this->params[1]->Duplicate() }, 1);
+			sub_ctx.insert_ins(stmt_ctx, 44, { this->params[0]->Duplicate() }, 1);
+			return shared_ptr<StackRvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+		}
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
 		}
@@ -291,6 +320,9 @@ public:
 			return vector<shared_ptr<Parameter>>(params);
 		}
 		case Op::mType::Float: {
+			return vector<shared_ptr<Parameter>>(params);
+		}
+		case Op::mType::Point: {
 			return vector<shared_ptr<Parameter>>(params);
 		}
 		default:
@@ -407,6 +439,13 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 2101, {}, 0);
 			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 		}
+		case Op::mType::Point: {
+			uint32_t id_var_addr = sub_ctx.count_var++;
+			sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_addr, false) }, -1);
+			sub_ctx.insert_ins(stmt_ctx, 2107, { new Parameter_variable(id_var_addr, false), new Parameter_int(1) }, 1);
+			sub_ctx.insert_ins(stmt_ctx, 2107, { new Parameter_variable(id_var_addr, false), new Parameter_int(0) }, 1);
+			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+		}
 		default:
 			throw(ErrDesignApp("StackAddrLvalueResult::ToRvalueResult : unknown type"));
 		}
@@ -423,6 +462,12 @@ public:
 		}
 		case Op::mType::Float: {
 			sub_ctx.insert_ins(stmt_ctx, 2103, {}, -2);
+			break;
+		}
+		case Op::mType::Point: {
+			uint32_t id_var_addr = sub_ctx.count_var++;
+			sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_addr, false) }, -1);
+			// TODO: Implement StackAddrLvalueResult::Assign for Point.
 			break;
 		}
 		default:
@@ -450,12 +495,17 @@ public:
 			if (params.size() != 0) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
 			break;
 		case Op::mType::Int:
-			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Int : wrong parameter count"));
 			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		case Op::mType::Float:
-			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Void : wrong parameter count"));
+			if (params.size() != 1) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Float : wrong parameter count"));
 			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			break;
+		case Op::mType::Point:
+			if (params.size() != 2) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : Point : wrong parameter count"));
+			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
+			if (!params[1]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
@@ -487,6 +537,11 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 45, { this->params[0]->Duplicate() }, -1);
 			break;
 		}
+		case Op::mType::Point: {
+			sub_ctx.insert_ins(stmt_ctx, 45, { this->params[0]->Duplicate() }, -1);
+			sub_ctx.insert_ins(stmt_ctx, 45, { this->params[1]->Duplicate() }, -1);
+			break;
+		}
 		default:
 			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
 		}
@@ -506,9 +561,9 @@ static inline uint32_t get_count_id_var(Op::mType type) {
 		[[fallthrough]];
 	case Op::mType::Float:
 		return 1;
-	case Op::mType::String:
-		[[fallthrough]];
 	case Op::mType::Point:
+		return 2;
+	case Op::mType::String:
 		[[fallthrough]];
 	case Op::mType::inilist:
 		[[fallthrough]];
@@ -806,6 +861,12 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 						vec_param.emplace_back(vec_param_result[0], true, true);
 						break;
 					}
+					case Op::mType::Point: {
+						if (vec_param_result.size() != 2) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+						vec_param.emplace_back(vec_param_result[0], true, true);
+						vec_param.emplace_back(vec_param_result[1], true, true);
+						break;
+					}
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
 					}
@@ -905,6 +966,15 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				} else {
 					return shared_ptr<LvalueResult>(new ParametersLvalueResult(sub_ctx, stmt_ctx, Op::mType::Float, vector<shared_ptr<Parameter>>({ shared_ptr<Parameter>(new Parameter_variable(id_var, true)) })));
 				}
+			case Op::mType::Point:
+				if (discard_result) {
+					return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+				} else {
+					return shared_ptr<LvalueResult>(new ParametersLvalueResult(sub_ctx, stmt_ctx, Op::mType::Point, vector<shared_ptr<Parameter>>({
+						shared_ptr<Parameter>(new Parameter_variable(id_var, true)),
+						shared_ptr<Parameter>(new Parameter_variable(id_var + 1, true))
+						})));
+				}
 			default:
 				throw(ErrDesignApp("tNoVars::OutputLvalueExpr : id=22 : unknown type"));
 			}
@@ -914,7 +984,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			switch (this->_type.type) {
 			case Op::mType::Int:
 				if (discard_result) {
-					uint32_t id_var_dummy = sub_ctx.count_var++;
+					uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(this->_type.type)) - get_count_id_var(this->_type.type);
 					sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_env(val_global_var->first, false) }, 1);
 					sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_dummy, false) }, -1);
 					return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
@@ -923,12 +993,26 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				}
 			case Op::mType::Float:
 				if (discard_result) {
-					uint32_t id_var_dummy = sub_ctx.count_var++;
+					uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(this->_type.type)) - get_count_id_var(this->_type.type);
 					sub_ctx.insert_ins(stmt_ctx, 44, { new Parameter_env(val_global_var->first, true) }, 1);
 					sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy, true) }, -1);
 					return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				} else {
 					return shared_ptr<LvalueResult>(new ParametersLvalueResult(sub_ctx, stmt_ctx, Op::mType::Float, vector<shared_ptr<Parameter>>({ shared_ptr<Parameter>(new Parameter_env(val_global_var->first, true)) })));
+				}
+			case Op::mType::Point:
+				if (discard_result) {
+					uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(this->_type.type)) - get_count_id_var(this->_type.type);
+					sub_ctx.insert_ins(stmt_ctx, 44, { new Parameter_env(val_global_var->first, true) }, 1);
+					sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy, true) }, -1);
+					sub_ctx.insert_ins(stmt_ctx, 44, { new Parameter_env(val_global_var->first - 1, true) }, 1);
+					sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy + 1, true) }, -1);
+					return shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+				} else {
+					return shared_ptr<LvalueResult>(new ParametersLvalueResult(sub_ctx, stmt_ctx, Op::mType::Point, vector<shared_ptr<Parameter>>({
+						shared_ptr<Parameter>(new Parameter_env(val_global_var->first, true)),
+						shared_ptr<Parameter>(new Parameter_env(val_global_var->first - 1, true))
+						})));
 				}
 			default:
 				throw(ErrDesignApp("tNoVars::OutputLvalueExpr : id=22 : unknown type"));
@@ -1012,9 +1096,15 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			case Op::mType::Int:
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+				break;
 			case Op::mType::Float:
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				break;
+			case Op::mType::Point:
+				// TODO: Implement Op::TokenType::PlusEqual & Op::TokenType::MinusEqual for Point.
+				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+				break;
 			default:
 				throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 			}
@@ -1035,10 +1125,17 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+				break;
 			case Op::mType::Float:
 				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				break;
+			case Op::mType::Point:
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				// TODO: Implement Op::TokenType::TimesEqual & Op::TokenType::DividesEqual for Point.
+				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
+				break;
 			default:
 				throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 			}
@@ -1246,6 +1343,12 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 							vec_param.emplace_back(vec_param_result[0], true, true);
 							break;
 						}
+						case Op::mType::Point: {
+							if (vec_param_result.size() != 2) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+							vec_param.emplace_back(vec_param_result[0], true, true);
+							vec_param.emplace_back(vec_param_result[1], true, true);
+							break;
+						}
 						default:
 							throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
 						}
@@ -1282,6 +1385,9 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 					sub_ctx.insert_ins(stmt_ctx, 53, {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				case Op::mType::Point:
+					// TODO: Implement Op::TokenType::Negative for Point.
+					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				default:
 					throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=25 : Negative : unknown type"));
 				}
@@ -1302,6 +1408,9 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 					sub_ctx.insert_ins(stmt_ctx, 72, {}, 0);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				case Op::mType::Point:
+					// TODO: Implement Op::TokenType::Not for Point.
+					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				default:
 					throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=25 : Negative : unknown type"));
 				}
@@ -1448,6 +1557,9 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				case Op::mType::Float:
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+				case Op::mType::Point:
+					// TODO: Implement comparative operators for Point.
+					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 				}
@@ -1471,6 +1583,9 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				case Op::mType::Float:
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				case Op::mType::Point:
+					// TODO: Implement Op::TokenType::Plus & Op::TokenType::Minus for Point.
+					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 				}
@@ -1496,6 +1611,9 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					if (cast_to_expr(this->branchs[2])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				case Op::mType::Point:
+					// TODO: Implement Op::TokenType::Times & Op::TokenType::Divide for Point.
+					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 				}
@@ -1592,7 +1710,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					++it_result) {
 					if (*it_numtype == ReadIns::NumType::Call) {
 						if ((*it_result)->GetMType() == Op::mType::Int
-							|| (*it_result)->GetMType() == Op::mType::Float)
+							|| (*it_result)->GetMType() == Op::mType::Float
+							|| (*it_result)->GetMType() == Op::mType::Point)
 							continue;
 						else
 							break;
@@ -1605,6 +1724,10 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 						break;
 					case Op::mType::Float:
 						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
+						break;
+					case Op::mType::Point:
+						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
+						is_res_match = is_res_match && *(it_numtype++) == ReadIns::NumType::Float;
 						break;
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown actual parameter type"));
