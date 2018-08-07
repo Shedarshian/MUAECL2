@@ -466,6 +466,10 @@ public:
 		}
 		case Op::mType::Point: {
 			uint32_t id_var_addr = sub_ctx.count_var++;
+			uint32_t id_rv_x = sub_ctx.count_var++;
+			uint32_t id_rv_y = sub_ctx.count_var++;
+			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_rv_x, false) }, -1);
+			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_rv_y, false) }, -1);
 			sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_addr, false) }, -1);
 			// TODO: Implement StackAddrLvalueResult::Assign for Point.
 			break;
@@ -1108,6 +1112,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				break;
 			case Op::mType::Point:
+				// Temporary placeholder to avoid exceptions.
+				stmt_ctx.stackptr_rel_current -= 2;
 				// TODO: Implement Op::TokenType::PlusEqual & Op::TokenType::MinusEqual for Point.
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
@@ -1139,6 +1145,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				break;
 			case Op::mType::Point:
 				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				// Temporary placeholder to avoid exceptions.
+				stmt_ctx.stackptr_rel_current -= 1;
 				// TODO: Implement Op::TokenType::TimesEqual & Op::TokenType::DividesEqual for Point.
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
@@ -1187,6 +1195,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			sub_ctx.insert_dummyins_target(id_target_f);
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(0) }, 1);
 			sub_ctx.insert_dummyins_target(id_target_after);
+			// Decrease current relative stack pointer to account for jumping with a stack value.
+			stmt_ctx.stackptr_rel_current -= 2;
 			shared_ptr<RvalueResult> rvres(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 			lvres_assign->Assign(sub_ctx, stmt_ctx, rvres);
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
@@ -1209,6 +1219,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			sub_ctx.insert_dummyins_target(id_target_f);
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(0) }, 1);
 			sub_ctx.insert_dummyins_target(id_target_after);
+			// Decrease current relative stack pointer to account for jumping with a stack value.
+			stmt_ctx.stackptr_rel_current -= 1;
 			shared_ptr<RvalueResult> rvres(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 			lvres_assign->Assign(sub_ctx, stmt_ctx, rvres);
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
@@ -1498,6 +1510,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			sub_ctx.insert_dummyins_target(id_target_f);
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(0) }, 1);
 			sub_ctx.insert_dummyins_target(id_target_after);
+			// Decrease current relative stack pointer to account for jumping with a stack value.
+			stmt_ctx.stackptr_rel_current -= 2;
 			if (discard_result) {
 				StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int).DiscardResult(sub_ctx, stmt_ctx);
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
@@ -1520,6 +1534,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			sub_ctx.insert_dummyins_target(id_target_f);
 			sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_int(0) }, 1);
 			sub_ctx.insert_dummyins_target(id_target_after);
+			// Decrease current relative stack pointer to account for jumping with a stack value.
+			stmt_ctx.stackptr_rel_current -= 1;
 			if (discard_result) {
 				StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int).DiscardResult(sub_ctx, stmt_ctx);
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
@@ -1570,6 +1586,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				case Op::mType::Point:
+					// Temporary placeholder to avoid exceptions.
+					stmt_ctx.stackptr_rel_current -= 3;
 					// TODO: Implement comparative operators for Point.
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
@@ -1596,6 +1614,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				case Op::mType::Point:
+					// Temporary placeholder to avoid exceptions.
+					stmt_ctx.stackptr_rel_current -= 2;
 					// TODO: Implement Op::TokenType::Plus & Op::TokenType::Minus for Point.
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
@@ -1624,6 +1644,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				case Op::mType::Point:
+					// Temporary placeholder to avoid exceptions.
+					stmt_ctx.stackptr_rel_current -= 1;
 					// TODO: Implement Op::TokenType::Times & Op::TokenType::Divide for Point.
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
