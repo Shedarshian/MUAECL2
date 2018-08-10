@@ -463,8 +463,8 @@ mVType tNoVars::get_mVType() const { return this->_type; }
 
 void tNoVars::LiteralCal() {
 #define GET(tree, type) static_cast<tNoVars*>(branchs[tree])->branchs[0]->getToken()->get##type()
-#define TERM(number) new tNoVars(23, -1, new tTerminator(new Token_Literal(branchs[0]->getLineNo(), number)))
-	GrammarTree* tree = nullptr;
+#define TERM(number) new tTerminator(new Token_Literal(branchs[0]->getLineNo(), (int)(number)))
+	tTerminator* tree = nullptr;
 	int change = 0;		//0：不变 1：删除1个并改id 2：删除2个并改id 3：删除3个，赋值tree，改id
 	using Op::TokenType;
 	switch (opID) {
@@ -593,7 +593,7 @@ void tNoVars::LiteralCal() {
 		change = 3;
 		break;
 	case TokenType::Less:
-		tree =TERM(*GET(0, Int) < *GET(2, Int));
+		tree = TERM(*GET(0, Int) < *GET(2, Int));
 		change = 3;
 		break;
 	case TokenType::LessEqual:
@@ -666,19 +666,28 @@ void tNoVars::LiteralCal() {
 		break;
 	}
 	if (change == 1) {
-		id = 28;
-		delete branchs[1];
+		id = 23;
+		auto tree2 = static_cast<tNoVars*>(branchs[0])->branchs[0];
+		static_cast<tNoVars*>(branchs[0])->branchs[0] = nullptr;
+		delete branchs[0], branchs[1];
 		branchs.pop_back();
+		branchs[0] = tree2;
+		_type.isLiteral = true;
 	}
 	else if (change == 2) {
-		id = 28;
-		delete branchs[1], branchs[2];
-		branchs.pop_back(); branchs.pop_back();
-	}
-	else if (change == 3) {
-		id = 28;
+		id = 23;
+		auto tree2 = static_cast<tNoVars*>(branchs[0])->branchs[0];
+		static_cast<tNoVars*>(branchs[0])->branchs[0] = nullptr;
 		delete branchs[0], branchs[1], branchs[2];
 		branchs.pop_back(); branchs.pop_back();
+		branchs[0] = tree2;
+		_type.isLiteral = true;
+	}
+	else if (change == 3) {
+		id = 23;
+		delete branchs[0], branchs[1], branchs[2];
+		branchs.pop_back(); branchs.pop_back();
+		_type = VTYPE(Int, r, true);
 		branchs[0] = tree;
 	}
 #undef GET
