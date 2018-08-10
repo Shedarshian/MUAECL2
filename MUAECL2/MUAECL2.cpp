@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 		tRoot* tree = parser.analyse();
 		parser.TypeCheck();
 		RawEclGenerator raw_ecl_generator(parser.Output());
-		ofstream out("out.ecl");
+		ofstream out("../out.ecl",ios::binary);
 		raw_ecl_generator.generate(out);
 	}
 	catch (ExceptionWithLineNo &e) {

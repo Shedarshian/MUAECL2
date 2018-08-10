@@ -27,11 +27,15 @@ namespace NameDecorator {
 	}
 
 	string decorateSubName(const string& name, Op::mType type_ret, const vector<Op::mType>& types_param) {
+#ifdef MUAECL2_NO_DECORATE
+		return name;
+#else
 		string name_decorated("@MUAECL2Sub@"s + name + "@"s + decorateTypeName(type_ret) + "@"s);
 		for (Op::mType val_types_param : types_param) {
 			name_decorated += decorateTypeName(val_types_param);
 		}
 		name_decorated += "@"s;
 		return name_decorated;
+#endif
 	}
 }
