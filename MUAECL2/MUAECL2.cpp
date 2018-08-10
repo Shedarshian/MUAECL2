@@ -171,14 +171,9 @@ static void compile(const CompileArguments& compile_args) {
 	parser.TypeCheck();
 	RawEclGenerator raw_ecl_generator(parser.Output());
 	unique_ptr<ofstream> out_f;
-	ostream* out = nullptr;
-	if (compile_args.filename_out.empty()) {
-		out = &cout;
-		// TODO: Find out whether this causes issues.
-	} else {
-		out_f = unique_ptr<ofstream>(new ofstream(compile_args.filename_out, ios::binary));
-		out = out_f.get();
+	if (!compile_args.filename_out.empty()) {
+		ofstream out(compile_args.filename_out, ios::binary);
+		raw_ecl_generator.generate(out);
 	}
-	raw_ecl_generator.generate(*out);
 	Parser::clear();
 }
