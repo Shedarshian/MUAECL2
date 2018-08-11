@@ -1067,6 +1067,12 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::TimesEqual, 55 },
 			{ Op::TokenType::DividesEqual, 57 }
 			});
+		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
+			{ Op::TokenType::PlusEqual, 2050 },
+			{ Op::TokenType::MinusEqual, 2051 },
+			{ Op::TokenType::TimesEqual, 2052 },
+			{ Op::TokenType::DividesEqual, 2053 }
+			});
 		switch (this->branchs[1]->getToken()->type()) {
 		case Op::TokenType::Equal: {
 			switch (this->branchs[0]->type()) {
@@ -1112,9 +1118,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				break;
 			case Op::mType::Point:
-				// Temporary placeholder to avoid exceptions.
-				stmt_ctx.stackptr_rel_current -= 2;
-				// TODO: Implement Op::TokenType::PlusEqual & Op::TokenType::MinusEqual for Point.
+				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -2);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
 			default:
@@ -1145,9 +1149,7 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				break;
 			case Op::mType::Point:
 				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
-				// Temporary placeholder to avoid exceptions.
-				stmt_ctx.stackptr_rel_current -= 1;
-				// TODO: Implement Op::TokenType::TimesEqual & Op::TokenType::DividesEqual for Point.
+				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
 			default:
@@ -1410,7 +1412,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					sub_ctx.insert_ins(stmt_ctx, 53, {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				case Op::mType::Point:
-					// TODO: Implement Op::TokenType::Negative for Point.
+					sub_ctx.insert_ins(stmt_ctx, 2058, {}, 0);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				default:
 					throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=25 : Negative : unknown type"));
@@ -1489,6 +1491,10 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::Minus, 53 },
 			{ Op::TokenType::Times, 55 },
 			{ Op::TokenType::Divide, 57 }
+			});
+		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
+			{ Op::TokenType::Plus, 2050 },
+			{ Op::TokenType::Minus, 2051 },
 			});
 		switch (this->branchs[1]->getToken()->type()) {
 		case Op::TokenType::LogicalOr: {
@@ -1614,9 +1620,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				case Op::mType::Point:
-					// Temporary placeholder to avoid exceptions.
-					stmt_ctx.stackptr_rel_current -= 2;
-					// TODO: Implement Op::TokenType::Plus & Op::TokenType::Minus for Point.
+					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -2);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));

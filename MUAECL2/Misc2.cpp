@@ -5,10 +5,27 @@
 
 using namespace std;
 
-// Append size bytes of data from src to dst, and increase dst by size.
-#define APPEND_DATA(dst, src, size) (reinterpret_cast<char*>(memcpy((*reinterpret_cast<char**>(&dst) += (size)) - (size), (src), (size))))
-// Append some null bytes to align ptr and size to 4 bytes boundary.
-#define ALIGN4_DATA(ptr, size_buf, size) if ((size) % 4) { uint32_t _dummy = 0; if ((ptr) && (size_buf) >= (size) + 4 - ((size) % 4)) APPEND_DATA((ptr), &_dummy, 4 - ((size) % 4)); (size) +=  4 - ((size) % 4); }
+/// <summary>
+/// Append <c>size</c> bytes of data from <c>src</c> to <c>dst</c>, and increase <c>dst</c> by size.
+/// </summary>
+static inline char* append_data(char*& dst, const void* src, size_t size) {
+	return reinterpret_cast<char*>(memcpy(
+		(dst += size) - size,
+		src,
+		size
+	));
+}
+/// <summary>
+/// Append some null bytes to align <c>ptr</c> and <c>size</c> to 4 bytes boundary.
+/// </summary>
+static inline void align4_data(char*& ptr, size_t size_buf, size_t& size) {
+	if (size % 4) {
+		uint32_t _dummy = 0;
+		if (ptr && size_buf >= size + 4 - (size % 4))
+			append_data(ptr, &_dummy, 4 - (size % 4));
+		size += 4 - (size % 4);
+	}
+}
 
 bool Parameter_int::isFloat() const { return false; }
 
@@ -19,7 +36,7 @@ int32_t Parameter_int::getRefId(const SubSerializationContext& sub_ctx) const { 
 size_t Parameter_int::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
 	static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
 	if (ptr && size_buf >= sizeof(int)) {
-		APPEND_DATA(ptr, &this->val, sizeof(int));
+		append_data(ptr, &this->val, sizeof(int));
 	}
 	return sizeof(int);
 }
@@ -33,7 +50,7 @@ int32_t Parameter_float::getRefId(const SubSerializationContext& sub_ctx) const 
 size_t Parameter_float::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
 	static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
 	if (ptr && size_buf >= sizeof(float)) {
-		APPEND_DATA(ptr, &this->val, sizeof(float));
+		append_data(ptr, &this->val, sizeof(float));
 	}
 	return sizeof(float);
 }
@@ -62,14 +79,14 @@ size_t Parameter_variable::serialize(char* ptr, size_t size_buf, const SubSerial
 #pragma warning(disable:4244)
 			float f_ref_id = ref_id;
 #pragma warning(pop)
-			APPEND_DATA(ptr, &f_ref_id, sizeof(float));
+			append_data(ptr, &f_ref_id, sizeof(float));
 		}
 		return sizeof(float);
 	} else {
 		static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
 		if (ptr && size_buf >= sizeof(int)) {
 			int i_ref_id = ref_id;
-			APPEND_DATA(ptr, &i_ref_id, sizeof(int));
+			append_data(ptr, &i_ref_id, sizeof(int));
 		}
 		return sizeof(int);
 	}
@@ -97,14 +114,14 @@ size_t Parameter_stack::serialize(char* ptr, size_t size_buf, const SubSerializa
 #pragma warning(disable:4244)
 			float f_ref_id = ref_id;
 #pragma warning(pop)
-			APPEND_DATA(ptr, &f_ref_id, sizeof(float));
+			append_data(ptr, &f_ref_id, sizeof(float));
 		}
 		return sizeof(float);
 	} else {
 		static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
 		if (ptr && size_buf >= sizeof(int)) {
 			int i_ref_id = ref_id;
-			APPEND_DATA(ptr, &i_ref_id, sizeof(int));
+			append_data(ptr, &i_ref_id, sizeof(int));
 		}
 		return sizeof(int);
 	}
@@ -133,14 +150,14 @@ size_t Parameter_env::serialize(char* ptr, size_t size_buf, const SubSerializati
 #pragma warning(disable:4244)
 			float f_ref_id = ref_id;
 #pragma warning(pop)
-			APPEND_DATA(ptr, &f_ref_id, sizeof(float));
+			append_data(ptr, &f_ref_id, sizeof(float));
 		}
 		return sizeof(float);
 	} else {
 		static_assert(sizeof(int) == sizeof(uint32_t), "sizeof(int) is not equal to sizeof(uint32_t).");
 		if (ptr && size_buf >= sizeof(int)) {
 			int i_ref_id = ref_id;
-			APPEND_DATA(ptr, &i_ref_id, sizeof(int));
+			append_data(ptr, &i_ref_id, sizeof(int));
 		}
 		return sizeof(int);
 	}
@@ -168,7 +185,7 @@ size_t Parameter_jmp::serialize(char* ptr, size_t size_buf, const SubSerializati
 		}
 		if (offs_data_entry_target > INT32_MAX || offs_data_entry_current > INT32_MAX) throw(exception("Too large ECL sub data entry offset."));
 		int32_t offs_jmp = (offs_data_entry_target & ~(uint32_t)0) - (offs_data_entry_current & ~(uint32_t)0);
-		APPEND_DATA(ptr, &offs_jmp, sizeof(int32_t));
+		append_data(ptr, &offs_jmp, sizeof(int32_t));
 	}
 	return sizeof(int32_t);
 }
@@ -185,13 +202,13 @@ size_t Parameter_string::serialize(char* ptr, size_t size_buf, const SubSerializ
 	uint32_t size_strdata = (this->str.size() & ~(uint32_t)0) / 4 * 4 + 4;
 	size += sizeof(uint32_t);
 	if (ptr && size_buf >= size) {
-		APPEND_DATA(ptr, &size_strdata, sizeof(uint32_t));
+		append_data(ptr, &size_strdata, sizeof(uint32_t));
 	}
 	size += size_strdata * sizeof(char);
 	if (ptr && size_buf >= size) {
 		unique_ptr<char[]> strdata(new char[size_strdata]());
 		memcpy(strdata.get(), this->str.data(), this->str.size() * sizeof(char));
-		APPEND_DATA(ptr, strdata.get(), size_strdata * sizeof(char));
+		append_data(ptr, strdata.get(), size_strdata * sizeof(char));
 	}
 	return size;
 }
@@ -207,7 +224,7 @@ size_t Parameter_call::serialize(char* ptr, size_t size_buf, const SubSerializat
 	size += sizeof(uint32_t);
 	if (ptr && size_buf >= size) {
 		uint32_t typeval = (this->is_from_float ? 0x66 : 0x69) | (this->is_to_float ? 0x6600 : 0x6900);
-		APPEND_DATA(ptr, &typeval, sizeof(uint32_t));
+		append_data(ptr, &typeval, sizeof(uint32_t));
 	}
 	if (this->is_from_float != this->param->isFloat()) throw(ErrDesignApp("Parameter_call::serialize : actual parameter type mismatch"));
 	size_t size_param = this->param->serialize(nullptr, 0, sub_ctx);
@@ -273,7 +290,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
 		//raw_ecl_ins_hdr.param_count;
 		//raw_ecl_ins_hdr.post_pop_count;
-		ptr_raw_ecl_ins_hdr = APPEND_DATA(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
+		ptr_raw_ecl_ins_hdr = append_data(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
 	}
 
 	std::vector<Parameter*> vec_param(this->paras);
@@ -281,6 +298,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 	if (ptr && size_buf >= size) {
 		raw_ecl_ins_hdr.param_count = vec_param.size() & ~(uint8_t)0;
 	}
+	raw_ecl_ins_hdr.post_pop_count = 0;
 	int i = 0;
 	for (const Parameter* val_param : vec_param) {
 		size_t size_param = val_param->serialize(nullptr, 0, sub_ctx);
@@ -344,13 +362,13 @@ size_t RawIns::serialize(char* ptr, size_t size_buf, const SubSerializationConte
 		raw_ecl_ins_hdr.diff_mask = this->difficulty_mask;
 		raw_ecl_ins_hdr.param_count = this->param_count;
 		raw_ecl_ins_hdr.post_pop_count = this->post_pop_count;
-		ptr_raw_ecl_ins_hdr = APPEND_DATA(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
+		ptr_raw_ecl_ins_hdr = append_data(ptr, &raw_ecl_ins_hdr, sizeof(raw_ecl_ins_hdr));
 	}
 
 	size += this->str_raw_params.size();
 	if (ptr && size_buf >= size) {
 		for (char val_param_byte : this->str_raw_params) {
-			APPEND_DATA(ptr, &val_param_byte, sizeof(char));
+			append_data(ptr, &val_param_byte, sizeof(char));
 		}
 	}
 
