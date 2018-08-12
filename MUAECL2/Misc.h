@@ -370,3 +370,41 @@ public:
 private:
 	string id;
 };
+
+class ErrSubstituteDeliminator :public ExceptionWithLineNo {
+public:
+	ErrSubstituteDeliminator(int lineNo, char deliminator, bool isEnds) :ExceptionWithLineNo(lineNo), id("deliminator '"s + deliminator + "' must not be alphabet or number or underline in #"s + (isEnds ? "ends"s : "s"s)) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrSubstituteNoString :public ExceptionWithLineNo {
+public:
+	ErrSubstituteNoString(int lineNo) :ExceptionWithLineNo(lineNo) {}
+	virtual const char* what() const throw() { return "missing replacing string in #s"; }
+};
+
+class ErrSubstituteRedeclare :public ExceptionWithLineNo {
+public:
+	ErrSubstituteRedeclare(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("name "s + name + " repeated"s) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrSubstituteName :public ExceptionWithLineNo {
+public:
+	ErrSubstituteName(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("name "s + name + "contains illegal character") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrEndsNotFound :public ExceptionWithLineNo {
+public:
+	ErrEndsNotFound(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("name "s + name + "not found in #ends") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};

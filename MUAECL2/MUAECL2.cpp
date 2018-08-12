@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "Preprocessor.h"
 #include "Tokenizer.h"
 #include "Parser.h"
 #include "RawEclGenerator.h"
@@ -10,6 +11,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <map>
 
@@ -64,6 +66,14 @@ static void compile(const CompileArguments& compile_args);
 
 int main(int argc, char* argv[]) {
 	try {
+		string v("define abc(d, e, f) def");
+		int delim2 = v.find_first_of(" (", 7);
+		string identifier = v.substr(7, delim2 - 7);
+		int delim3 = v.find_first_of(')', 7);
+		string replace_string = v.substr(delim3 + 2);
+		string identifier_list = v.substr(delim2 + 1, delim3 - delim2 - 1);
+		cout << identifier << endl << identifier_list << endl << replace_string << endl;
+
 		vector<string> vec_rawcmdarg;
 		for (int i = 1; i < argc; ++i) {
 			vec_rawcmdarg.emplace_back(argv[i]);
@@ -163,9 +173,9 @@ static void compile(const CompileArguments& compile_args) {
 		in_f = unique_ptr<ifstream>(new ifstream(compile_args.filename_in));
 		in = in_f.get();
 	}
-	// TODO: Remove the following line?
-	//ifstream in("D:\\A.学习【Learning】\\A2.Mathematics\\VC\\C++workspace\\MUAECL2\\in.txt");
-	Tokenizer tokenizer(*in);
+	stringstream preprocess_out;			//if preprocess no output to file
+	Preprocessor::process(*in, preprocess_out);
+	Tokenizer tokenizer(preprocess_out);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();
