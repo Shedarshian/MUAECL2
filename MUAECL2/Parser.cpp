@@ -21,7 +21,7 @@ namespace Template {
 	template<int first, int ...count>
 	struct unfoldClass<void, first, count...> {
 		static auto pop(stack<pair<int, GrammarTree*>> &s) {
-			//static_assert
+			static_assert(first == 0 || first == 1);
 			if constexpr (first) {
 				auto t = s.top().second; s.pop();
 				if constexpr (sizeof...(count) != 0)

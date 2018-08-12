@@ -69,10 +69,7 @@ static void compile(const CompileArguments& compile_args);
 int main(int argc, char* argv[]) {
 	try {
 		string v("abcdefghi \\\nabcdefghijklmno \\\nc");
-		int blankline = 1;
-		for (; blankline > 0; --blankline)
-			cout << '\n';
-		cout << v << endl;
+		//cout << c << endl;
 
 		vector<string> vec_rawcmdarg;
 		for (int i = 1; i < argc; ++i) {
@@ -167,16 +164,19 @@ static void compile(const CompileArguments& compile_args) {
 	//调试中
 	unique_ptr<ifstream> in_f;
 	istream* in = nullptr;
+	string filename;
 	if (compile_args.filename_in.empty()) {
 		in = &cin;
+		filename = "std::cin";
 	} else {
 		in_f = unique_ptr<ifstream>(new ifstream(compile_args.filename_in));
 		in = in_f.get();
+		filename = compile_args.filename_in;
 	}
-	stringstream preprocess_out;			//if preprocess no output to file
 	vector<string> anim, ecli;
+	stringstream preprocess_out;			//if preprocess no output to file
 	Preprocessor::process(*in, preprocess_out, ecli, anim);
-	Tokenizer tokenizer(preprocess_out);
+	Tokenizer tokenizer(preprocess_out, filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();

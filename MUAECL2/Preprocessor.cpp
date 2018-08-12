@@ -48,7 +48,6 @@ void Preprocessor::process(istream &in, ostream &out, vector<string>& ecli, vect
 			v.erase(0, 1);
 			if (v[0] == 's' && (v[1] < 'a' || v[1] > 'z')) {
 				//#s deliminator pattern deliminator string
-				//#s deliminator pattern deliminator string deliminator name
 				char deliminator = v[1];
 				if (deliminator >= 'A' && deliminator <= 'Z' || deliminator >= '0' && deliminator <= '9' || deliminator == '_')
 					throw(ErrSubstituteDeliminator(lineNo, deliminator, false));
