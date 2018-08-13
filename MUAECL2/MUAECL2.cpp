@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "Preprocessor.h"
 #include "Tokenizer.h"
 #include "Parser.h"
 #include "RawEclGenerator.h"
@@ -64,6 +65,7 @@ struct PreprocessArguments final {
 struct CompileArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	string filename;
 };
 
 /// <summary>Command line argument definition map.
@@ -87,6 +89,8 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 static void preprocess(const PreprocessArguments& preprocess_args);
 static void compile(const CompileArguments& compile_args);
 
+#include<regex>
+
 int main(int argc, char* argv[]) {
 	try {
 		unordered_map<string, string> map_cmdarg_alias_to_id;
@@ -95,6 +99,9 @@ int main(int argc, char* argv[]) {
 				map_cmdarg_alias_to_id[val_alias] = val_cmdarg_def.first;
 			}
 		}
+
+		string v("abcdefghi \\\nabcdefghijklmno \\\nc");
+		//cout << c << endl;
 
 		vector<string> vec_rawcmdarg;
 		for (int i = 1; i < argc; ++i) {
@@ -189,13 +196,16 @@ Examples:\n\
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	string filename;
 
 	unique_ptr<ifstream> in_f;
 	if (map_cmdarg_input["input-file"s].is_specified) {
 		in_f = unique_ptr<ifstream>(new ifstream(map_cmdarg_input["input-file"s].value));
 		in = in_f.get();
+		filename = map_cmdarg_input["input-file"s].value;
 	} else {
 		in = &cin;
+		filename = "std::cin"s;
 	}
 
 	unique_ptr<ofstream> out_f;
@@ -206,11 +216,11 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		out = &cout;
 	}
 
-
 	if (map_cmdarg_input["no-preprocess"s].is_specified) {
 		CompileArguments compile_args;
 		compile_args.in = in;
 		compile_args.out = out;
+		compile_args.filename = filename;
 		compile(compile_args);
 	} else {
 		stringstream preprocessed;
@@ -223,6 +233,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		CompileArguments compile_args;
 		compile_args.in = &preprocessed;
 		compile_args.out = out;
+		compile_args.filename = filename;
 		compile(compile_args);
 	}
 }
@@ -250,19 +261,15 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 }
 
 static void preprocess(const PreprocessArguments& preprocess_args) {
-	// TODO: Preprocess from *preprocess_args.in to *preprocess_args.out.
-	while (!preprocess_args.in->eof()) {
-		char c;
-		preprocess_args.in->get(c);
-		preprocess_args.out->put(c);
-	}
+	vector<string> anim, ecli;
+	Preprocessor::process(*preprocess_args.in, *preprocess_args.out, ecli, anim);
 }
 
 static void compile(const CompileArguments& compile_args) {
 	ReadIns::Read();
 	Parser::initialize();
 	//调试中
-	Tokenizer tokenizer(*compile_args.in);
+	Tokenizer tokenizer(*compile_args.in, compile_args.filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();

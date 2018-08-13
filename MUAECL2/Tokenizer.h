@@ -38,7 +38,7 @@ using namespace std;
 
 class Tokenizer {
 public:
-	Tokenizer(istream &ReadStream);		//从输入流中读取文本
+	Tokenizer(istream &ReadStream, const string& filename);		//从输入流中读取文本
 	~Tokenizer();
 	friend Tokenizer& operator>> (Tokenizer& t, Token*& token);		//不建议使用
 	Token* popToken();
@@ -52,5 +52,6 @@ private:
 	bool willBeNegative;
 	int lineNo;
 	istream& ReadStream;
+	const string& filename;
 };
 
