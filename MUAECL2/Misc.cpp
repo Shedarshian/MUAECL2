@@ -2,6 +2,7 @@
 #include <functional>
 #include <fstream>
 #include <sstream>
+#include <vector>
 #include "Misc.h"
 #include "GrammarTree.h"
 using namespace std;
@@ -228,7 +229,7 @@ map<string, pair<int, vector<ReadIns::NumType>>> ReadIns::mode{};
 map<string, pair<int, ReadIns::NumType>> ReadIns::globalVariable{};
 map<string, int> ReadIns::constint{};
 map<string, float> ReadIns::constfloat{};
-set<string> ReadIns::integratedFunction{};
+vector<pair<regex, string>> ReadIns::include{};
 set<string> ReadIns::defaultList{};
 
 void ReadIns::Read() {
@@ -268,19 +269,6 @@ void ReadIns::Read() {
 			s >> n >> name >> c;
 			ReadIns::globalVariable.emplace(name, make_pair(n, c == "int" ? NumType::Int : NumType::Float));
 		}
-		//读取符号常量
-		else if (mode == "constint") {
-			stringstream s = stringstream(buffer);
-			string name; int key;
-			s >> name >> key;
-			ReadIns::constint.insert(make_pair(name, key));
-		}
-		else if (mode == "constfloat") {
-			stringstream s = stringstream(buffer);
-			string name; float key;
-			s >> name >> key;
-			ReadIns::constfloat.insert(make_pair(name, key));
-		}
 		//读取变换mode
 		else if (mode == "mode") {
 			stringstream s = stringstream(buffer);
@@ -294,10 +282,6 @@ void ReadIns::Read() {
 			}
 			ReadIns::mode.emplace(name, make_pair(n, lnt));
 		}
-		//读取集成函数
-		else if (mode == "integrated function") {
-			ReadIns::integratedFunction.emplace(buffer);
-		}
 	}
 	ifstream indef("default.ini");
 	//读取default.ecl中的函数名
@@ -305,4 +289,49 @@ void ReadIns::Read() {
 		indef.getline(buffer, 255);
 		defaultList.emplace(buffer);
 	}
+	ifstream includefile("include.ini");
+	//读取include.ini中的预定义宏
+	while (!includefile.eof()) {
+		includefile.getline(buffer, 255);
+		string v = buffer;
+		if (v[0] == 's' && (v[1] < 'a' || v[1] > 'z')) {
+			//#s deliminator pattern deliminator string
+			char deliminator = v[1];
+			int delim2 = v.find_first_of(deliminator, 2);
+			int delim3 = v.find_first_of(deliminator, delim2 + 1);
+			string pattern = v.substr(2, delim2 - 2);
+			string replace_string = v.substr(delim2 + 1, delim3 - delim2 - 1);
+			include.emplace_back(regex(pattern), replace_string);
+		}
+		else if (v.compare(0, 7, "define ") == 0) {
+			//#define space identifier space string
+			//#define space identifier ( identifier_list ) space string
+			int delim2 = v.find_first_of(" (", 7);
+			string identifier = v.substr(7, delim2 - 7);
+			if (v[delim2] = ' ') {
+				string replace_string = v.substr(delim2 + 1);
+				include.emplace_back(regex("\\b" + identifier + "\\b"), replace_string);
+			}
+			else {
+				int delim3 = v.find_first_of(')', 7);
+				string replace_string = v.substr(delim3 + 2);
+				string identifier_list = v.substr(delim2 + 1, delim3 - delim2 - 1);
+				vector<string> params;
+				regex word = regex("[_[:alpha:]][_[:alnum:]]*");
+				auto it_begin = sregex_iterator(identifier_list.begin(), identifier_list.end(), word);
+				auto it_end = sregex_iterator();
+				string identifier_replace_list;
+				int n = 1;
+				for (auto it = it_begin; it != it_end; ++it, ++n) {
+					char c[4];
+					snprintf(c, 4, "$%.2d", 1);
+					replace_string = regex_replace(replace_string, regex((*it).str()), c, regex_constants::format_sed);
+					identifier_replace_list += "\\s*(" + (*it).str() + ")\\s*,";
+				}
+				identifier_replace_list.erase(identifier_replace_list.end() - 1);
+				include.emplace_back(regex("\\b" + identifier + "\\s\\(" + identifier_replace_list + "\\)"), replace_string);
+			}
+		}
+	}
+
 }

@@ -12,6 +12,8 @@
 #include <variant>
 #include <functional>
 #include <bitset>
+#include <regex>
+#include <vector>
 #define TYPE(name) Op::mType::name
 #define VTYPE(name, lr, ...) Op::mVType{ TYPE(name), Op::LRvalue::lr##value, ##__VA_ARGS__ }
 #define OFFSET 128
@@ -29,8 +31,8 @@ public:
 	static map<string, pair<int, NumType>> globalVariable;		//全局变量表
 	static map<string, int> constint;							//符号常量表
 	static map<string, float> constfloat;
-	static set<string> integratedFunction;						//集成函数表
 	static set<string> defaultList;								//default.ecl中的线程名表
+	static vector<pair<regex, string>> include;					//预定义宏
 
 	//读取ins.ini与default.ini
 	static void Read();
@@ -365,7 +367,61 @@ private:
 
 class ErrNoOverloadFunction :public ExceptionWithLineNo {
 public:
-	ErrNoOverloadFunction(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("no overload function "s + name + " found."s) {}
+	ErrNoOverloadFunction(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("no overload function " + name + " found.") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrSubstituteDeliminator :public ExceptionWithLineNo {
+public:
+	ErrSubstituteDeliminator(int lineNo, char deliminator, bool isEnds) :ExceptionWithLineNo(lineNo), id("deliminator '"s + deliminator + "' must not be alphabet or number or underline in #" + (isEnds ? "ends" : "s")) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrSubstituteNoString :public ExceptionWithLineNo {
+public:
+	ErrSubstituteNoString(int lineNo) :ExceptionWithLineNo(lineNo) {}
+	virtual const char* what() const throw() { return "missing replacing string in #s"; }
+};
+
+class ErrSubstituteRedeclare :public ExceptionWithLineNo {
+public:
+	ErrSubstituteRedeclare(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("name " + name + " repeated") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrSubstituteName :public ExceptionWithLineNo {
+public:
+	ErrSubstituteName(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("name " + name + "contains illegal character") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrEndsNotFound :public ExceptionWithLineNo {
+public:
+	ErrEndsNotFound(int lineNo, string name, string type) :ExceptionWithLineNo(lineNo), id("name " + name + "not found in #" + type) {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrDeclareIdList :public ExceptionWithLineNo {
+public:
+	ErrDeclareIdList(int lineNo, string id_list) :ExceptionWithLineNo(lineNo), id("identifier list " + id_list + " illegal.") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
+
+class ErrPreprocessNotFound :public ExceptionWithLineNo {
+public:
+	ErrPreprocessNotFound(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("preprocess command \"" + name + "\"not found.") {}
 	virtual const char* what() const throw() { return id.c_str(); }
 private:
 	string id;

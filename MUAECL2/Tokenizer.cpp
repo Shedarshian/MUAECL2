@@ -1,9 +1,10 @@
 #include "stdafx.h"
+#include <ctime>
 #include "Tokenizer.h"
 
 using namespace std;
 
-Tokenizer::Tokenizer(istream& ReadStream) :ReadStream(ReadStream), lineNo(1) {
+Tokenizer::Tokenizer(istream& ReadStream, const string& filename) :ReadStream(ReadStream), lineNo(1), filename(filename) {
 	nextChar = ReadStream.get();
 	bufferToken = getToken();
 }
@@ -138,12 +139,37 @@ Token* Tokenizer::getToken(){
 			}
 			//keyword后面为负号
 			willBeNegative = true;
+			//如果是几种预定义宏
+			if (s == "__DATE__") {
+				char c[9]; time_t t; tm time;
+				std::time(&t);
+				localtime_s(&time, &t);
+				strftime(c, 9, "%F", &time);
+				return new Token_Literal(lineNo, c);
+			}
+			if (s == "__TIME__") {
+				char c[9]; time_t t; tm time;
+				std::time(&t);
+				localtime_s(&time, &t);
+				strftime(c, 9, "%T", &time);
+				return new Token_Literal(lineNo, c);
+			}
+			if (s == "__FILE__")
+				return new Token_Literal(lineNo, filename.substr(filename.find_last_of("/") + 1));
+			if (s == "__LINE__")
+				return new Token_Literal(lineNo, lineNo);
 			//如果是build-in type
 			if (auto it = Op::Ch::StringToType.find(s); it != Op::Ch::StringToType.end())
 				return new Token_KeywordType(lineNo, it->second);
 			//如果是keyword
 			if (auto it = Op::Ch::StringToOperator.find(s); it != Op::Ch::StringToOperator.end())
 				return new Token_Operator(lineNo, it->second);
+			//如果是const int
+			if (auto it = ReadIns::constint.find(s); it != ReadIns::constint.end())
+				return new Token_Literal(lineNo, it->second);
+			//如果是const float
+			if (auto it = ReadIns::constfloat.find(s); it != ReadIns::constfloat.end())
+				return new Token_Literal(lineNo, it->second);
 			willBeNegative = false;
 			return new Token_Identifier(lineNo, s);
 		}
