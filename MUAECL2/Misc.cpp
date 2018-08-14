@@ -234,7 +234,7 @@ set<string> ReadIns::defaultList{};
 
 void ReadIns::Read() {
 	ifstream in("ins.ini");
-	char buffer[255];
+	char buffer[512];
 	string mode;
 	while (!in.eof()) {
 		in.getline(buffer, 255);
@@ -292,7 +292,7 @@ void ReadIns::Read() {
 	ifstream includefile("include.ini");
 	//读取include.ini中的预定义宏
 	while (!includefile.eof()) {
-		includefile.getline(buffer, 255);
+		includefile.getline(buffer, 512);
 		string v = buffer;
 		if (v[0] == 's' && (v[1] < 'a' || v[1] > 'z')) {
 			//#s deliminator pattern deliminator string
