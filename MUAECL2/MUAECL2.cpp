@@ -59,6 +59,8 @@ struct cmdarg_input_t {
 struct PreprocessArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	vector<string> ecli;
+	vector<string> anim;
 };
 
 /// <summary>Parsed arguments passed to the compiling routine.</summary>
@@ -66,6 +68,8 @@ struct CompileArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	string filename;
+	vector<string> ecli;
+	vector<string> anim;
 };
 
 /// <summary>Command line argument definition map.
@@ -86,8 +90,8 @@ static void display_help() throw();
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
 /// <summary>Command line action: Preprocess (and not compile) an MUAECL2 source file to a preprocessed source file.</summary>
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
-static void preprocess(const PreprocessArguments& preprocess_args);
-static void compile(const CompileArguments& compile_args);
+static void preprocess(PreprocessArguments& preprocess_args);
+static void compile(CompileArguments& compile_args);
 
 #include<regex>
 
@@ -100,6 +104,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
+		// TODO: What's the purpose of the following line??
 		string v("abcdefghi \\\nabcdefghijklmno \\\nc");
 		//cout << c << endl;
 
@@ -154,6 +159,7 @@ int main(int argc, char* argv[]) {
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
+	// TODO: Exception handling for ErrDesignApp & std::exception?
 	/*catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
 	}
@@ -234,6 +240,8 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		compile_args.in = &preprocessed;
 		compile_args.out = out;
 		compile_args.filename = filename;
+		compile_args.ecli = preprocess_args.ecli;
+		compile_args.anim = preprocess_args.anim;
 		compile(compile_args);
 	}
 }
@@ -260,12 +268,11 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 	preprocess(preprocess_args);
 }
 
-static void preprocess(const PreprocessArguments& preprocess_args) {
-	vector<string> anim, ecli;
-	Preprocessor::process(*preprocess_args.in, *preprocess_args.out, ecli, anim);
+static void preprocess(PreprocessArguments& preprocess_args) {
+	Preprocessor::process(*preprocess_args.in, *preprocess_args.out, preprocess_args.ecli, preprocess_args.anim);
 }
 
-static void compile(const CompileArguments& compile_args) {
+static void compile(CompileArguments& compile_args) {
 	ReadIns::Read();
 	Parser::initialize();
 	//调试中
@@ -273,7 +280,10 @@ static void compile(const CompileArguments& compile_args) {
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();
-	RawEclGenerator raw_ecl_generator(parser.Output());
+	fRoot froot = parser.Output();
+	froot.ecli = compile_args.ecli;
+	froot.anim = compile_args.anim;
+	RawEclGenerator raw_ecl_generator(froot);
 	unique_ptr<ofstream> out_f;
 	raw_ecl_generator.generate(*compile_args.out);
 	Parser::clear();

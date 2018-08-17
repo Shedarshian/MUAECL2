@@ -2145,7 +2145,6 @@ fRoot tRoot::Output() const {
 	vector<fSub> fsubs;
 	for (const tSub* val_tsub : this->subs)
 		fsubs.push_back(val_tsub->Output(*this));
-	// TODO: ECLI & ANIM.
 	return fRoot(fsubs, vector<string>(), vector<string>());
 }
 
