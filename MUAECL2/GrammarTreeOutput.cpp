@@ -452,26 +452,33 @@ public:
 	}
 	virtual void Assign(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, shared_ptr<RvalueResult> rvres) override {
 		if (rvres->GetMType() != this->type) throw(ErrDesignApp("StackAddrLvalueResult::Assign : rvres->GetMType() != this->type"));
-		rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 		switch (this->type) {
-		case Op::mType::Void:
+		case Op::mType::Void: {
+			rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			break;
+		}
 		case Op::mType::Int: {
+			rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			sub_ctx.insert_ins(stmt_ctx, 2102, {}, -2);
 			break;
 		}
 		case Op::mType::Float: {
+			rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			sub_ctx.insert_ins(stmt_ctx, 2103, {}, -2);
 			break;
 		}
 		case Op::mType::Point: {
-			uint32_t id_var_addr = sub_ctx.count_var++;
+			rvres->ToStackRvalueResult(sub_ctx, stmt_ctx);
 			uint32_t id_rv_x = sub_ctx.count_var++;
 			uint32_t id_rv_y = sub_ctx.count_var++;
+			uint32_t id_var_addr = sub_ctx.count_var++;
 			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_rv_x, false) }, -1);
 			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_rv_y, false) }, -1);
 			sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_addr, false) }, -1);
-			// TODO: Implement StackAddrLvalueResult::Assign for Point.
+			sub_ctx.insert_ins(stmt_ctx, 44, { new Parameter_variable(id_rv_y, false) }, -1);
+			sub_ctx.insert_ins(stmt_ctx, 44, { new Parameter_variable(id_rv_x, false) }, -1);
+			sub_ctx.insert_ins(stmt_ctx, 2114, { new Parameter_variable(id_var_addr, false), new Parameter_int(0) }, 1);
+			sub_ctx.insert_ins(stmt_ctx, 2114, { new Parameter_variable(id_var_addr, false), new Parameter_int(1) }, 1);
 			break;
 		}
 		default:
@@ -1495,6 +1502,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
 			{ Op::TokenType::Plus, 2050 },
 			{ Op::TokenType::Minus, 2051 },
+			{ Op::TokenType::Times, 2052 },
+			{ Op::TokenType::Divide, 2053 }
 			});
 		switch (this->branchs[1]->getToken()->type()) {
 		case Op::TokenType::LogicalOr: {
@@ -1634,24 +1643,38 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
 				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
 			} else {
-				cast_to_expr(this->branchs[2])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
-				cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 				switch (this->_type.type) {
-				case Op::mType::Int:
+				case Op::mType::Int: {
 					if (cast_to_expr(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 					if (cast_to_expr(this->branchs[2])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+					cast_to_expr(this->branchs[2])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+					cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
-				case Op::mType::Float:
+				}
+				case Op::mType::Float: {
 					if (cast_to_expr(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 					if (cast_to_expr(this->branchs[2])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+					cast_to_expr(this->branchs[2])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+					cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
-				case Op::mType::Point:
-					// Temporary placeholder to avoid exceptions.
-					stmt_ctx.stackptr_rel_current -= 1;
-					// TODO: Implement Op::TokenType::Times & Op::TokenType::Divide for Point.
-					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+				}
+				case Op::mType::Point: {
+					tNoVars* branch_scalar = nullptr;
+					tNoVars* branch_point = nullptr;
+					if (cast_to_expr(this->branchs[0])->_type.type == Op::mType::Float && cast_to_expr(this->branchs[2])->_type.type == Op::mType::Point) {
+						branch_scalar = cast_to_expr(this->branchs[0]);
+						branch_point = cast_to_expr(this->branchs[2]);
+					} else if (cast_to_expr(this->branchs[0])->_type.type == Op::mType::Point && cast_to_expr(this->branchs[2])->_type.type == Op::mType::Float && this->branchs[1]->getToken()->type() == Op::TokenType::Times) {
+						branch_scalar = cast_to_expr(this->branchs[2]);
+						branch_point = cast_to_expr(this->branchs[0]);
+					}
+					branch_point->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+					branch_scalar->OutputRvalueExpr(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx);
+					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -1);
+					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
+				}
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 				}
