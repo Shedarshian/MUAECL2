@@ -173,14 +173,13 @@ static void compile(const CompileArguments& compile_args) {
 		in = in_f.get();
 		filename = compile_args.filename_in;
 	}
-	vector<string> anim, ecli;
 	stringstream preprocess_out;			//if preprocess no output to file
-	Preprocessor::process(*in, preprocess_out, ecli, anim);
+	auto[ecli, anim] = Preprocessor::process(*in, preprocess_out);
 	Tokenizer tokenizer(preprocess_out, filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();
-	RawEclGenerator raw_ecl_generator(parser.Output());
+	RawEclGenerator raw_ecl_generator(parser.Output(ecli, anim));
 	unique_ptr<ofstream> out_f;
 	if (!compile_args.filename_out.empty()) {
 		ofstream out(compile_args.filename_out, ios::binary);

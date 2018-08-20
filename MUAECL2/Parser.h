@@ -18,7 +18,7 @@ public:
 	static void clear();
 	tRoot* analyse();
 	void TypeCheck();
-	fRoot Output();
+	fRoot Output(const vector<string>& ecli, const svector<string>& anim);
 private:
 	static GrammarTree* mergeTree(int id, stack<pair<int, GrammarTree*>>& s);
 	//int表示移动，1~999为入栈，1001~1999为规约，0为accept，负数为error

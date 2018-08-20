@@ -5,6 +5,6 @@ using namespace std;
 
 class Preprocessor {
 public:
-	static void process(istream &in, ostream &out, vector<string>& ecli, vector<string>& anim);
+	static pair<vector<string>, vector<string>> process(istream &in, ostream &out);
 };
 

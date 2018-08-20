@@ -386,7 +386,7 @@ public:
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	/// <param name="types_param">From right to left.</param>
 	string getSubDecoratedName(const string& id, const vector<mType>& types_params) const;
-	fRoot Output() const;
+	fRoot Output(const vector<string>& ecli, const vector<string>& anim) const;
 private:
 	multimap<string, pair<mType, vector<mType>>> subdecl;
 	vector<tSub*> subs;
