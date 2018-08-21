@@ -154,10 +154,10 @@ int main(int argc, char* argv[]) {
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
 	// TODO: Exception handling for ErrDesignApp & std::exception?
-	/*catch (ErrDesignApp &e) {
+	catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
 	}
-	catch (exception &e) {
+	/*catch (exception &e) {
 		cerr << e.what() << endl;
 	}*/
 #ifdef _DEBUG

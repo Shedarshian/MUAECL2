@@ -55,7 +55,7 @@ public:
 	virtual GrammarTree* typeChange(Op::Rank rank);
 	virtual bool isLabel() const;
 protected:
-	static constexpr bool debug = true;
+	static constexpr bool debug = false;
 };
 
 //为入栈所使用的状态标记

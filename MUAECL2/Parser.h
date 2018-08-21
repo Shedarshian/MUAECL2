@@ -30,6 +30,6 @@ private:
 	Tokenizer &tokenizer;
 	stack<pair<int, GrammarTree*>> s;
 	tRoot* saveTree;
-	static constexpr bool debug = true;
+	static constexpr bool debug = false;
 };
 
