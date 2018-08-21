@@ -144,6 +144,9 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 				out << '\n';
 			v.clear();
 		}
+		else {
+			out << '\n';
+		}
 	}
 	return make_pair(ecli, anim);
 }
