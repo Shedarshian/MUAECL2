@@ -2141,7 +2141,7 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 	}
 }
 
-fRoot tRoot::Output() const {
+fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim) const {
 	vector<fSub> fsubs;
 	for (const tSub* val_tsub : this->subs)
 		fsubs.push_back(val_tsub->Output(*this));

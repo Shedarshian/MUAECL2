@@ -188,8 +188,8 @@ void Parser::TypeCheck() {
 	}
 }
 
-fRoot Parser::Output() {
-	return saveTree->Output();
+fRoot Parser::Output(const vector<string>& ecli, const vector<string>& anim) {
+	return saveTree->Output(ecli, anim);
 }
 
 //依据产生式id号由stack构造tree

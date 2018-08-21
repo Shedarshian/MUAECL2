@@ -269,7 +269,9 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 }
 
 static void preprocess(PreprocessArguments& preprocess_args) {
-	Preprocessor::process(*preprocess_args.in, *preprocess_args.out, preprocess_args.ecli, preprocess_args.anim);
+	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out);
+	preprocess_args.ecli = ecli_and_anim.first;
+	preprocess_args.anim = ecli_and_anim.second;
 }
 
 static void compile(CompileArguments& compile_args) {
@@ -280,10 +282,7 @@ static void compile(CompileArguments& compile_args) {
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();
-	fRoot froot = parser.Output();
-	froot.ecli = compile_args.ecli;
-	froot.anim = compile_args.anim;
-	RawEclGenerator raw_ecl_generator(froot);
+	RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim));
 	unique_ptr<ofstream> out_f;
 	raw_ecl_generator.generate(*compile_args.out);
 	Parser::clear();
