@@ -93,8 +93,6 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 static void preprocess(PreprocessArguments& preprocess_args);
 static void compile(CompileArguments& compile_args);
 
-#include<regex>
-
 int main(int argc, char* argv[]) {
 	try {
 		unordered_map<string, string> map_cmdarg_alias_to_id;
@@ -103,10 +101,6 @@ int main(int argc, char* argv[]) {
 				map_cmdarg_alias_to_id[val_alias] = val_cmdarg_def.first;
 			}
 		}
-
-		// TODO: What's the purpose of the following line??
-		string v("abcdefghi \\\nabcdefghijklmno \\\nc");
-		//cout << c << endl;
 
 		vector<string> vec_rawcmdarg;
 		for (int i = 1; i < argc; ++i) {
@@ -277,7 +271,6 @@ static void preprocess(PreprocessArguments& preprocess_args) {
 static void compile(CompileArguments& compile_args) {
 	ReadIns::Read();
 	Parser::initialize();
-	//调试中
 	Tokenizer tokenizer(*compile_args.in, compile_args.filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
