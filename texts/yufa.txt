@@ -64,6 +64,7 @@ R62	id_expr	expr->( expr )
 R63	id24	expr->id ( insv )//call
 R63	id34	expr->id ( insv )//ins
 R63	id35	expr->id ( insv )//mode
+R63	id36	expr->id ( insv )//internal func
 R64	id25	expr->(*) expr
 R65	id25	expr->(&) expr
 R66	id27	expr->expr [ expr ]

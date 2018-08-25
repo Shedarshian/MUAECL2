@@ -59,10 +59,14 @@ bool Op::operator==(const Rank& rankL, const Rank& rankR) {
 
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 	multimap<TokenType, tuple<mVType, mVType, mVType, int>> t;
-	for (auto tt : { Op::LogicalOr, Op::LogicalAnd, Op::Or, Op::And, Op::BitOr, Op::BitXor, Op::BitAnd, Op::Mod }) {
+	for (auto tt : { Op::LogicalOr, Op::LogicalAnd, Op::Or, Op::And, Op::BitOr, Op::BitXor, Op::BitAnd }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
 	}
+	//int & int = int, id+0
+	t.emplace(Op::Mod, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)Op::Mod));
+	//float & float = float, id+OFFSET
+	t.emplace(Op::Mod, make_tuple(VTYPE(Float, r), VTYPE(Float, r), VTYPE(Float, r), (int)Op::Mod + OFFSET));
 	for (auto tt : { Op::EqualTo, Op::NotEqual, Op::Greater, Op::GreaterEqual, Op::Less, Op::LessEqual }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
@@ -142,13 +146,41 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		//point = float, id+2*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Float, r), VTYPE(Point, l), (int)tt + OFFSET * 2));
 	}
-	for (auto tt : { Op::ModEqual, Op::LogicalOrEqual, Op::LogicalAndEqual, Op::BitOrEqual, Op::BitAndEqual, Op::BitXorEqual }) {
+	//int & int = int, id+0
+	t.emplace(Op::ModEqual, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)Op::ModEqual));
+	//float & float = float, id+OFFSET
+	t.emplace(Op::ModEqual, make_tuple(VTYPE(Float, l), VTYPE(Float, r), VTYPE(Float, l), (int)Op::ModEqual + OFFSET));
+	for (auto tt : { Op::LogicalOrEqual, Op::LogicalAndEqual, Op::BitOrEqual, Op::BitAndEqual, Op::BitXorEqual }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)tt));
 	}
 	return t;
 }
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> Op::mVType::typeChange = makeTypeChange();
+
+const multimap<string, tuple<mVType, vector<mVType>, int>> makeInternalFunction() {
+	multimap<string, tuple<mVType, vector<mVType>, int>> t;
+	t.emplace("sin", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 79));
+	t.emplace("cos", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 80));
+	t.emplace("deg", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2013));
+	t.emplace("rad", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2014));
+	t.emplace("ln", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2015));
+	t.emplace("log", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2016));
+	t.emplace("pow", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r), VTYPE(Int, r) }, 2017));
+	t.emplace("pow", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2018));
+	t.emplace("sgn", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2019));
+	t.emplace("sgn", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r) }, 2020));
+	t.emplace("tan", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2021));
+	t.emplace("asin", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2022));
+	t.emplace("acos", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2023));
+	t.emplace("atan", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2024));
+	t.emplace("sar", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2026));
+	t.emplace("shr", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2027));
+	t.emplace("shl", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2028));
+	t.emplace("abs", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r), VTYPE(Int, r) }, 2033));
+	t.emplace("abs", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2032));
+}
+const multimap<string, tuple<mVType, vector<mVType>, int>> Op::mVType::internalFunction = makeInternalFunction();
 
 Op::Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	Rank rank;

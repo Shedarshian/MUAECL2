@@ -108,6 +108,8 @@ namespace Op {
 		/// <summary>implicit type change, return ranks</summary>
 		/// <returns>return rank for changes, saves what changes are done.</returns>
 		static Rank canChangeTo(const mVType& typ, const mVType& typto);
+		/// saves : name->return type + operand + ins ID
+		static const multimap<string, tuple<mVType, vector<mVType>, int>> internalFunction;
 	};
 };
 
