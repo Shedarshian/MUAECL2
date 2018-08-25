@@ -1072,7 +1072,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::PlusEqual, 51 },
 			{ Op::TokenType::MinusEqual, 53 },
 			{ Op::TokenType::TimesEqual, 55 },
-			{ Op::TokenType::DividesEqual, 57 }
+			{ Op::TokenType::DividesEqual, 57 },
+			{ Op::TokenType::Mod, 2031 }
 			});
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
 			{ Op::TokenType::PlusEqual, 2050 },
@@ -1135,7 +1136,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 		}
 		case Op::TokenType::TimesEqual:[[fallthrough]];
-		case Op::TokenType::DividesEqual: {
+		case Op::TokenType::DividesEqual:[[fallthrough]];
+		case Op::TokenType::ModEqual: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
@@ -1145,17 +1147,18 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			shared_ptr<RvalueResult> rvres;
 			switch (this->_type.type) {
 			case Op::mType::Int:
-				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				break;
 			case Op::mType::Float:
-				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				break;
 			case Op::mType::Point:
-				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (this->branchs[1]->getToken()->type() == Op::TokenType::ModEqual) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
@@ -1165,7 +1168,6 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			lvres_assign->Assign(sub_ctx, stmt_ctx, rvres);
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 		}
-		case Op::TokenType::ModEqual:[[fallthrough]];
 		case Op::TokenType::BitOrEqual:[[fallthrough]];
 		case Op::TokenType::BitAndEqual:[[fallthrough]];
 		case Op::TokenType::BitXorEqual: {
@@ -1475,7 +1477,6 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::BitOr, 76 },
 			{ Op::TokenType::BitXor, 75 },
 			{ Op::TokenType::BitAnd, 77 },
-			{ Op::TokenType::Mod, 58 },
 			{ Op::TokenType::EqualTo, 59 },
 			{ Op::TokenType::NotEqual, 61 },
 			{ Op::TokenType::Greater, 67 },
@@ -1485,7 +1486,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::Plus, 50 },
 			{ Op::TokenType::Minus, 52 },
 			{ Op::TokenType::Times, 54 },
-			{ Op::TokenType::Divide, 56 }
+			{ Op::TokenType::Divide, 56 },
+			{ Op::TokenType::Mod, 58 }
 			});
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_float({
 			{ Op::TokenType::EqualTo, 60 },
@@ -1497,7 +1499,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::Plus, 51 },
 			{ Op::TokenType::Minus, 53 },
 			{ Op::TokenType::Times, 55 },
-			{ Op::TokenType::Divide, 57 }
+			{ Op::TokenType::Divide, 57 },
+			{ Op::TokenType::Mod, 2031 }
 			});
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
 			{ Op::TokenType::Plus, 2050 },
@@ -1562,8 +1565,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		case Op::TokenType::And:[[fallthrough]];
 		case Op::TokenType::BitOr:[[fallthrough]];
 		case Op::TokenType::BitXor:[[fallthrough]];
-		case Op::TokenType::BitAnd:[[fallthrough]];
-		case Op::TokenType::Mod: {
+		case Op::TokenType::BitAnd: {
 			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (this->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : this->_type.type != Op::mType::Int"s).c_str()));
@@ -1637,7 +1639,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			}
 		}
 		case Op::TokenType::Times:[[fallthrough]];
-		case Op::TokenType::Divide: {
+		case Op::TokenType::Divide:[[fallthrough]];
+		case Op::TokenType::Mod: {
 			if (discard_result) {
 				cast_to_expr(this->branchs[2])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
 				cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
@@ -1661,6 +1664,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				}
 				case Op::mType::Point: {
+					if (this->branchs[1]->getToken()->type() == Op::TokenType::Mod) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 					tNoVars* branch_scalar = nullptr;
 					tNoVars* branch_point = nullptr;
 					if (cast_to_expr(this->branchs[0])->_type.type == Op::mType::Float && cast_to_expr(this->branchs[2])->_type.type == Op::mType::Point) {
