@@ -1,6 +1,8 @@
 R0		E->subs
 R12		subs->\e
 R13		subs->sub id ( subv ) { stmts } subs
+R73		subs->no_overload sub id ( subv ) { stmts } subs
+R74		subs->sub id ( subv ) no_overload { stmts } subs
 R14		subv->\e
 R15		subv->type id
 R16		subv->type id , subv
@@ -103,7 +105,7 @@ exprf	expr
 vdecl	id
 insv	\e expr
 
-24 52 65 66 67 72 79 128 129 130 151
+72 79 128 129 130 151
 
 
 I255:
@@ -112,7 +114,10 @@ I0:
 E->\.subs
 subs->\.
 subs->\.sub id ( subv ) { stmts } subs
+subs->\.no_overload sub id ( subv ) { stmts } subs
+subs->\.sub id ( subv ) no_overload { stmts } subs
 I0---sub id (--->I61(I34 I35)
+  ---no_overload sub id (--->I24(I65 I66 I67)
   ---subs------->I255
 I9:
 subs->sub id ( subv ) {\.stmts } subs
@@ -424,8 +429,11 @@ I50:
 subs->sub id ( subv ) { stmts }\.subs
 subs->\.
 subs->\.sub id ( subv ) { stmts } subs
+subs->\.no_overload sub id ( subv ) { stmts } subs
+subs->\.sub id ( subv ) no_overload { stmts } subs
 I50---sub id (-->I61(I34 I35)
    ---subs------>I51
+   ---same---I0
 I51:
 subs->sub id ( subv ) { stmts } subs\.
 I53:
@@ -471,11 +479,20 @@ stmt->if ( expr ) stmt\.else stmt
 I60---else------->I70
 I61:
 subs->sub id (\.subv ) { stmts } subs
+subs->sub id (\.subv ) no_overload { stmts } subs
 subv->\.
 subv->\.type id
 subv->\.type id , subv
 I61---type------->I62
    ---subv------->I69
+I24:
+subs->no_overload sub id (\.subv ) { stmts } subs
+\.subv
+I24---type-------->I62
+   ---subv-------->I52
+I52:
+subs->no_overload sub id ( subv\.) { stmts } subs
+I52---) {--------->I179(I178)
 I62:
 subv->type\.id
 subv->type\.id , subv
@@ -495,7 +512,9 @@ I68:
 subv->type id , subv\.
 I69:
 subs->sub id ( subv\.) { stmts } subs
+subs->sub id ( subv\.) no_overload { stmts } subs
 I69---) {-------->I9(I56)
+   ---) no_overload {--->I184(I56 I183)
 I70:
 stmt->if ( expr ) stmt else\.stmt
 \.stmt
@@ -907,6 +926,25 @@ I176---same---I168
     ---data---I177
 I177:
 data->{ insdata } ; data\.
+I179:
+subs->no_overload sub id ( subv ) {\.stmts } subs
+I180:
+subs->no_overload sub id ( subv ) { stmts\.} subs
+I181:
+subs->no_overload sub id ( subv ) { stmts }\.subs
+I182:
+subs->no_overload sub id ( subv ) { stmts } subs\.
+I183:
+subs->sub id ( subv ) no_overload\.{ stmts } subs
+I184:
+subs->sub id ( subv ) no_overload {\.stmts } subs
+I185:
+subs->sub id ( subv ) no_overload { stmts\.} subs
+I186:
+subs->sub id ( subv ) no_overload { stmts }\.subs
+I187:
+subs->sub id ( subv ) no_overload { stmts } subs\.
+
 
 
 

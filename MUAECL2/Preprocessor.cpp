@@ -139,14 +139,14 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 				}
 				out << '\n';
 			}
-			lineNo += blankline + 1;
-			for (; blankline > 0; --blankline)
-				out << '\n';
-			v.clear();
 		}
 		else {
 			out << '\n';
 		}
+		lineNo += blankline + 1;
+		for (; blankline > 0; --blankline)
+			out << '\n';
+		v.clear();
 	}
 	return make_pair(ecli, anim);
 }

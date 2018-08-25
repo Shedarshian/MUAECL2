@@ -357,16 +357,17 @@ private:
 //单个Sub，不会出现在规约栈中所以不重载type
 class tSub : public GrammarTree {
 public:
-	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts);
+	tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts, bool no_overload);
 	~tSub();
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
-	void insertDecl(multimap<string, pair<mType, vector<mType>>>& m) const;
+	void insertDecl(multimap<string, tuple<mType, vector<mType>, bool>>& m) const;
 	mVar* checkVar(const string& id);
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() const override;
 	string getDecoratedName() const;
 	fSub Output(const tRoot& root) const;
 private:
+	bool no_overload;					//是否装饰sub名
 	const string name;
 	int lineNo;
 	vector<mType> varpara;				//全部逆序储存
@@ -382,12 +383,12 @@ public:
 	~tRoot();
 	Op::NonTerm type() const override;
 	void addSub(tSub* s);
-	decltype(declval<multimap<string, pair<mType, vector<mType>>>>().equal_range(declval<string>())) checkSub(const string& id);
+	decltype(declval<multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) checkSub(const string& id);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	/// <param name="types_param">From right to left.</param>
 	string getSubDecoratedName(const string& id, const vector<mType>& types_params) const;
 	fRoot Output(const vector<string>& ecli, const vector<string>& anim) const;
 private:
-	multimap<string, pair<mType, vector<mType>>> subdecl;
+	multimap<string, tuple<mType, vector<mType>, bool>> subdecl;
 	vector<tSub*> subs;
 };

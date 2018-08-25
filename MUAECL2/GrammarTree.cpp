@@ -195,9 +195,9 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 			_type = OverloadCheck<void, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
 				[](const decltype(begin_it)& it) {
 					vector<mVType> vTypes;
-					transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
+					transform(get<1>(it->second).cbegin(), get<1>(it->second).cend(), inserter(vTypes, vTypes.begin()),
 						[](const mType& t) { return mVType{ t, Op::LRvalue::rvalue, false }; });
-					return make_tuple((void*)nullptr, mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes); },
+					return make_tuple((void*)nullptr, mVType{ get<0>(it->second), Op::LRvalue::rvalue, false }, vTypes); },
 				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
 				begin_it, end_it);
 			if (_type.type == Op::mType::type_error)
@@ -285,9 +285,9 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 			_type = OverloadCheck<void, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
 				[](const decltype(begin_it)& it) {
 				vector<mVType> vTypes;
-				transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
+				transform(get<1>(it->second).cbegin(), get<1>(it->second).cend(), inserter(vTypes, vTypes.begin()),
 					[](const mType& t) { return mVType{ t, Op::LRvalue::rvalue, false }; });
-				return make_tuple((void*)nullptr, mVType{ it->second.first, Op::LRvalue::rvalue, false }, vTypes); },
+				return make_tuple((void*)nullptr, mVType{ get<0>(it->second), Op::LRvalue::rvalue, false }, vTypes); },
 				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
 				begin_it, end_it);
 			if (_type.type == Op::mType::type_error)
@@ -746,7 +746,7 @@ void tStmts::extractlabel(map<string, GrammarTree*>& l) {
 		t->extractlabel(l);
 }
 
-tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts) :stmts(stmts), vardecl(subv->vars), name(name), lineNo(lineNo) {
+tSub::tSub(string name, int lineNo, tSubVars* subv, GrammarTree* stmts, bool no_overload) :stmts(stmts), vardecl(subv->vars), name(name), lineNo(lineNo), no_overload(no_overload) {
 	transform(subv->vars.begin(), subv->vars.end(), inserter(varpara, varpara.end()), [](const mVar& t) { return t.type; });
 	delete subv;
 	stmts->extractdecl(vardecl);
@@ -761,10 +761,19 @@ mVType tSub::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 	return VTYPE(Void, r);
 }
 
-void tSub::insertDecl(multimap<string, pair<mType, vector<mType>>>& m) const {
-	auto it = m.insert(make_pair(name, make_pair(typeReturn, varpara))); //TODO 检测重载是否有误
-	//if (!it.second)
-	//	throw(ErrFuncRedeclared(lineNo, name));
+void tSub::insertDecl(multimap<string, tuple<mType, vector<mType>, bool>>& m) const {
+	if (no_overload)
+		if (m.find(name) != m.end())
+			throw(ErrFuncRedeclared(lineNo, name));
+		else
+			m.insert(make_pair(name, make_tuple(typeReturn, varpara, true)));
+	else {
+		auto[it_begin, it_end] = m.equal_range(name);
+		for (; it_begin != it_end; ++it_begin)
+			if (get<2>(it_begin->second) || get<1>(it_begin->second) == varpara)
+				throw(ErrFuncRedeclared(lineNo, name));
+		m.insert(make_pair(name, make_tuple(typeReturn, varpara, false)));
+	}
 }
 
 mVar* tSub::checkVar(const string& id) {
@@ -790,7 +799,7 @@ void tRoot::addSub(tSub* s) {
 	s->insertDecl(subdecl);
 }
 
-decltype(declval<multimap<string, pair<mType, vector<mType>>>>().equal_range(declval<string>())) tRoot::checkSub(const string& id) {
+decltype(declval<multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) tRoot::checkSub(const string& id) {
 	return subdecl.equal_range(id);
 }
 
