@@ -158,6 +158,8 @@ Token* Tokenizer::getToken(){
 				return new Token_Literal(lineNo, filename.substr(filename.find_last_of("/") + 1));
 			if (s == "__LINE__")
 				return new Token_Literal(lineNo, lineNo);
+			if (s == "pi")
+				return new Token_Literal(lineNo, 3.14159265);
 			//Èç¹ûÊÇbuild-in type
 			if (auto it = Op::Ch::StringToType.find(s); it != Op::Ch::StringToType.end())
 				return new Token_KeywordType(lineNo, it->second);

@@ -71,7 +71,7 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 				else if (v.compare(0, 7, "define ") == 0) {
 					//#define space identifier space string
 					//#define space identifier ( identifier_list ) space string
-					int delim2 = v.find_first_of(" (", 7);
+					int delim2 = v.find_first_of(" {", 7);
 					string identifier = v.substr(7, delim2 - 7);
 					if (!regex_match(identifier, regex("[_[:alpha:]][_[:alnum:]]*")))
 						throw(ErrSubstituteName(lineNo, identifier));
@@ -82,7 +82,7 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 						subs.emplace_back(identifier, regex("\\b" + identifier + "\\b"), replace_string);
 					}
 					else {
-						int delim3 = v.find_first_of(')', 7);
+						int delim3 = v.find_first_of('}', 7);
 						string replace_string = v.substr(delim3 + 2);
 						string identifier_list = v.substr(delim2 + 1, delim3 - delim2 - 1);
 						if (!regex_match(identifier_list, regex("|\\s*[_[:alpha:]][_[:alnum:]]*(\\s*,\\s*[_[:alpha:]][_[:alnum:]]*)*\\s*")))
@@ -97,13 +97,13 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 								char c[4];
 								snprintf(c, 4, "$%.2d", n);
 								replace_string = regex_replace(replace_string, regex((*it).str()), c, regex_constants::format_sed);
-								identifier_replace_list += "\\s*([^,]*?)\\s*,";
+								identifier_replace_list += "\\s*(.*?\\S)\\s*,";
 							}
 							identifier_replace_list.erase(identifier_replace_list.end() - 1);
-							subs.emplace_back(identifier, regex("\\b" + identifier + "\\s*\\(" + identifier_replace_list + "\\)"), replace_string);
+							subs.emplace_back(identifier, regex("\\b" + identifier + "\\s*\\{" + identifier_replace_list + "\\}"), replace_string);
 						}
 						else {
-							subs.emplace_back(identifier, regex("\\b" + identifier + "\\s*\\(\\s*\\)"), replace_string);
+							subs.emplace_back(identifier, regex("\\b" + identifier + "\\s*\\{\\s*\\}"), replace_string);
 						}
 					}
 				}
@@ -139,11 +139,14 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 				}
 				out << '\n';
 			}
-			lineNo += blankline + 1;
-			for (; blankline > 0; --blankline)
-				out << '\n';
-			v.clear();
 		}
+		else {
+			out << '\n';
+		}
+		lineNo += blankline + 1;
+		for (; blankline > 0; --blankline)
+			out << '\n';
+		v.clear();
 	}
 	return make_pair(ecli, anim);
 }

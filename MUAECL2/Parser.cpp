@@ -60,9 +60,9 @@ map<int, map<Op::TokenType, int>*> Parser::Action;
 
 const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::stmt, map<int, int>({ { 7, 7 }, { 9, 7 }, { 58, 60 }, { 70, 71 }, { 73, 74 }, { 75, 76 }, { 77, 7 }, { 160, 161 } }) },
-	{ NonTerm::stmts, map<int, int>({ { 7, 17 }, { 9, 49 }, { 77, 78 } }) },
-	{ NonTerm::subs, map<int, int>({ { 0, 255 }, { 50, 51 } }) },
-	{ NonTerm::subv, map<int, int>({ { 61, 69 }, { 64, 68 } }) },
+	{ NonTerm::stmts, map<int, int>({ { 7, 17 }, { 9, 49 }, { 77, 78 }, { 179, 180 }, { 184, 185 } }) },
+	{ NonTerm::subs, map<int, int>({ { 0, 255 }, { 50, 51 }, { 181, 182 }, { 186, 187 } }) },
+	{ NonTerm::subv, map<int, int>({ { 24, 52 }, { 61, 69 }, { 64, 68 } }) },
 	{ NonTerm::vdecl, map<int, int>({ { 2, 12 }, { 54, 55 }, { 59, 48 } }) },
 	{ NonTerm::insv, map<int, int>({ { 10, 46 }, { 43, 45 }, { 156, 157 } }) },
 	{ NonTerm::ini, map<int, int>({ { 28, 29 }, { 30, 31 }, { 32, 33 }, { 53, 21 } }) },
@@ -202,7 +202,21 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 		auto[tok, subv, stmts, subs] = pop<0, 1, 0, 1, 0, 0, 1, 0, 1>(s);
 		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
 		delete tok;
-		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts));
+		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts, false));
+		//构造函数中提取所有label与var，存到sub里
+		return subs; }
+	case 73: { //subs->no_overload sub id ( subv ) { stmts } subs
+		auto[tok, subv, stmts, subs] = pop<0, 0, 1, 0, 1, 0, 0, 1, 0, 1>(s);
+		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
+		delete tok;
+		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts, true));
+		//构造函数中提取所有label与var，存到sub里
+		return subs; }
+	case 74: { //subs->sub id ( subv ) no_overload { stmts } subs
+		auto[tok, subv, stmts, subs] = pop<0, 1, 0, 1, 0, 0, 0, 1, 0, 1>(s);
+		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
+		delete tok;
+		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts, true));
 		//构造函数中提取所有label与var，存到sub里
 		return subs; }
 	case 14: //subv->\e

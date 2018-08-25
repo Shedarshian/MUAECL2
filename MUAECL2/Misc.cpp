@@ -11,7 +11,7 @@ using TT = Op::TokenType;
 using BT = Op::mType;
 
 const unordered_set<char> Op::Ch::OperatorChar = { '+', '-', '*', '/', '%', '&', '|', '!', '^', '=', '>', '<', '.', ';', ':', '(', ')', '{', '}', ',', '[', ']' };
-const map<Op::TokenType, string> Op::Ch::OperatorToString = { { TT::Plus, "+" }, { TT::Minus, "-" }, { TT::Times, "*" }, { TT::Divide, "/" }, { TT::Mod, "%" }, { TT::EqualTo, "==" }, { TT::NotEqual, "!=" }, { TT::Less, "<" }, { TT::LessEqual, "<=" }, { TT::Greater, ">" }, { TT::GreaterEqual, ">=" }, { TT::Not, "!" }, { TT::LogicalOr, "||" }, { TT::LogicalAnd, "&&" }, { TT::BitOr, "|" }, { TT::BitAnd, "&" }, { TT::BitXor, "^" }, { TT::Negative, "(-)" }, { TT::Deref, "(*)" }, { TT::Address, "(&)" }, { TT::Dot, "." }, { TT::And, "and" }, { TT::Or, "or" }, { TT::Equal, "=" }, { TT::PlusEqual, "+=" }, { TT::MinusEqual, "-=" }, { TT::TimesEqual, "*=" }, { TT::DividesEqual, "/=" }, { TT::ModEqual, "%=" }, { TT::LogicalOrEqual, "||=" }, { TT::LogicalAndEqual, "&&=" }, { TT::BitOrEqual, "|=" }, { TT::BitAndEqual, "&=" }, { TT::BitXorEqual, "^=" }, { TT::If, "if" }, { TT::Else, "else" }, { TT::For, "for" }, { TT::While, "while" }, { TT::Break, "break" }, { TT::Continue, "continue" }, { TT::Goto, "goto" }, { TT::Sub, "sub" }, { TT::Do, "do" }, { TT::Thread, "thread" }, { TT::Rawins, "__rawins" }, { TT::Semicolon, ";" }, { TT::Colon, ":" }, { TT::Bra, "(" }, { TT::Ket, ")" }, { TT::MidBra, "[" }, { TT::MidKet, "]" }, { TT::BigBra, "{" }, { TT::BigKet, "}" }, { TT::Comma, "," } };
+const map<Op::TokenType, string> Op::Ch::OperatorToString = { { TT::Plus, "+" }, { TT::Minus, "-" }, { TT::Times, "*" }, { TT::Divide, "/" }, { TT::Mod, "%" }, { TT::EqualTo, "==" }, { TT::NotEqual, "!=" }, { TT::Less, "<" }, { TT::LessEqual, "<=" }, { TT::Greater, ">" }, { TT::GreaterEqual, ">=" }, { TT::Not, "!" }, { TT::LogicalOr, "||" }, { TT::LogicalAnd, "&&" }, { TT::BitOr, "|" }, { TT::BitAnd, "&" }, { TT::BitXor, "^" }, { TT::Negative, "(-)" }, { TT::Deref, "(*)" }, { TT::Address, "(&)" }, { TT::Dot, "." }, { TT::And, "and" }, { TT::Or, "or" }, { TT::Equal, "=" }, { TT::PlusEqual, "+=" }, { TT::MinusEqual, "-=" }, { TT::TimesEqual, "*=" }, { TT::DividesEqual, "/=" }, { TT::ModEqual, "%=" }, { TT::LogicalOrEqual, "||=" }, { TT::LogicalAndEqual, "&&=" }, { TT::BitOrEqual, "|=" }, { TT::BitAndEqual, "&=" }, { TT::BitXorEqual, "^=" }, { TT::If, "if" }, { TT::Else, "else" }, { TT::For, "loop" }, { TT::While, "while" }, { TT::Break, "break" }, { TT::Continue, "continue" }, { TT::Goto, "goto" }, { TT::Sub, "sub" }, { TT::NoOverload, "no_overload" }, { TT::Do, "do" }, { TT::Thread, "thread" }, { TT::Rawins, "__rawins" }, { TT::Semicolon, ";" }, { TT::Colon, ":" }, { TT::Bra, "(" }, { TT::Ket, ")" }, { TT::MidBra, "[" }, { TT::MidKet, "]" }, { TT::BigBra, "{" }, { TT::BigKet, "}" }, { TT::Comma, "," } };
 const map<string, TokenType> Op::Ch::StringToOperator = Op::swap_map(Op::Ch::OperatorToString);
 const map<string, mType> Op::Ch::StringToType = { { "type_error", BT::type_error }, { "void", BT::Void }, { "int", BT::Int }, { "float", BT::Float }, { "point", BT::Point }, { "string", BT::String }, { "initializer_list", BT::inilist } };
 const map<mType, string> Op::Ch::TypeToString = Op::swap_map(Op::Ch::StringToType);
@@ -59,10 +59,14 @@ bool Op::operator==(const Rank& rankL, const Rank& rankR) {
 
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 	multimap<TokenType, tuple<mVType, mVType, mVType, int>> t;
-	for (auto tt : { Op::LogicalOr, Op::LogicalAnd, Op::Or, Op::And, Op::BitOr, Op::BitXor, Op::BitAnd, Op::Mod }) {
+	for (auto tt : { Op::LogicalOr, Op::LogicalAnd, Op::Or, Op::And, Op::BitOr, Op::BitXor, Op::BitAnd }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
 	}
+	//int & int = int, id+0
+	t.emplace(Op::Mod, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)Op::Mod));
+	//float & float = float, id+OFFSET
+	t.emplace(Op::Mod, make_tuple(VTYPE(Float, r), VTYPE(Float, r), VTYPE(Float, r), (int)Op::Mod + OFFSET));
 	for (auto tt : { Op::EqualTo, Op::NotEqual, Op::Greater, Op::GreaterEqual, Op::Less, Op::LessEqual }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
@@ -81,7 +85,8 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		//point & point = point, id+2*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(Point, r), VTYPE(Point, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
 		//string & string = string, id+3*OFFSET
-		t.emplace(tt, make_tuple(VTYPE(String, r), VTYPE(String, r), VTYPE(String, r), (int)tt + OFFSET * 3));
+		if (tt != Op::Minus)
+			t.emplace(tt, make_tuple(VTYPE(String, r), VTYPE(String, r), VTYPE(String, r), (int)tt + OFFSET * 3));
 		//inilist & inilist = inilist, id+4*OFFSET
 		if (tt == Op::Colon)
 			t.emplace(tt, make_tuple(VTYPE(inilist, r), VTYPE(inilist, r), VTYPE(inilist, r), (int)tt + OFFSET * 3));
@@ -100,14 +105,23 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 	for (auto tt : { Op::Negative, Op::Not }) {
 		//int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Int, r), VTYPE(Int, r), (int)tt));
-		//float = float, id+OFFSET
-		t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Float, r), VTYPE(Float, r), (int)tt + OFFSET));
-		//point = point, id+OFFSET*2
-		t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Point, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
+		if (tt == Op::Negative){
+			//float = float, id+OFFSET
+			t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Float, r), VTYPE(Float, r), (int)tt + OFFSET));
+			//point = point, id+OFFSET*2
+			t.emplace(tt, make_tuple(VTYPE(type_error, r), VTYPE(Point, r), VTYPE(Point, r), (int)tt + OFFSET * 2));
+		}
 	}
 	//int = void l, id+0
 	t.emplace(Op::Deref, make_tuple(VTYPE(type_error, r), VTYPE(Int, r), VTYPE(Void, l), (int)Op::Deref));
-	//address, no
+	//int l = int, id+0
+	t.emplace(Op::Address, make_tuple(VTYPE(type_error, r), VTYPE(Int, l), VTYPE(Int, r), (int)Op::Address));
+	//float l = int, id+OFFSET
+	t.emplace(Op::Address, make_tuple(VTYPE(type_error, r), VTYPE(Float, l), VTYPE(Int, r), (int)Op::Address + OFFSET));
+	//point l = int, id+2*OFFSET
+	t.emplace(Op::Address, make_tuple(VTYPE(type_error, r), VTYPE(Point, l), VTYPE(Int, r), (int)Op::Address + OFFSET * 2));
+	//string l = int, id+3*OFFSET
+	t.emplace(Op::Address, make_tuple(VTYPE(type_error, r), VTYPE(String, l), VTYPE(Int, r), (int)Op::Address + OFFSET * 3));
 	//midbra, no
 	//dot, TODO
 	for (auto tt : { Op::Equal, Op::PlusEqual, Op::MinusEqual }) {
@@ -118,7 +132,8 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		//point = point, id+2*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Point, r), VTYPE(Point, l), (int)tt + OFFSET * 2));
 		//string = string, id+3*OFFSET
-		t.emplace(tt, make_tuple(VTYPE(String, l), VTYPE(String, r), VTYPE(String, l), (int)tt + OFFSET * 3));
+		if (tt != Op::MinusEqual)
+			t.emplace(tt, make_tuple(VTYPE(String, l), VTYPE(String, r), VTYPE(String, l), (int)tt + OFFSET * 3));
 		//point = inilist, id+4*OFFSET, 是否需要特殊检查？
 		if (tt == Op::Equal)
 			t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(inilist, r), VTYPE(inilist, l), (int)tt + OFFSET * 4));
@@ -131,13 +146,41 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		//point = float, id+2*OFFSET
 		t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(Float, r), VTYPE(Point, l), (int)tt + OFFSET * 2));
 	}
-	for (auto tt : { Op::ModEqual, Op::LogicalOrEqual, Op::LogicalAndEqual, Op::BitOrEqual, Op::BitAndEqual, Op::BitXorEqual }) {
+	//int & int = int, id+0
+	t.emplace(Op::ModEqual, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)Op::ModEqual));
+	//float & float = float, id+OFFSET
+	t.emplace(Op::ModEqual, make_tuple(VTYPE(Float, l), VTYPE(Float, r), VTYPE(Float, l), (int)Op::ModEqual + OFFSET));
+	for (auto tt : { Op::LogicalOrEqual, Op::LogicalAndEqual, Op::BitOrEqual, Op::BitAndEqual, Op::BitXorEqual }) {
 		//int & int = int, id+0
 		t.emplace(tt, make_tuple(VTYPE(Int, l), VTYPE(Int, r), VTYPE(Int, l), (int)tt));
 	}
 	return t;
 }
 const multimap<TokenType, tuple<mVType, mVType, mVType, int>> Op::mVType::typeChange = makeTypeChange();
+
+const multimap<string, tuple<mVType, vector<mVType>, int>> makeInternalFunction() {
+	multimap<string, tuple<mVType, vector<mVType>, int>> t;
+	t.emplace("sin", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 79));
+	t.emplace("cos", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 80));
+	t.emplace("deg", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2013));
+	t.emplace("rad", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2014));
+	t.emplace("ln", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2015));
+	t.emplace("log", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2016));
+	t.emplace("pow", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r), VTYPE(Int, r) }, 2017));
+	t.emplace("pow", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2018));
+	t.emplace("sgn", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2019));
+	t.emplace("sgn", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r) }, 2020));
+	t.emplace("tan", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2021));
+	t.emplace("asin", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2022));
+	t.emplace("acos", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2023));
+	t.emplace("atan", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2024));
+	t.emplace("sar", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2026));
+	t.emplace("shr", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2027));
+	t.emplace("shl", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2028));
+	t.emplace("abs", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r), VTYPE(Int, r) }, 2033));
+	t.emplace("abs", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2032));
+}
+const multimap<string, tuple<mVType, vector<mVType>, int>> Op::mVType::internalFunction = makeInternalFunction();
 
 Op::Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	Rank rank;

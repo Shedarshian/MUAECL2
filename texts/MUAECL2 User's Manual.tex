@@ -1,0 +1,804 @@
+\documentclass[UTF8]{ctexart}
+
+\usepackage{url}
+\usepackage{comment}
+\usepackage{float}
+\usepackage{fontspec}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage[colorlinks,
+            linkcolor=blue,
+            anchorcolor=black,
+            citecolor=blue
+            ]{hyperref}
+\usepackage[top=0.7in, bottom=0.7in, left=1.2in, right=1.2in]{geometry}
+\usepackage{makecell}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{fancyvrb}
+
+\author{MUA Group(Modification Ultraman Alliance)}
+\title{MUAECL2 User's Manual  ver. 2.0.1\_alpha}
+\date{\today}
+
+\DefineVerbatimEnvironment{MUAvbt}{Verbatim}{frame=single, rulecolor=\color{magenta}}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{关于}
+
+MUAECL是MUA制作组制作的ecl编译器，可以将一种比较类似C的语言——MUAECL语言的mecl文本文件，编译成ecl文件，并且可以被MUA引擎，以及th15的引擎所识别运行。
+
+\section{安装与运行}
+
+下载后解压至任意文件夹即可。解压后的文件包括：
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{c|c}
+		\hline
+		文件名 & 用途 \\\hline
+		MUAECL2.exe & 程序本体 \\\hline
+		action.csv & 跳转表 \\\hline
+		ins.ini & ins对照表 \\\hline
+		default.ini & default.ecl中包含的子程序名 \\\hline
+		include.ini & 预定义预处理指令 \\\hline
+	\end{tabular}
+\end{table}
+
+这些文件需要被放在同一文件夹下。
+
+本程序使用命令行方式运行。在cmd中运行``\verb|MUAECL2.x.x.exe -h|''（实际exe名随版本号而不同）或``\verb|MUAECL2.x.x.exe --help|''即可查看命令行帮助。
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{l|l|c}
+		\hline
+		\multicolumn{2}{c|}{命令行参数} & 用途 \\\hline
+		-h & --help & 显示命令行帮助 \\\hline
+		-c & --compile & 将MUAECL2源代码编译成ecl文件 \\\hline
+		-p & --preprocess & 预处理MUAECL2源代码，但不编译 \\\hline
+		-i <filename> & --input-file <filename> & 输入文件名 \\\hline
+		-o <filename> & --output-file <filename> & 输出文件名 \\\hline
+		-n & -no-preprocess & 在编译时不进行预处理 \\\hline
+	\end{tabular}
+\end{table}
+
+命令行应用示例：
+
+\begin{MUAvbt}
+MUAECL2 -h
+MUAECL2 -c -i st01.mecl -o st01.ecl
+MUAECL2 -p -i st01.mecl -o st01p.mecl
+MUAECL2 -c -n -i st01p.mecl -o st01.ecl
+\end{MUAvbt}
+
+\section{MUAECL语言}
+
+MUAECL语言是一种类似C的，描述MUA引擎中诸如子弹发射、敌人出场等信息的脚本。
+
+\subsection{预处理指令}
+
+预处理时，MUAECL首先检测每行行尾的反斜杠，对于行尾有反斜杠的行，将反斜杠删除，并将下一行的文本移至本行。
+
+MUAECL的预处理指令由\verb|#|开始，共有以下几种：
+
+\paragraph{s指令（s代表substitute）} \verb|#s| \textit{deliminator pattern deliminator string deliminator name}
+
+作用：将后续文本中每行内的\textit{pattern}的所有匹配（识别\href{https://en.wikipedia.org/wiki/Regular_expression}{正则表达式}）替换成\textit{string}，直到\textit{name}相同的\verb|ends|指令出现为止。若没有对应的ends指令，则替换直到文件尾。
+
+示例：
+
+\begin{MUAvbt}
+#s/abc/def/name
+#s ((?:a|b|c)*)d(e?) $2$1 mysubs1
+\end{MUAvbt}
+
+\begin{enumerate}
+	\item \textit{deliminator}为一个任意非标识符字符\verb|[^a-zA-Z0-9_]|。
+	\item \textit{pattern}与\textit{string}内的特殊字符依照\href{https://zh.cppreference.com/w/cpp/regex/ecmascript}{ECMAScript}规则（即C++标准库<reg\_ex>中默认的语法规则）替换
+	\item \textit{pattern}与\textit{string}按照全部字面意思读取，包括空格与制表符，但不包括换行符。
+	\item \textit{pattern}与\textit{string}内不能包含该非标识符字符，也不能跨行匹配或替换为多行文本。
+	\item \textit{name}不得包含非标识符字符。
+	\item 若有两个\textit{name}相同则报错
+\end{enumerate}
+
+\paragraph{无名s指令} \verb|#s| \textit{deliminator pattern deliminator string deliminator}
+
+作用：将后续文本中\textit{pattern}的所有匹配替换成\textit{string}，直到文件尾。
+
+\paragraph{ends指令} \verb|#ends| \textit{deliminator name}
+
+作用：结束名为\textit{name}的替换。\textit{deliminator}与\textit{name}的要求与\verb|s|指令相同。
+
+\paragraph{define指令} \verb|#define| \textit{space identifier space string}
+
+作用：与c相同，将\textit{identifier}关键词替换成\textit{string}。
+
+示例：\verb|#define abc def| \\ 会将文本中\verb|abc + abcd|替换成\verb|def + abcd|。
+
+\begin{enumerate}
+	\item 相当于匹配``\verb|\b|\textit{identifier}\verb|\b|''，并且\textit{name}定义为\textit{identifier}的\verb|s|指令。
+	\item \textit{identifier}不得包含非标识符字符。
+\end{enumerate}
+
+\paragraph{函数式define指令} \verb|#define| \textit{space identifier\{paraname1, paraname2, ...\} space string}
+
+作用：与c类似，将带参数的\textit{identifier}关键词替换成\textit{string}，与c不同的是，对于\textit{string}中\textit{paraname}的处理，只替换字符串不识别标识符。\textbf{所以请一定要注意各个paraname不要有相互包含的字符串，而且也不要使用string中包含的}。
+
+示例：\verb|#define abc{d,e,f} (d+e+f+def)| \\ 会将文本中\verb|abc{1,3,5}|替换成\verb|(1+3+5+135)|。
+
+\begin{enumerate}
+	\item 相当于匹配``\verb|\b|\textit{identifier}\verb|\b|''，并且\textit{name}定义为\textit{identifier}的s指令。
+	\item \textit{identifier}与\textit{paraname}不得包含非标识符字符。
+	\item 以示例为例，等价于：将\textit{string}中\textit{paraname1}替换成'\verb|$01|'，将\textit{paraname2}替换成'\verb|$02|'，以此类推后：\\
+	\verb|#s \babc\{\s*(.*?\S)\s*,\s*(.*?\S)\s*,\s*(.*?\S)\s*\} ($01+$02+$03+$01$02$03) abc|
+\end{enumerate}
+
+\paragraph{undef指令} \verb|#undef| \textit{space name}
+
+结束\textit{name}的后续匹配。等价于\verb|#ends|\ \textit{name}。
+
+\paragraph{ecli包含} \verb|#ecli| \textit{space eclfile}
+\paragraph{anim包含} \verb|#anim| \textit{space anmfile}
+
+为文件添加ecl文件与anm文件的包含。
+
+示例：\verb|#ecli default.ecl|
+
+预处理不改变后续文本的行号。
+
+\subsection{预定义宏变量}
+
+mecl包含几个预定义宏变量：
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{c|c}
+		\hline
+		宏名 & 作用 \\\hline
+		\verb|__FILE__| & 展开成当前文件名 \\\hline
+		\verb|__DATE__| & 展开成翻译到当前关键字时的日期 \\\hline
+		\verb|__TIME__| & 展开成翻译到当前关键字时的时间 \\\hline
+		\verb|__LINE__| & 展开成行号 \\\hline
+		\verb|pi| & 展开成3.14159265 \\\hline
+	\end{tabular}
+\end{table}
+
+\section{基本概念}
+
+\subsection{注释}
+
+mecl允许两种注释：C风格注释或C++风格注释：
+
+\begin{MUAvbt}
+1. /* some content */
+2. // some content \n
+\end{MUAvbt}
+
+与C不同的是，注释的处理在预处理替换步骤之后，也即：1.注释范围内的预处理指令会被处理；2.预处理替换后组合而成的注释符号会被识别。
+
+\subsection{标识符}
+
+与C相同，一个\textit{标识符}是一个由数字，下划线，小写和大写拉丁字母组成的任意长度的序列，且不可以数字起始。标识符区分大小写。
+
+有效的标识符示例：\verb|shedarshian|,\verb|Temp0_float|,\verb|_name_|
+
+\subsubsection{全局变量}
+
+mecl语言中包含若干全局变量，诸如自机坐标、内置随机数等，列表可在ins.ini中查询。若标识符与某一全局变量名相同，则会被识别成该全局变量。
+
+\subsection{类型}
+
+mecl语言包含如下几种类型：
+
+void类型，int类型，float类型，string类型，point类型。（目前版本中对于string类型\textbf{变量}尚无支持）
+
+mecl中int与float类型占据4字节。
+
+称算术类型包含int，float，point，基本算术类型包含int，float
+
+\subsubsection{隐式类型转换}
+
+在需要时（如\hyperref[chongzai]{重载决议}发生时，或if、for表达式内），会检测是否需要隐式类型转换。
+
+隐式类型转换包括：左值到右值转换，整数到浮点数转换，以及void类型左值到任意类型左值转换。
+
+\section{子程序}
+
+mecl由多个子程序（\verb|sub|）组成：\textit{suffix} \verb|sub| \textit{subname} \verb|(| \textit{subvars} \verb|)| \textit{suffix} \verb|{| \textit{subcontents} \verb|}|
+
+\textit{suffix}为可选的\verb|no_overload|关键字。参数列表为\textit{参数声明}的逗号分隔列表，每一项包含一个类型名以及一个变量名。这些具名形参均可在函数体内被访问。函数体\textit{subcontents}内为一条条的\hyperref[yuju]{语句}。
+
+示例：
+
+\begin{MUAvbt}
+sub MainSub01(float x) no_overload
+{
+	//some content
+}
+no_overload sub Main()
+{
+	//some content
+}
+sub Boss_at1(int num, float angle) {
+	//some content
+}
+\end{MUAvbt}
+
+子程序之间允许同名（\textbf{重载}），只要参数数或类型不同。调用重载的函数时遵循\hyperref[chongzai]{重载决议}（后述）。
+
+默认情况下，编译器输出ecl文件时会使用输入参数类型名装饰sub名。\verb|no_overload|关键字指示编译器在输出至ecl文件时不装饰sub名，同时禁止了对此函数的重载。
+
+子程序名为全局，也即允许\textbf{后声明先调用}。
+
+\section{表达式}
+
+表达式是\textit{运算符}和它们的\textit{运算数}的序列，它指定一项计算。
+
+\subsection{类型与值类型}
+
+每个表达式有一个类型，和一个值类型。值类型为左值或右值。左值指示其求值确定一个对象个体，右值指示其求值没有结果对象。
+
+下列表达式是左值表达式：
+\begin{enumerate}
+	\item 变量名\verb|a|。
+	\item 赋值及复合赋值表达式，如\verb|a = b|。
+	\item 间接寻址表达式，如\verb|*p|。
+\end{enumerate}
+
+左值可以取地址\verb|&(i = 1)|，左值可以作为赋值运算符的左操作数。
+
+下列表达式是右值表达式：
+\begin{enumerate}
+	\item 字面量，如\verb|42|。
+	\item 函数调用表达式，如\verb|g(1)|。
+	\item 算术表达式、逻辑表达式、比较表达式，如\verb|a + 1|、\verb|c && d|等。
+	\item 取地址表达式，如\verb|&a|。
+	\item 转型表达式，如\verb|(int)f|。
+\end{enumerate}
+
+右值不能被取地址，右值不能作为赋值运算符的左操作数。
+
+\subsection{初等表达式}
+
+初等表达式包括字面量与标识符。
+
+\paragraph{整数字面量} 整数字面量包含以下几种：
+
+\begin{enumerate}
+	\item 十进制字面量，由\verb|1-9|的数位后随零或多个\verb|0-9|的数位组成；
+	\item 八进制字面量，由\verb|0|后随多个\verb|0-7|的数位组成；
+	\item 十六进制字面量，由\verb|0x|后随多个\verb|0-9|或\verb|A-F|或\verb|a-f|组成。
+\end{enumerate}
+
+例如下列变量被初始化到相同值：
+
+\begin{MUAvbt}
+int d = 42;
+int o = 052;
+int x = 0x2a;
+int X = 0x2A;
+\end{MUAvbt}
+
+\paragraph{浮点数字面量} 浮点数字面量为一个包含且仅包含一个小数点的十进制数，后随一个可选的\verb|f|组成的字面量。如：\verb|2.34|,\verb|.1f|,\verb|1.|。
+
+\paragraph{字符串字面量} 字符串字面量为用一对双引号\verb|""|围起来的字符序列。反斜杠可以用于escape，在单个反斜杠后的字符以本义被录入，可用于在字符串中添加双引号字符本身。字符串字面量拥有string类型。
+
+\paragraph{预定义常量} 预定义常量在ins.ini中定义，被转义成等效的整数字面量或浮点数字面量。支持的预定义常量将在对应的instruction处列出。
+
+\paragraph{标识符} 标识符可以用于函数名，或者指代一个变量。%未来可能支持成员名
+
+\subsection{运算符}
+
+运算符有以下几类：
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{|c|c|c|c|c|c|}
+		\hline
+		\hyperref[fuzhi]{赋值} & \hyperref[suanshu]{算术} & \hyperref[luoji]{逻辑} & \hyperref[bijiao]{比较} & \hyperref[chengyuan]{成员访问} & \hyperref[qita]{其他} \\\hline
+		% \begin{comment}
+\begin{minipage}{0.6in}
+\begin{verbatim}
+
+a = b
+a += b
+a -= b
+a *= b
+a /= b
+a %= b
+a &&= b
+a ||= b
+a &= b
+a |= b
+a ^= b
+
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.5in}
+\begin{verbatim}
+-a
+a + b
+a - b
+a * b
+a / b
+a % b
+a & b
+a | b
+a ^ b
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.6in}
+\begin{verbatim}
+!a
+a && b
+a || b
+a and b
+a or b
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.5in}
+\begin{verbatim}
+a == b
+a != b
+a < b
+a <= b
+a > b
+a >= b
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.4in}
+\begin{verbatim}
+a.b
+a[b]
+*a
+&a
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{1.3in}
+\begin{verbatim}
+id(...)
+a1 : a2 : a3 : a4
+(type)a
+(a)
+\end{verbatim}
+\end{minipage}
+\\\hline
+% \end{comment}
+	\end{tabular}
+\end{table}
+
+内建运算符有几种内建的重载，\hyperref[chongzai]{重载决议}规则决定调用哪个重载。
+
+\subsubsection{算术运算符}
+\label{suanshu}
+
+\paragraph{一元负运算符} 返回运算数的相反数。形式为：\verb|-expr|。
+
+对于算术类型\verb|A|，下列函数签名参与\hyperref[chongzai]{重载决议}：%算术类型：href
+\begin{MUAvbt}
+A operator-(A)
+\end{MUAvbt}
+
+\paragraph{加减运算符} 返回运算数之和或差。形式为：\verb|expr + expr|，\verb|expr - expr|。
+
+对于算术类型\verb|A|，下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+A operator+(A, A)
+A operator-(A, A)
+string operator+(string, string)
+\end{MUAvbt}
+
+\paragraph{乘法性运算符} 返回运算数之积、商或余数。对于整数之商，向零截断小数部分。形式为：\verb|expr * expr|，\verb|expr / expr|，\verb|expr % expr|
+
+对于基本算术类型\verb|I|，下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+I operator*(I, I)
+I operator/(I, I)
+int operator%(int, int)
+point operator*(float, point)
+point operator*(point, float)
+point operator/(point, float)
+\end{MUAvbt}
+
+\paragraph{按位逻辑运算符} 返回运算数之按位与、按位或、按位异或。形式为：\verb|expr & expr|，\verb&expr | expr&，\verb|expr ^ expr|。
+
+下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+int operator&(int, int)
+int operator|(int, int)
+int operator^(int, int)
+\end{MUAvbt}
+
+\subsubsection{逻辑运算符}
+\label{luoji}
+
+逻辑运算符返回运算数之逻辑与、逻辑或、逻辑非。此处以int代替布尔值，非0为真，0为假。返回值以1代表真，0代表假。形式为：\verb|expr && expr|，\verb&expr || expr&，\verb|expr and expr|，\verb&expr or expr&，\verb|! expr|。提供两种版本的与、或运算符：符号形式短路求值，单词形式不短路求值。短路求值即：对于\verb|&&|，若第一运算数为假则不求值第二运算数；对于\verb&||&，若第一运算数为真则不求值第二运算数。
+
+下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+int operator&&(int, int)
+int operator||(int, int)
+int operator and(int, int)
+int operator or(int, int)
+int operator!(int)
+\end{MUAvbt}
+
+\subsubsection{比较运算符}
+\label{bijiao}
+
+比较运算符返回运算数间是否相等以及大小关系。形式为：\verb|expr == expr|，\verb|expr != expr|，\verb|expr < expr|，\verb|expr <= expr|，\verb|expr > expr|，\verb|expr >= expr|。
+
+对于全部四种类型之一\verb|T|（int, float, point, string），下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+int operator==(T, T)
+int operator!=(T, T)
+int operator<(T, T)
+int operator<=(T, T)
+int operator>(T, T)
+int operator>=(T, T)
+\end{MUAvbt}
+
+\subsubsection{赋值运算符}
+\label{fuzhi}
+
+赋值运算符的右操作数允许直接使用冒号分隔表达式，其余运算符则不允许。赋值运算符期待可修改左值为其左运算数，右值表达式为其右运算数。
+
+\paragraph{简单赋值运算符} 简单赋值运算符以右操作数的值修改左操作数。形式为：\verb|expr = exprf|。赋值运算符返回左操作数的左值。
+
+对于全部四种类型\verb|T|（int, float, point, string），下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+T& operator=(T&, T)
+\end{MUAvbt}
+
+\paragraph{复合赋值运算符} 复合赋值运算符以左操作数与右操作数运算后的值修改左操作数，\verb|E1 op= E2|的行为与表达式\verb|E1 = E1 op E2|行为相同，除了只求值表达式\verb|E1|一次。形式为：\verb|expr += exprf|，\verb|expr -= exprf|，\verb|expr *= exprf|，\verb|expr /= exprf|，\verb|expr %= exprf|，\verb|expr &&= exprf|，\verb&expr ||= exprf&，\verb|expr &= exprf|，\verb&expr |= exprf&，\verb|expr ^= exprf|。其中逻辑与赋值运算符、逻辑或赋值运算符有短路求值。
+
+对于算术类型\verb|A|、基本算术类型\verb|I|、全部四种类型之一\verb|T|（int, float, point, string），下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+T& operator+=(T&, T)
+A& operator-=(A&, A)
+I& operator*=(I&, I)
+point& operator*=(point&, float)
+I& operator/=(I&, I)
+point& operator/=(point&, float)
+int& operator%=(int&, int)
+int& operator&&=(int&, int)
+int& operator||=(int&, int)
+int& operator&=(int&, int)
+int& operator|=(int&, int)
+int& operator^=(int&, int)
+\end{MUAvbt}
+
+\subsubsection{成员访问运算符}
+\label{chengyuan}
+
+\paragraph{间接寻址运算符} 间接寻址运算符取出指针指向的操作数。形式为：\verb|*expr|。由于当前版本无指针类型，以int代替指针，故间接寻址运算符返回void左值对象，需使用类型转换表达式指定取出对象的类型。特别的是，此void左值对象可以隐式转换到任意类型，故可以利用此特性靠上下文推断出取出的对象类型。而不能推断出类型的表达式则视为错误。更多信息请参考\hyperref[chongzai]{重载决议}。
+
+下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+void& operator*(int)
+\end{MUAvbt}
+
+\paragraph{取地址运算符} 取地址运算符获得指向该对象的指针。形式为：\verb|&expr|。由于当前版本无指针类型，故取地址运算符返回int类型。
+
+对于全部四种类型之一\verb|T|（int, float, point, string）下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+int operator&(T&)
+\end{MUAvbt}
+
+\paragraph{成员运算符} \verb|expr.expr|，当前版本未加载其作用。
+
+\paragraph{数组下标运算符} \verb|expr[expr]|，当前版本未加载其作用。
+
+\subsubsection{其他运算符}
+\label{qita}
+
+\paragraph{函数调用运算符} 形式为：\verb|id(exprf, exprf, ...)|。\verb|id|为标识函数名的标识符，可以为用户定义的sub名或是内建的ins名或mode名。函数传入的参数列表可以为冒号分隔表达式或者普通表达式。用户定义的sub名可以重载，\hyperref[chongzai]{重载决议}规则决定调用哪个重载。需注意的是，几乎所有内建的ins与mode均返回void。
+
+当前版本所有函数返回void右值。
+
+\paragraph{冒号分隔表达式} 冒号分隔表达式是一种简便的难度switch，接受对应ENHL四种难度的四个参数，形式为\verb|expr : expr : expr : expr|。只有赋值表达式的右侧与函数调用支持冒号分隔表达式。
+
+对于全部四种类型之一\verb|T|（int, float, point, string）下列函数签名参与\hyperref[chongzai]{重载决议}：
+\begin{MUAvbt}
+T operator:(T, T, T, T)
+\end{MUAvbt}
+
+\paragraph{C风格转型表达式} 转型表达式可以将一种类型转换为另一种类型。形式为：\verb|(type)expr|。转型表达式无转换类型限制（？？？）。
+
+\paragraph{括号表达式} 括号表达式用于指定运算顺序。形式为：\verb|(expr)|。
+
+\subsection{运算符优先级}
+
+下表列出mecl运算符的优先级和结合性。运算符从顶到底以降序列出。
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+		优先级 & 运算符 & 描述 & 结合性 \\\hline
+		1 & \verb|()| & 括号 & 左到右 \\\hline
+		\multirow{2}{*}{2} & \verb|a.b| & 取成员 & \multirow{2}{*}{左到右} \\\cline{2-3}
+		& \verb|a[b]| & 取下标 & \\\hline
+		\multirow{3}{*}{3} & \verb|!| & 逻辑非 & \multirow{3}{*}{右到左}\\\cline{2-3}
+		& \verb|*a &a| & 寻址与取址 & \\\cline{2-3}
+		& \verb|-a| & 一元负 & \\\hline
+		4 & \verb|a*b a/b a%b| & 乘法 除法 余数 & 左到右 \\\hline
+		5 & \verb|a+b a-b| & 加法 减法 & 左到右 \\\hline
+		\multirow{2}{*}{6} & \verb|a<b a<=b| & 小于 小于等于 & \multirow{2}{*}{左到右} \\\cline{2-3}
+		& \verb|a>b a>=b| & 大于 大于等于 & \\\hline
+		7 & \verb|a==b a!=b| & 等于 不等于 & 左到右 \\\hline
+		8 & \verb|a&b| & 按位与 & \multirow{7}{*}{左到右} \\\cline{1-3}
+		9 & \verb|a^b| & 按位异或 & \\\cline{1-3}
+		10 & \verb&a|b& & 按位或 & \\\cline{1-3}
+		11 & \verb|a and b| & 非短路逻辑与 & \\\cline{1-3}
+		12 & \verb|a or b| & 非短路逻辑或 & \\\cline{1-3}
+		13 & \verb|a&&b| & 短路逻辑与 & \\\cline{1-3}
+		14 & \verb&a||b& & 短路逻辑或 & \\\hline
+		\multirow{2}{*}{15} & \verb|= += -= *= /=| & \multirow{2}{*}{所有赋值} & \multirow{2}{*}{右到左} \\\cline{2-2}
+		& \verb"%= &&= ||= &= ^= |=" &  & \\\hline
+		16 & \verb|a1:a2:a3:a4| & 冒号分隔 & - \\\hline
+	\end{tabular}
+\end{table}
+
+\subsection{重载决议}
+\label{chongzai}
+
+选取一个函数或运算符的重载时，使用如下规则：
+
+对该函数或运算符的所有重载判断输入参数个数是否相等，以及能否将每个输入参数类型隐式转换至目标类型。之后在所有可以转换到的重载函数集中选取最优的。最优定义为：有高优先级的某转换的隐式转换优于无该转换的。隐式转换的优先级由高到低为：
+
+\verb|void&|$\to$\verb|point|, \verb|void&|$\to$\verb|string|, \verb|void&|$\to$\verb|float|, \verb|void&|$\to$\verb|int|, \verb|int|$\to$\verb|float|, \verb|lvalue|$\to$\verb|rvalue|.
+
+\subsection{字面量优化}
+
+编译器会对于字面量运算在编译时进行运算，优化后存入ecl脚本。如\verb|a*(1./2)|在ecl文件中会变成\verb|a*0.5|。
+
+\section{语句}
+\label{yuju}
+
+mecl的每条语句（\textit{stmt}）有以下几种类型：
+
+\subsection{表达式语句}
+
+跟随分号的表达式是语句。
+
+\textit{expr} \verb|;|
+
+示例：
+
+\begin{MUAvbt}
+a += 1;		//赋值语句
+wait(20);		//ins调用
+MainSub00();		//函数调用
+a;		//弃值表达式
+\end{MUAvbt}
+
+\subsection{语句块}
+
+\verb|{| \textit{stmts} \verb|}|
+
+可以使用大括号括起多条语句，将其合并成一条。
+
+\subsection{变量声明}
+
+变量声明语句声明（并可选的初始化）一个或多个变量。形式为：\verb|type| \textit{vdecl} \verb|;|
+
+其中\textit{vdecl}为一个或多个下列项的逗号分隔列表：\verb|id|或\verb|id =| \textit{inif}。
+
+\textit{inif}可以为有或无冒号分隔的初始化列表或者表达式。
+
+mecl的每条变量声明均为子程序局域，也即只要在同一个子程序中，允许\textbf{后声明先调用}。同样无局部作用域的概念。
+
+示例：
+
+\begin{MUAvbt}
+int i;
+float a = 1., b;
+int j = 123 * 456 : 234 * 567 : 345 * 678 : 456 * 789;
+\end{MUAvbt}
+
+\subsubsection{初始化列表}
+
+\verb|{| \textit{expr1, expr2,...} \verb|}|
+
+初始化列表是用来初始化复杂算术类型（如point）的手段。示例：
+
+\begin{MUAvbt}
+point p = {1., 2.};
+point p1 = {1., 2.}:{3., 4.}:{5., 6.}:{7., 8.};
+\end{MUAvbt}
+
+\subsection{选择语句}
+
+选择语句在数个控制流中选择一个。形式为：
+
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+if ( \textit{condition} ) \textit{true_stmt}
+if ( \textit{condition} ) \textit{true_stmt} else \textit{false_stmt}
+\end{Verbatim}
+
+若\textit{condition}为非0则执行\textit{true\_stmt}（常为复合语句），否则执行\textit{false\_stmt}。
+
+\textit{condition}需可以隐式转换至int右值。
+
+在第二形式的\verb|if|语句（包含\verb|else|者）中，若\textit{true\_stmt}亦是\verb|if|语句，则内层\verb|if|语句必须也含有\verb|else|部分。换言之，嵌套\verb|if|语句中，\verb|else|关联到最近的尚未有\verb|else|的\verb|if|。
+
+若通过\verb|goto|进入\textit{true\_stmt}，则不执行\textit{false\_stmt}。
+
+示例：
+
+\begin{MUAvbt}
+if (i == 1) {
+	et_shape(0, ET_small, BLUE16);
+	et_shoot(0);
+	wait(30);
+}
+else if (i == 2)
+	if (j == 2)
+		wait(20);
+	else			//此else与j == 2的if对应
+		wait(30);
+\end{MUAvbt}
+
+\subsection{循环语句}
+
+循环语句重复执行一些代码。形式为：
+
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+while ( \textit{condition} ) \textit{stmt}
+do \textit{stmt} while ( \textit{condition} ) ;
+loop ( \textit{times} ) \textit{stmt}
+\end{Verbatim}
+
+在循环语句中可以使用break语句和continue语句进行\hyperref[break]{流程控制}。
+
+\subsubsection{while循环}
+
+while循环重复执行\textit{stmt}，直到\textit{condition}变为0。
+
+\textit{condition}需可以隐式转换至int右值。
+
+示例：
+
+\begin{MUAvbt}
+float s = 10.;
+while (s >= 0) {
+	et_dir(0, RanDEG, 0.);
+	et_speed(0, s, 0.);
+	et_shoot(0);
+	wait(1);
+	s -= 0.1;
+}
+while (1)
+	wait(1000);			//这是死循环
+\end{MUAvbt}
+
+\subsubsection{do-while循环}
+
+do-while循环类似while循环，但至少执行一次\textit{stmt}。
+
+示例：
+
+\begin{MUAvbt}
+float c = 1, s = 0;
+do {
+	s += c;
+	c /= 2;
+} while (c > 0.00001);
+\end{MUAvbt}
+
+\subsubsection{loop循环}
+
+loop循环执行\textit{times}次\textit{stmt}。
+
+\textit{times}需可以隐式转换至int右值。
+
+示例：
+
+\begin{MUAvbt}
+loop (100) {
+	et_shoot(1);
+	wait(1);
+}
+\end{MUAvbt}
+
+\subsection{标号语句}
+
+标号语句建立一个标号，以供goto语句跳转。形式为：
+
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+\textit{id} :
+\end{Verbatim}
+
+\subsection{跳转语句}
+
+跳转语句无条件地转移控制流。形式为：
+
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+break ;
+continue ;
+goto \textit{id} ;
+\end{Verbatim}
+
+\subsubsection{break语句}
+
+break语句退出外围的while、do-while、loop语句。
+
+break语句不能用于跳出多重嵌套循环。这种情况可以使用goto语句。
+
+示例：
+
+\begin{MUAvbt}
+while (1) {
+	et_shoot(0);
+	wait(30);
+	if (Yplayer <= 120.)
+		break;
+}
+et_shoot(1);
+\end{MUAvbt}
+
+\subsubsection{continue语句}
+
+continue语句跳过外围的while、do-while、loop语句中的剩余部分，继续下一次循环。如同用goto跳转到循环体尾。
+
+示例：
+
+\begin{MUAvbt}
+loop (1000) {
+	et_shoot(0);
+	wait(10);
+	if (Y_absol <= 224.)
+		continue;
+	et_shoot(1);
+}
+\end{MUAvbt}
+
+\subsubsection{goto语句}
+
+goto语句跳转至指定的标签处。goto语句必须在与它所用的标签相同的函数中，它可出现于标签前后。
+
+\subsection{thread语句}
+
+thread语句开启一个线程，与后续程序同步进行。形式为：
+
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+thread \textit{id} ( \textit{exprf}, \textit{exprf}, ... ) ;
+\end{Verbatim}
+
+示例：
+
+\begin{MUAvbt}
+thread BossCard1_at1(1., 20, pi/20, RED32);
+thread BossCard1_at1(2., 20, pi/20, GREEN32);
+thread BossCard1_at1(1.5, 10, pi/10, CYAN32);
+while (1) wait(1000);
+\end{MUAvbt}
+
+\subsection{rawins语句}
+
+rawins语句使用数据直接构建ecl内容。形式为：
+
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\[\]]
+__rawins {
+	\textit[insdata] ;
+	\textit[insdata] ;
+	...
+}
+\end{Verbatim}
+
+每条\textit{insdata}为：
+
+\verb|{| \textit{id difficulty\_mask pop\_count param\_count param\_mask, param1 param2 ...} \verb|}|
+
+\end{document}
