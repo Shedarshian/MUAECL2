@@ -2095,8 +2095,12 @@ void tStmts::Output(SubOutputContext& sub_ctx) const {
 }
 
 string tSub::getDecoratedName() const {
-	vector<mType> vec_type_param_lr(this->varpara.crbegin(), this->varpara.crend());
-	return NameDecorator::decorateSubName(this->name, this->typeReturn, vec_type_param_lr);
+	if (this->no_overload) {
+		return this->name;
+	} else {
+		vector<mType> vec_type_param_lr(this->varpara.crbegin(), this->varpara.crend());
+		return NameDecorator::decorateSubName(this->name, this->typeReturn, vec_type_param_lr);
+	}
 }
 
 fSub tSub::Output(const tRoot& root) const {
@@ -2123,18 +2127,22 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 		return id;
 	} else {
 		pair<
-			multimap<string, pair<mType, vector<mType>>>::const_iterator,
-			multimap<string, pair<mType, vector<mType>>>::const_iterator
+			multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator,
+			multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator
 		> range_subdecl_id(this->subdecl.equal_range(id));
 		for (
-			multimap<string, pair<mType, vector<mType>>>::const_iterator it_subdecl = range_subdecl_id.first;
+			multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator it_subdecl = range_subdecl_id.first;
 			it_subdecl != range_subdecl_id.second;
 			++it_subdecl
 			) {
-			if (it_subdecl->second.second == types_params) {
-				// From left to right.
-				vector<mType> vec_type_param_lr(it_subdecl->second.second.crbegin(), it_subdecl->second.second.crend());
-				return NameDecorator::decorateSubName(id, it_subdecl->second.first, vec_type_param_lr);
+			if (get<1>(it_subdecl->second) == types_params) {
+				if (get<2>(it_subdecl->second)) {
+					return id;
+				} else {
+					// From left to right.
+					vector<mType> vec_type_param_lr(get<1>(it_subdecl->second).crbegin(), get<1>(it_subdecl->second).crend());
+					return NameDecorator::decorateSubName(id, get<0>(it_subdecl->second), vec_type_param_lr);
+				}
 			}
 		}
 		throw(ErrDesignApp("tRoot::getSubDecoratedName : subroutine not found"));
