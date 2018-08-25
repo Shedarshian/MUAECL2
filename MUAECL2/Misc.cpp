@@ -166,7 +166,7 @@ const multimap<string, tuple<mVType, vector<mVType>, int>> makeInternalFunction(
 	t.emplace("rad", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2014));
 	t.emplace("ln", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2015));
 	t.emplace("log", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2016));
-	t.emplace("pow", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r), VTYPE(Int, r) }, 2017));
+	t.emplace("pow", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Float, r) }, 2017));
 	t.emplace("pow", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2018));
 	t.emplace("sgn", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2019));
 	t.emplace("sgn", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r) }, 2020));
@@ -177,8 +177,8 @@ const multimap<string, tuple<mVType, vector<mVType>, int>> makeInternalFunction(
 	t.emplace("sar", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2026));
 	t.emplace("shr", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2027));
 	t.emplace("shl", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2028));
-	t.emplace("abs", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r), VTYPE(Int, r) }, 2033));
-	t.emplace("abs", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2032));
+	t.emplace("abs", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2033));
+	t.emplace("abs", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r) }, 2032));
 }
 const multimap<string, tuple<mVType, vector<mVType>, int>> Op::mVType::internalFunction = makeInternalFunction();
 
