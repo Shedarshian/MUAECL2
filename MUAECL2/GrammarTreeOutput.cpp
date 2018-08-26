@@ -1969,6 +1969,58 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		}
 		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : danmaku transformation mode not found"));
 	}
+	case 36:// expr->id ( insv )//internal func
+	{
+		int32_t stackptr_delta = 0;
+		const tNoVars* insv = cast_to_insv(this->branchs[0]);
+		// From left to right.
+		vector<shared_ptr<StackRvalueResult>> vec_result;
+		for_each(insv->branchs.crbegin(), insv->branchs.crend(),
+			[&sub_ctx, &stmt_ctx, &vec_result, &stackptr_delta](const GrammarTree* val_branch) {
+				const tNoVars* exprf = cast_to_exprf(val_branch);
+				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx));
+				stackptr_delta -= get_count_id_var(vec_result.back()->GetMType());
+			}
+		);
+		{
+			// Call internal function.
+			// From right to left.
+			vector<Op::mType> vec_type_result;
+			vec_type_result.reserve(vec_result.size());
+			for_each(vec_result.crbegin(), vec_result.crend(),
+				[&sub_ctx, &stmt_ctx, &vec_type_result](const shared_ptr<StackRvalueResult>& val_result) {
+					vec_type_result.push_back(val_result->GetMType());
+				}
+			);
+			pair<
+				multimap<string, tuple<Op::mVType, vector<Op::mVType>, int>>::const_iterator,
+				multimap<string, tuple<Op::mVType, vector<Op::mVType>, int>>::const_iterator
+			> range_internal_function_name(Op::mVType::internalFunction.equal_range(this->branchs[1]->getToken()->getId()));
+			multimap<string, tuple<Op::mVType, vector<Op::mVType>, int>>::const_iterator it_internal_function;
+			for (it_internal_function = range_internal_function_name.first; it_internal_function != range_internal_function_name.second; ++it_internal_function) {
+				vector<Op::mType> vec_type_internal_function;
+				vector<Op::mVType>::const_iterator it_operand;
+				for (
+					it_operand = get<1>(it_internal_function->second).cbegin();
+					it_operand != get<1>(it_internal_function->second).cend();
+					++it_operand) {
+					if (it_operand->valuetype != Op::LRvalue::rvalue) break;
+					vec_type_internal_function.push_back(it_operand->type);
+				}
+				if (it_operand != get<1>(it_internal_function->second).cend()) continue;
+				if (vec_type_result != vec_type_internal_function) continue;
+				if (get<0>(it_internal_function->second).valuetype != Op::LRvalue::rvalue) continue;
+				if (get<0>(it_internal_function->second).type != this->_type.type) continue;
+				stackptr_delta += get_count_id_var(get<0>(it_internal_function->second).type);
+				break;
+			}
+			if (it_internal_function != range_internal_function_name.second) {
+				sub_ctx.insert_ins(stmt_ctx, get<2>(it_internal_function->second), {}, stackptr_delta);
+				return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
+			}
+		}
+		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=36 : subroutine not found"));
+	}
 	default:
 		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : unknown expr id"));
 	}
