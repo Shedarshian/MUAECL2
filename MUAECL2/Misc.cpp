@@ -179,6 +179,7 @@ const multimap<string, tuple<mVType, vector<mVType>, int>> makeInternalFunction(
 	t.emplace("shl", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r), VTYPE(Int, r) }, 2028));
 	t.emplace("abs", make_tuple(VTYPE(Float, r), vector<mVType>{ VTYPE(Float, r) }, 2033));
 	t.emplace("abs", make_tuple(VTYPE(Int, r), vector<mVType>{ VTYPE(Int, r) }, 2032));
+	return t;
 }
 const multimap<string, tuple<mVType, vector<mVType>, int>> Op::mVType::internalFunction = makeInternalFunction();
 
@@ -277,6 +278,9 @@ set<string> ReadIns::defaultList{};
 
 void ReadIns::Read() {
 	ifstream in("ins.ini");
+	if (!in.is_open()) {
+		throw(ErrFileNotFound("ins.ini"));
+	}
 	char buffer[512];
 	string mode;
 	while (!in.eof()) {
@@ -326,13 +330,21 @@ void ReadIns::Read() {
 			ReadIns::mode.emplace(name, make_pair(n, lnt));
 		}
 	}
+	in.close();
 	ifstream indef("default.ini");
+	if (!indef.is_open()) {
+		throw(ErrFileNotFound("default.ini"));
+	}
 	//读取default.ecl中的函数名
 	while (!indef.eof()) {
 		indef.getline(buffer, 255);
 		defaultList.emplace(buffer);
 	}
+	indef.close();
 	ifstream includefile("include.ini");
+	if (!includefile.is_open()) {
+		throw(ErrFileNotFound("include.ini"));
+	}
 	//读取include.ini中的预定义宏
 	while (!includefile.eof()) {
 		includefile.getline(buffer, 512);
@@ -380,5 +392,5 @@ void ReadIns::Read() {
 			}
 		}
 	}
-
+	includefile.close();
 }

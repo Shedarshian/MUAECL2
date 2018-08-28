@@ -159,7 +159,7 @@ Token* Tokenizer::getToken(){
 			if (s == "__LINE__")
 				return new Token_Literal(lineNo, lineNo);
 			if (s == "pi")
-				return new Token_Literal(lineNo, 3.14159265);
+				return new Token_Literal(lineNo, (float)3.14159265);
 			//Èç¹ûÊÇbuild-in type
 			if (auto it = Op::Ch::StringToType.find(s); it != Op::Ch::StringToType.end())
 				return new Token_KeywordType(lineNo, it->second);
