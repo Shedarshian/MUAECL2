@@ -198,6 +198,15 @@ public:
 	const int lineNo;
 };
 
+class ErrFileNotFound :public exception {
+public:
+	ErrFileNotFound(const char* what) : s("File "s + what + " Not Found!"s) {}
+	ErrFileNotFound(const string what) : s("File "s + what + " Not Found!"s) {}
+	virtual const char* what() const throw() { return s.c_str(); }
+private:
+	const string s;
+};
+
 class ErrDesignApp :public exception {
 public:
 	ErrDesignApp(const char* what) : s("Design Error :"s + what + " Please Contact shedarshian@gmail.com"s) {}

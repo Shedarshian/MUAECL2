@@ -251,8 +251,7 @@ insv->\.
 exprf->\.expr
 exprf->\.expr : expr : expr : expr
 \.expr
-I10---same---I3
-   ---expr---------->I15
+I10---expr---------->I15
    ---exprf--------->I42
    ---insv---------->I46
 I11:
@@ -410,7 +409,7 @@ insv->\.
 exprf->\.expr
 exprf->\.expr : expr : expr : expr
 \.expr
-I43---same---I3/I10
+I43---same---I10
    ---expr----------->I15
    ---exprf---------->I42
    ---insv----------->I45
@@ -870,7 +869,7 @@ insv->\.exprf , insv
 insv->\.
 \.exprf
 \.expr
-I156---same---I3
+I156---same---I10
     ---expr------->I15
     ---exprf------>I42
     ---insv------->I157

@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "GrammarTree.h"
+#include <cmath>
 
 using namespace std;
 
@@ -219,12 +220,15 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		for (auto i : branchs)
 			i->TypeCheck(sub, subs, whileBlock);
 		break;
-	case 19: //insv = vector<exprf>
+	case 19: { //insv = vector<exprf>
 		//类型检查时直接由id(insv)访问insv内部寻找
+		/*bool isLiteral = true;
 		for (auto i : branchs)
-			i->TypeCheck(sub, subs, whileBlock);
-		_type = VTYPE(Void, r);
-		break;
+			isLiteral = i->TypeCheck(sub, subs, whileBlock).isLiteral && isLiteral;
+		_type = VTYPE(Void, r, isLiteral);
+		break;*/
+		throw(ErrDesignApp("GrammarTree::TypeCheck.19"));
+	}
 	case 14: //inif->ini
 		[[fallthrough]];
 	case 16: //inif->expr
@@ -282,7 +286,10 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		auto name = branchs[1]->getToken()->getId();
 		//此为内置函数
 		if (auto[begin_it, end_it] = Op::mVType::internalFunction.equal_range(name); begin_it != end_it) {
-			auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs, [sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
+			bool isLiteral = true;
+			auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs,
+				[sub, subs, whileBlock, &isLiteral](GrammarTree* tree) { auto type = tree->TypeCheck(sub, subs, whileBlock);
+					isLiteral = isLiteral && type.isLiteral; return type; },
 				[](const decltype(begin_it)& it) { return make_tuple(new int(get<2>(it->second)), get<0>(it->second), get<1>(it->second)); },
 				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
 					begin_it, end_it);
@@ -290,6 +297,8 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 				throw(ErrNoOverloadFunction(lineNo, name));
 			_type = typ; opID = *opIDPtr; delete opIDPtr;
 			this->id = 36;
+			if (isLiteral)
+				LiteralCal();
 		}
 		//此为函数调用,same as function
 		else if (auto[begin_it, end_it] = subs->checkSub(name); begin_it != end_it) {
@@ -346,6 +355,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		else
 			throw(ErrFuncNotFound(lineNo, name));
 		if constexpr (debug)clog << "ins " << name << " ";
+		break;
 	}
 	case 25: { //expr->Unary_op expr
 		Op::TokenType tok = branchs[1]->getToken()->type();
@@ -471,236 +481,355 @@ GrammarTree* tNoVars::typeChange(Op::Rank rank) {
 mVType tNoVars::get_mVType() const { return this->_type; }
 
 void tNoVars::LiteralCal() {
-#define GET(tree, type) static_cast<tNoVars*>(branchs[tree])->branchs[0]->getToken()->get##type()
-#define TERM(number) new tTerminator(new Token_Literal(branchs[0]->getLineNo(), (int)(number)))
 	tTerminator* tree = nullptr;
-	int change = 0;		//0：不变 1：删除1个并改id 2：删除2个并改id 3：删除3个，赋值tree，改id
-	using Op::TokenType;
-	switch (opID) {
-	case TokenType::Plus:
-		//int & int = int
-		*GET(0, Int) += *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::Plus + OFFSET:
-		//float & float = float
-		*GET(0, Float) += *GET(2, Float);
-		change = 2;
-		break;
-	case TokenType::Plus + 2 * OFFSET:
-		//point & point = point
-		throw(ErrDesignApp("Point literal + Point literal"));
-	case TokenType::Plus + 3 * OFFSET:
-		//string & string = string
-		*GET(0, String) += *GET(2, String);
-		change = 2;
-		break;
-	case TokenType::Minus:
-		//int & int = int
-		*GET(0, Int) -= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::Minus + OFFSET:
-		//float & float = float
-		*GET(0, Float) -= *GET(2, Float);
-		change = 2;
-		break;
-	case TokenType::Minus + 2 * OFFSET:
-		//point & point = point
-		throw(ErrDesignApp("Point literal - Point literal"));
-	case TokenType::Times:
-		//int & int = int
-		*GET(0, Int) *= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::Times + OFFSET:
-		//float & float = float
-		*GET(0, Float) *= *GET(2, Float);
-		change = 2;
-		break;
-	case TokenType::Times + 2 * OFFSET:
-		//point & float = point
-		throw(ErrDesignApp("Point literal * Float literal"));
-	case TokenType::Times + 3 * OFFSET:
-		//float & point = point
-		throw(ErrDesignApp("Float literal * Point literal"));
-	case TokenType::Divide:
-		*GET(0, Int) /= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::Divide + OFFSET:
-		//float & float = float
-		*GET(0, Float) /= *GET(2, Float);
-		change = 2;
-		break;
-	case TokenType::Divide + 2 * OFFSET:
-		//point & float = point
-		throw(ErrDesignApp("Point literal / Float literal"));
-	case TokenType::Mod:
-		*GET(0, Int) %= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::Negative:
-		//int = int
-		*GET(0, Int) = -*GET(0, Int);
-		change = 1;
-		break;
-	case TokenType::Negative + OFFSET:
-		//float = float
-		*GET(0, Float) = -*GET(0, Float);
-		change = 1;
-		break;
-	case TokenType::Negative + 2 * OFFSET:
-		//point = point
-		throw(ErrDesignApp("(-) Point literal"));
-	case TokenType::Not:
-		*GET(0, Int) = !*GET(0, Int);
-		change = 1;
-		break;
-	case TokenType::Not + OFFSET:
-		//float = float
-		*GET(0, Float) = !*GET(0, Float);
-		change = 1;
-		break;
-	case TokenType::Not + 2 * OFFSET:
-		//point = point
-		throw(ErrDesignApp("(!) Point literal"));
-	case TokenType::BitOr:
-		[[fallthrough]];
-	case TokenType::LogicalOr:
-		[[fallthrough]];
-	case TokenType::Or:
-		*GET(0, Int) |= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::BitAnd:
-		[[fallthrough]];
-	case TokenType::LogicalAnd:
-		[[fallthrough]];
-	case TokenType::And:
-		*GET(0, Int) &= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::BitXor:
-		*GET(0, Int) ^= *GET(2, Int);
-		change = 2;
-		break;
-	case TokenType::EqualTo:
-		tree = TERM(*GET(0, Int) == *GET(2, Int));
-		change = 3;
-		break;
-	case TokenType::NotEqual:
-		tree = TERM(*GET(0, Int) != *GET(2, Int));
-		change = 3;
-		break;
-	case TokenType::Greater:
-		tree = TERM(*GET(0, Int) > *GET(2, Int));
-		change = 3;
-		break;
-	case TokenType::GreaterEqual:
-		tree = TERM(*GET(0, Int) >= *GET(2, Int));
-		change = 3;
-		break;
-	case TokenType::Less:
-		tree = TERM(*GET(0, Int) < *GET(2, Int));
-		change = 3;
-		break;
-	case TokenType::LessEqual:
-		tree = TERM(*GET(0, Int) <= *GET(2, Int));
-		change = 3;
-		break;
-	case TokenType::EqualTo + OFFSET:
-		tree = TERM(*GET(0, Float) == *GET(2, Float));
-		change = 3;
-		break;
-	case TokenType::NotEqual + OFFSET:
-		tree = TERM(*GET(0, Float) != *GET(2, Float));
-		change = 3;
-		break;
-	case TokenType::Greater + OFFSET:
-		tree = TERM(*GET(0, Float) > *GET(2, Float));
-		change = 3;
-		break;
-	case TokenType::GreaterEqual + OFFSET:
-		tree = TERM(*GET(0, Float) >= *GET(2, Float));
-		change = 3;
-		break;
-	case TokenType::Less + OFFSET:
-		tree = TERM(*GET(0, Float) < *GET(2, Float));
-		change = 3;
-		break;
-	case TokenType::LessEqual + OFFSET:
-		tree = TERM(*GET(0, Float) <= *GET(2, Float));
-		change = 3;
-		break;
-	case TokenType::EqualTo + 2 * OFFSET:
-		[[fallthrough]];
-	case TokenType::NotEqual + 2 * OFFSET:
-		[[fallthrough]];
-	case TokenType::Greater + 2 * OFFSET:
-		[[fallthrough]];
-	case TokenType::GreaterEqual + 2 * OFFSET:
-		[[fallthrough]];
-	case TokenType::Less + 2 * OFFSET:
-		[[fallthrough]];
-	case TokenType::LessEqual + 2 * OFFSET:
-		throw(ErrDesignApp("Point literal logical operator Point literal"));
-	case TokenType::EqualTo + 3 * OFFSET:
-		tree = TERM(*GET(0, String) == *GET(2, String));
-		change = 3;
-		break;
-	case TokenType::NotEqual + 3 * OFFSET:
-		tree = TERM(*GET(0, String) != *GET(2, String));
-		change = 3;
-		break;
-	case TokenType::Greater + 3 * OFFSET:
-		tree = TERM(*GET(0, String) > *GET(2, String));
-		change = 3;
-		break;
-	case TokenType::GreaterEqual + 3 * OFFSET:
-		tree = TERM(*GET(0, String) >= *GET(2, String));
-		change = 3;
-		break;
-	case TokenType::Less + 3 * OFFSET:
-		tree = TERM(*GET(0, String) < *GET(2, String));
-		change = 3;
-		break;
-	case TokenType::LessEqual + 3 * OFFSET:
-		tree = TERM(*GET(0, String) <= *GET(2, String));
-		change = 3;
-		break;
-	case TokenType::Dot:
-		throw(ErrDesignApp("LiteralCal->Dot"));
-	default:
-		break;
-	}
-	if (change == 1) {
+	if (id == 36) {
+		auto insv = static_cast<tNoVars*>(branchs[0]);
+#define GET(tree, type) static_cast<tNoVars*>(static_cast<tNoVars*>(insv->branchs[tree])->branchs[0])->branchs[0]->getToken()->get##type()
+#define TERM(number) new tTerminator(new Token_Literal(insv->getLineNo(), (number)))
+		switch (opID) {
+		case 79:
+			//sin
+			tree = TERM(sin(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 80:
+			//cos
+			tree = TERM(cos(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2013:
+			//deg
+			tree = TERM(*GET(0, Float) * 180 / 3.14159265f);
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2014:
+			//rad
+			tree = TERM(*GET(0, Float) * 3.14159265f / 180);
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2015:
+			//ln
+			tree = TERM(log(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2016:
+			//log
+			tree = TERM(log10(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2017:
+			//pow float
+			tree = TERM((int)pow(*GET(1, Float), *GET(0, Int)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2018:
+			//pow int
+			tree = TERM((int)pow(*GET(1, Int), *GET(0, Int)));
+			_type = VTYPE(Int, r, true);
+			break;
+		case 2019:
+			//sgn float
+			{
+				float temp = *GET(0, Float);
+				tree = TERM(temp > 0 ? 1 : temp == 0 ? 0 : -1);
+			}
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2020:
+			//sgn int
+			{
+				int temp = *GET(0, Int);
+				tree = TERM(temp > 0 ? 1 : temp == 0 ? 0 : -1);
+			}
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2021:
+			//tan
+			tree = TERM(tan(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2022:
+			//asin
+			tree = TERM(asin(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2023:
+			//acos
+			tree = TERM(acos(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2024:
+			//atan
+			tree = TERM(atan(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2026:
+			//sar
+			tree = TERM(int(unsigned int(*GET(1, Int)) >> *GET(0, Int)));
+			_type = VTYPE(Int, r, true);
+			break;
+		case 2027:
+			//shr
+			tree = TERM(*GET(1, Int) >> *GET(0, Int));
+			_type = VTYPE(Int, r, true);
+			break;
+		case 2028:
+			//shr
+			tree = TERM(*GET(1, Int) << *GET(0, Int));
+			_type = VTYPE(Int, r, true);
+			break;
+		case 2033:
+			//abs float
+			tree = TERM(abs(*GET(0, Float)));
+			_type = VTYPE(Float, r, true);
+			break;
+		case 2032:
+			//abs int
+			tree = TERM(abs(*GET(0, Int)));
+			_type = VTYPE(Int, r, true);
+			break;
+		default:
+			break;
+		}
 		id = 23;
-		auto tree2 = static_cast<tNoVars*>(branchs[0])->branchs[0];
-		static_cast<tNoVars*>(branchs[0])->branchs[0] = nullptr;
-		delete branchs[0], branchs[1];
-		branchs.pop_back();
-		branchs[0] = tree2;
-		_type.isLiteral = true;
-	}
-	else if (change == 2) {
-		id = 23;
-		auto tree2 = static_cast<tNoVars*>(branchs[0])->branchs[0];
-		static_cast<tNoVars*>(branchs[0])->branchs[0] = nullptr;
-		delete branchs[0], branchs[1], branchs[2];
-		branchs.pop_back(); branchs.pop_back();
-		branchs[0] = tree2;
-		_type.isLiteral = true;
-	}
-	else if (change == 3) {
-		id = 23;
-		delete branchs[0], branchs[1], branchs[2];
-		branchs.pop_back(); branchs.pop_back();
-		_type = VTYPE(Int, r, true);
-		branchs[0] = tree;
-	}
+		for (auto ptr : branchs)
+			delete ptr;
+		branchs.clear();
+		branchs.push_back(tree);
 #undef GET
 #undef TERM
+	}
+	else {
+#define GET(tree, type) static_cast<tNoVars*>(branchs[tree])->branchs[0]->getToken()->get##type()
+#define TERM(number) new tTerminator(new Token_Literal(branchs[0]->getLineNo(), (int)(number)))
+		int change = 0;		//0：不变 1：删除1个并改id 2：删除2个并改id 3：删除3个，赋值tree，改id
+		using Op::TokenType;
+		switch (opID) {
+		case TokenType::Plus:
+			//int & int = int
+			*GET(2, Int) += *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::Plus + OFFSET:
+			//float & float = float
+			*GET(2, Float) += *GET(0, Float);
+			change = 2;
+			break;
+		case TokenType::Plus + 2 * OFFSET:
+			//point & point = point
+			throw(ErrDesignApp("Point literal + Point literal"));
+		case TokenType::Plus + 3 * OFFSET:
+			//string & string = string
+			*GET(2, String) += *GET(0, String);
+			change = 2;
+			break;
+		case TokenType::Minus:
+			//int & int = int
+			*GET(2, Int) -= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::Minus + OFFSET:
+			//float & float = float
+			*GET(2, Float) -= *GET(0, Float);
+			change = 2;
+			break;
+		case TokenType::Minus + 2 * OFFSET:
+			//point & point = point
+			throw(ErrDesignApp("Point literal - Point literal"));
+		case TokenType::Times:
+			//int & int = int
+			*GET(2, Int) *= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::Times + OFFSET:
+			//float & float = float
+			*GET(2, Float) *= *GET(0, Float);
+			change = 2;
+			break;
+		case TokenType::Times + 2 * OFFSET:
+			//point & float = point
+			throw(ErrDesignApp("Point literal * Float literal"));
+		case TokenType::Times + 3 * OFFSET:
+			//float & point = point
+			throw(ErrDesignApp("Float literal * Point literal"));
+		case TokenType::Divide:
+			*GET(2, Int) /= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::Divide + OFFSET:
+			//float & float = float
+			*GET(2, Float) /= *GET(0, Float);
+			change = 2;
+			break;
+		case TokenType::Divide + 2 * OFFSET:
+			//point & float = point
+			throw(ErrDesignApp("Point literal / Float literal"));
+		case TokenType::Mod:
+			*GET(2, Int) %= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::Negative:
+			//int = int
+			*GET(0, Int) = -*GET(0, Int);
+			change = 1;
+			break;
+		case TokenType::Negative + OFFSET:
+			//float = float
+			*GET(0, Float) = -*GET(0, Float);
+			change = 1;
+			break;
+		case TokenType::Negative + 2 * OFFSET:
+			//point = point
+			throw(ErrDesignApp("(-) Point literal"));
+		case TokenType::Not:
+			*GET(0, Int) = !*GET(0, Int);
+			change = 1;
+			break;
+		case TokenType::Not + OFFSET:
+			//float = float
+			*GET(0, Float) = !*GET(0, Float);
+			change = 1;
+			break;
+		case TokenType::Not + 2 * OFFSET:
+			//point = point
+			throw(ErrDesignApp("(!) Point literal"));
+		case TokenType::BitOr:
+			[[fallthrough]];
+		case TokenType::LogicalOr:
+			[[fallthrough]];
+		case TokenType::Or:
+			*GET(2, Int) |= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::BitAnd:
+			[[fallthrough]];
+		case TokenType::LogicalAnd:
+			[[fallthrough]];
+		case TokenType::And:
+			*GET(2, Int) &= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::BitXor:
+			*GET(2, Int) ^= *GET(0, Int);
+			change = 2;
+			break;
+		case TokenType::EqualTo:
+			tree = TERM(*GET(2, Int) == *GET(0, Int));
+			change = 3;
+			break;
+		case TokenType::NotEqual:
+			tree = TERM(*GET(2, Int) != *GET(0, Int));
+			change = 3;
+			break;
+		case TokenType::Greater:
+			tree = TERM(*GET(2, Int) > *GET(0, Int));
+			change = 3;
+			break;
+		case TokenType::GreaterEqual:
+			tree = TERM(*GET(2, Int) >= *GET(0, Int));
+			change = 3;
+			break;
+		case TokenType::Less:
+			tree = TERM(*GET(2, Int) < *GET(0, Int));
+			change = 3;
+			break;
+		case TokenType::LessEqual:
+			tree = TERM(*GET(2, Int) <= *GET(0, Int));
+			change = 3;
+			break;
+		case TokenType::EqualTo + OFFSET:
+			tree = TERM(*GET(2, Float) == *GET(0, Float));
+			change = 3;
+			break;
+		case TokenType::NotEqual + OFFSET:
+			tree = TERM(*GET(2, Float) != *GET(0, Float));
+			change = 3;
+			break;
+		case TokenType::Greater + OFFSET:
+			tree = TERM(*GET(2, Float) > *GET(0, Float));
+			change = 3;
+			break;
+		case TokenType::GreaterEqual + OFFSET:
+			tree = TERM(*GET(2, Float) >= *GET(0, Float));
+			change = 3;
+			break;
+		case TokenType::Less + OFFSET:
+			tree = TERM(*GET(2, Float) < *GET(0, Float));
+			change = 3;
+			break;
+		case TokenType::LessEqual + OFFSET:
+			tree = TERM(*GET(2, Float) <= *GET(0, Float));
+			change = 3;
+			break;
+		case TokenType::EqualTo + 2 * OFFSET:
+			[[fallthrough]];
+		case TokenType::NotEqual + 2 * OFFSET:
+			[[fallthrough]];
+		case TokenType::Greater + 2 * OFFSET:
+			[[fallthrough]];
+		case TokenType::GreaterEqual + 2 * OFFSET:
+			[[fallthrough]];
+		case TokenType::Less + 2 * OFFSET:
+			[[fallthrough]];
+		case TokenType::LessEqual + 2 * OFFSET:
+			throw(ErrDesignApp("Point literal logical operator Point literal"));
+		case TokenType::EqualTo + 3 * OFFSET:
+			tree = TERM(*GET(2, String) == *GET(0, String));
+			change = 3;
+			break;
+		case TokenType::NotEqual + 3 * OFFSET:
+			tree = TERM(*GET(2, String) != *GET(0, String));
+			change = 3;
+			break;
+		case TokenType::Greater + 3 * OFFSET:
+			tree = TERM(*GET(2, String) > *GET(0, String));
+			change = 3;
+			break;
+		case TokenType::GreaterEqual + 3 * OFFSET:
+			tree = TERM(*GET(2, String) >= *GET(0, String));
+			change = 3;
+			break;
+		case TokenType::Less + 3 * OFFSET:
+			tree = TERM(*GET(2, String) < *GET(0, String));
+			change = 3;
+			break;
+		case TokenType::LessEqual + 3 * OFFSET:
+			tree = TERM(*GET(2, String) <= *GET(0, String));
+			change = 3;
+			break;
+		case TokenType::Dot:
+			throw(ErrDesignApp("LiteralCal->Dot"));
+		default:
+			break;
+		}
+		if (change == 1) {
+			id = 23;
+			auto tree2 = static_cast<tNoVars*>(branchs[0])->branchs[0];
+			static_cast<tNoVars*>(branchs[0])->branchs[0] = nullptr;
+			delete branchs[0], branchs[1];
+			branchs.pop_back();
+			branchs[0] = tree2;
+			_type.isLiteral = true;
+		}
+		else if (change == 2) {
+			id = 23;
+			auto tree2 = static_cast<tNoVars*>(branchs[2])->branchs[0];
+			static_cast<tNoVars*>(branchs[2])->branchs[0] = nullptr;
+			delete branchs[0], branchs[1], branchs[2];
+			branchs.pop_back(); branchs.pop_back();
+			branchs[0] = tree2;
+			_type.isLiteral = true;
+		}
+		else if (change == 3) {
+			id = 23;
+			delete branchs[0], branchs[1], branchs[2];
+			branchs.pop_back(); branchs.pop_back();
+			_type = VTYPE(Int, r, true);
+			branchs[0] = tree;
+		}
+#undef GET
+#undef TERM
+	}
 }
 
 tLabel::~tLabel() {}

@@ -1,4 +1,4 @@
-\documentclass[UTF8]{ctexart}
+\documentclass{article}
 
 \usepackage{url}
 \usepackage{comment}
@@ -18,8 +18,8 @@
 \usepackage{fancyvrb}
 
 \author{MUA Group(Modification Ultraman Alliance)}
-\title{MUAECL2 User's Manual  ver. 2.0.1\_alpha}
-\date{\today}
+\title{MUAECL2 User's Manual  ver. 2.0.0\_alpha}
+\date{today}
 
 \DefineVerbatimEnvironment{MUAvbt}{Verbatim}{frame=single, rulecolor=\color{magenta}}
 
@@ -28,46 +28,46 @@
 \tableofcontents
 \clearpage
 
-\section{关于}
+\section{ABOUT}
 
-MUAECL是MUA制作组制作的ecl编译器，可以将一种比较类似C的语言——MUAECL语言的mecl文本文件，编译成ecl文件，并且可以被MUA引擎，以及th15的引擎所识别运行。
+MUAECL is a ecl compiler developed by MUA Group. It can translate a C-like language (MUAECL language) to a ecl file, in order to be read by either MUA engine, or th15 engine.
 
-\section{安装与运行}
+\section{INSTALLATION AND RUNNING}
 
-下载后解压至任意文件夹即可。解压后的文件包括：
+Download and unzip to any folder. The unzipped folder contains:
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{c|c}
 		\hline
-		文件名 & 用途 \\\hline
-		MUAECL2.exe & 程序本体 \\\hline
-		action.csv & 跳转表 \\\hline
-		ins.ini & ins对照表 \\\hline
-		default.ini & default.ecl中包含的子程序名 \\\hline
-		include.ini & 预定义预处理指令 \\\hline
+		File name & Usage \\\hline
+		MUAECL2.exe & the program \\\hline
+		action.csv & jumping table \\\hline
+		ins.ini & instruction translate table \\\hline
+		default.ini & sub names contained in default.ecl \\\hline
+		include.ini & predefined preprocess directive \\\hline
 	\end{tabular}
 \end{table}
 
-这些文件需要被放在同一文件夹下。
+These files need to be contained in the same folder.
 
-本程序使用命令行方式运行。在cmd中运行``\verb|MUAECL2.x.x.exe -h|''（实际exe名随版本号而不同）或``\verb|MUAECL2.x.x.exe --help|''即可查看命令行帮助。
+MUAECL run in command line. Running ``\verb|MUAECL2.x.x.exe -h|''(The real exe name will change along with version number) in cmd or ``\verb|MUAECL2.x.x.exe --help|'' will check the command line syntax help.
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{l|l|c}
 		\hline
-		\multicolumn{2}{c|}{命令行参数} & 用途 \\\hline
-		-h & --help & 显示命令行帮助 \\\hline
-		-c & --compile & 将MUAECL2源代码编译成ecl文件 \\\hline
-		-p & --preprocess & 预处理MUAECL2源代码，但不编译 \\\hline
-		-i <filename> & --input-file <filename> & 输入文件名 \\\hline
-		-o <filename> & --output-file <filename> & 输出文件名 \\\hline
-		-n & -no-preprocess & 在编译时不进行预处理 \\\hline
+		\multicolumn{2}{c|}{Command Line Argument} & Usage \\\hline
+		-h & --help & Display command line syntax help \\\hline
+		-c & --compile & Compile an MUAECL2 source file to a raw ECl file \\\hline
+		-p & --preprocess & Preprocess (and not compile) an MUAECL2 source file \\\hline
+		-i <filename> & --input-file <filename> & Input filename \\\hline
+		-o <filename> & --output-file <filename> & Output filename \\\hline
+		-n & -no-preprocess & Bypass the preprocessing step during compiling \\\hline
 	\end{tabular}
 \end{table}
 
-命令行应用示例：
+Examples:
 
 \begin{MUAvbt}
 MUAECL2 -h
@@ -76,21 +76,21 @@ MUAECL2 -p -i st01.mecl -o st01p.mecl
 MUAECL2 -c -n -i st01p.mecl -o st01.ecl
 \end{MUAvbt}
 
-\section{MUAECL语言}
+\section{MUAECL Language}
 
-MUAECL语言是一种类似C的，描述MUA引擎中诸如子弹发射、敌人出场等信息的脚本。
+MUAECL Language is a C-like script language, which describes some information for MUA engine, such as bullet shooting or enemy entering.
 
-\subsection{预处理指令}
+\subsection{Preprocess directives}
 
-预处理时，MUAECL首先检测每行行尾的反斜杠，对于行尾有反斜杠的行，将反斜杠删除，并将下一行的文本移至本行。
+First, the MUAECL preprocessor checks for backslash which appears at the end of a line. Delete those backslashes, and moves the text on the next line to th original line.
 
-MUAECL的预处理指令由\verb|#|开始，共有以下几种：
+MUAECL preprocess directives begins with \verb|#|. It contains those following types:
 
-\paragraph{s指令（s代表substitute）} \verb|#s| \textit{deliminator pattern deliminator string deliminator name}
+\paragraph{s directive (s stands for substitute)} \verb|#s| \textit{deliminator pattern deliminator string deliminator name}
 
-作用：将后续文本中每行内的\textit{pattern}的所有匹配（识别\href{https://en.wikipedia.org/wiki/Regular_expression}{正则表达式}）替换成\textit{string}，直到\textit{name}相同的\verb|ends|指令出现为止。若没有对应的ends指令，则替换直到文件尾。
+Usage: Substitute all matching \textit{pattern} (checks for \href{https://en.wikipedia.org/wiki/Regular_expression}{regular expression}) with \textit{string} in following texts, until a \verb|ends| directive with the same \textit{name}. If no matching \verb|ends|, substitute until EOF.
 
-示例：
+Examples:
 
 \begin{MUAvbt}
 #s/abc/def/name
@@ -98,121 +98,121 @@ MUAECL的预处理指令由\verb|#|开始，共有以下几种：
 \end{MUAvbt}
 
 \begin{enumerate}
-	\item \textit{deliminator}为一个任意非标识符字符\verb|[^a-zA-Z0-9_]|。
-	\item \textit{pattern}与\textit{string}内的特殊字符依照\href{https://zh.cppreference.com/w/cpp/regex/ecmascript}{ECMAScript}规则（即C++标准库<reg\_ex>中默认的语法规则）替换
-	\item \textit{pattern}与\textit{string}按照全部字面意思读取，包括空格与制表符，但不包括换行符。
-	\item \textit{pattern}与\textit{string}内不能包含该非标识符字符，也不能跨行匹配或替换为多行文本。
-	\item \textit{name}不得包含非标识符字符。
-	\item 若有两个\textit{name}相同则报错
+	\item \textit{deliminator} should be a non-identifier character \verb|[^a-zA-Z0-9_]|.
+	\item Special character in \textit{pattern} and \textit{string} will be interpreted according to \href{https://en.cppreference.com/w/cpp/regex/ecmascript}{ECMAScript} grammar, which is the same as what C++ standard library <reg\_ex> use by default.
+	\item Read \textit{pattern} and \textit{string} all by literal, including space and tab, but not including newline.
+	\item \textit{pattern} and \textit{string} are not allowed to contain the non-identifier character used for \textit{deliminator}, and not allowed to match or substitute to multiline text.
+	\item \textit{name} could not contain non-identifier character.
+	\item Preprocessor will report an error when two \textit{name} being the same.
 \end{enumerate}
 
-\paragraph{无名s指令} \verb|#s| \textit{deliminator pattern deliminator string deliminator}
+\paragraph{unnamed s directive} \verb|#s| \textit{deliminator pattern deliminator string deliminator}
 
-作用：将后续文本中\textit{pattern}的所有匹配替换成\textit{string}，直到文件尾。
+Usage: Substitute all matching \textit{pattern} with \textit{string} in following texts until EOF.
 
-\paragraph{ends指令} \verb|#ends| \textit{deliminator name}
+\paragraph{ends directive} \verb|#ends| \textit{deliminator name}
 
-作用：结束名为\textit{name}的替换。\textit{deliminator}与\textit{name}的要求与\verb|s|指令相同。
+Usage: End the substituting whose name is \textit{name}. The constrain of \textit{deliminator} and \textit{name} are the same as \verb|s| directive.
 
-\paragraph{define指令} \verb|#define| \textit{space identifier space string}
+\paragraph{define directive} \verb|#define| \textit{space identifier space string}
 
-作用：与c相同，将\textit{identifier}关键词替换成\textit{string}。
+Usage: Just like C, substitute keyword \textit{identifier} to \textit{string}.
 
-示例：\verb|#define abc def| \\ 会将文本中\verb|abc + abcd|替换成\verb|def + abcd|。
+Example:\verb|#define abc def| \\ Will substitute \verb|abc + abcd| to \verb|def + abcd|.
 
 \begin{enumerate}
-	\item 相当于匹配``\verb|\b|\textit{identifier}\verb|\b|''，并且\textit{name}定义为\textit{identifier}的\verb|s|指令。
-	\item \textit{identifier}不得包含非标识符字符。
+	\item Same as \verb|s| directive who matches ``\verb|\b|\textit{identifier}\verb|\b|'', while \textit{name} defined to \textit{identifier}
+	\item \textit{identifier} could not contain non-identifier character.
 \end{enumerate}
 
-\paragraph{函数式define指令} \verb|#define| \textit{space identifier\{paraname1, paraname2, ...\} space string}
+\paragraph{function type define directive} \verb|#define| \textit{space identifier\{paraname1, paraname2, ...\} space string}
 
-作用：与c类似，将带参数的\textit{identifier}关键词替换成\textit{string}，与c不同的是，对于\textit{string}中\textit{paraname}的处理，只替换字符串不识别标识符。\textbf{所以请一定要注意各个paraname不要有相互包含的字符串，而且也不要使用string中包含的}。
+Usage: Just like C, substitute keyword \textit{identifier} with parameters to \textit{string}. What do not like C is that during processing \textit{paraname} within \textit{string}, only substitute string but not identifier. \textbf{So PLEASE be cautious, DO NOT let paranames contain each other as substrings, or let \textit{string} contain some of the paranames.}
 
-示例：\verb|#define abc{d,e,f} (d+e+f+def)| \\ 会将文本中\verb|abc{1,3,5}|替换成\verb|(1+3+5+135)|。
+Example: \verb|#define abc{d,e,f} (d+e+f+def)| \\ Will substitute \verb|abc{1,3,5}| to \verb|(1+3+5+135)|.
 
 \begin{enumerate}
-	\item \textit{identifier}与\textit{paraname}不得包含非标识符字符。
-	\item 以示例为例，等价于：将\textit{string}中\textit{paraname1}替换成'\verb|$01|'，将\textit{paraname2}替换成'\verb|$02|'，以此类推后：\\
+	\item \textit{identifier} and \textit{paraname} could not contain non-identifier character.
+	\item Using the example above, it is the same as: substitute \textit{paraname1} to '\verb|$01|', \textit{paraname2} to '\verb|$02|', and so on in \textit{string}: \\
 	\verb|#s \babc\{\s*(.*?\S)\s*,\s*(.*?\S)\s*,\s*(.*?\S)\s*\} ($01+$02+$03+$01$02$03) abc|
 \end{enumerate}
 
-\paragraph{undef指令} \verb|#undef| \textit{space name}
+\paragraph{undef directive} \verb|#undef| \textit{space name}
 
-结束\textit{name}的后续匹配。等价于\verb|#ends|\ \textit{name}。
+Usage: End the matching of \textit{name}. Same as \verb|#ends| \textit{name}.
 
-\paragraph{ecli包含} \verb|#ecli| \textit{space eclfile}
-\paragraph{anim包含} \verb|#anim| \textit{space anmfile}
+\paragraph{ecli including} \verb|#ecli| \textit{space eclfile}
+\paragraph{anim including} \verb|#anim| \textit{space anmfile}
 
-为文件添加ecl文件与anm文件的包含。
+Add include ecl and anm files.
 
-示例：\verb|#ecli default.ecl|
+Example: \verb|#ecli default.ecl|
 
-预处理不改变后续文本的行号。
+All preprocess will not change line numbers afterwards.
 
-\subsection{预定义宏变量}
+\subsection{Predefined macro variables}
 
-mecl包含几个预定义宏变量：
+mecl includes some predefined macro variables:
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{c|c}
 		\hline
-		宏名 & 作用 \\\hline
-		\verb|__FILE__| & 展开成当前文件名 \\\hline
-		\verb|__DATE__| & 展开成翻译到当前关键字时的日期 \\\hline
-		\verb|__TIME__| & 展开成翻译到当前关键字时的时间 \\\hline
-		\verb|__LINE__| & 展开成行号 \\\hline
-		\verb|pi| & 展开成3.14159265 \\\hline
+		Macro name & Usage \\\hline
+		\verb|__FILE__| & Expands to the name of the current file \\\hline
+		\verb|__DATE__| & Expands to the date when translating the current keyword \\\hline
+		\verb|__TIME__| & Expands to the time when translating the current keyword \\\hline
+		\verb|__LINE__| & Expands to the line number \\\hline
+		\verb|pi| & Expands to 3.14159265 \\\hline
 	\end{tabular}
 \end{table}
 
-\section{基本概念}
+\section{BASIC CONCEPTS}
 
-\subsection{注释}
+\subsection{COMMENTS}
 
-mecl允许两种注释：C风格注释或C++风格注释：
+mecl allows two types of comments: C-style and C++-style:
 
 \begin{MUAvbt}
 1. /* some content */
 2. // some content \n
 \end{MUAvbt}
 
-与C不同的是，注释的处理在预处理替换步骤之后，也即：1.注释范围内的预处理指令会被处理；2.预处理替换后组合而成的注释符号会被识别。
+Unlike C, the processing of comment is later than the preprocess substituting, which means: 1. Preprocess directives will be checked inside the comment range; 2. Comment token which is formed by preprocess substituting will be checked.
 
-\subsection{标识符}
+\subsection{IDENTIFIER}
 
-与C相同，一个\textit{标识符}是一个由数字，下划线，小写和大写拉丁字母组成的任意长度的序列，且不可以数字起始。标识符区分大小写。
+Just like C, a \textit{identifier} is an arbitrarily long sequence of digits, underscores, lowercase and uppercase Latin letters, and should not begin with digits. Identifiers are case-sensitive.
 
-有效的标识符示例：\verb|shedarshian|,\verb|Temp0_float|,\verb|_name_|
+Examples of valid identifiers: \verb|shedarshian|,\verb|Temp0_float|,\verb|_name_|
 
-\subsubsection{全局变量}
+\subsubsection{GLOBAL VARIABLES}
 
-mecl语言中包含若干全局变量，诸如自机坐标、内置随机数等，列表可在ins.ini中查询。若标识符与某一全局变量名相同，则会被识别成该全局变量。
+mecl contains many global variables, such as the coordinate of player, the internal random number generator. A list will be found in ins.ini. If an identifier being the same as a global variable, it will be considered as that global variable.
 
-\subsection{类型}
+\subsection{TYPES}
 
-mecl语言包含如下几种类型：
+mecl contains types below:
 
-void类型，int类型，float类型，string类型，point类型。（目前版本中对于string类型\textbf{变量}尚无支持）
+void, int, float, string, point. (Current version do not support string type \textbf{VARIABLES}.)
 
-mecl中int与float类型占据4字节。
+In mecl, int and float occupies 4 bytes.
 
-称算术类型包含int，float，point，基本算术类型包含int，float
+We call ``int, float, point'' as arithmetic type, and ``int float'' as fundamental arithmetic type.
 
-\subsubsection{隐式类型转换}
+\subsubsection{IMPLICIT TYPE CONVERSION}
 
-在需要时（如\hyperref[chongzai]{重载决议}发生时，或if、for表达式内），会检测是否需要隐式类型转换。
+Implicit type conversion will be check when needed (for example, when \hyperref[chongzai]{overload resolution} happens, or in if/for expressions).
 
-隐式类型转换包括：左值到右值转换，整数到浮点数转换，以及void类型左值到任意类型左值转换。
+Implicit conversion includes: lvalue to rvalue conversion; int to float conversion, and void lvalue to any type lvalue conversion.
 
-\section{子程序}
+\section{SUB-PROGRAMS}
 
-mecl由多个子程序（\verb|sub|）组成：\textit{suffix} \verb|sub| \textit{subname} \verb|(| \textit{subvars} \verb|)| \textit{suffix} \verb|{| \textit{subcontents} \verb|}|
+mecl is made up of serveral sub-programs (\verb|sub|): \textit{suffix} \verb|sub| \textit{subname} \verb|(| \textit{subvars} \verb|)| \textit{suffix} \verb|{| \textit{subcontents} \verb|}|
 
-\textit{suffix}为可选的\verb|no_overload|关键字。参数列表为\textit{参数声明}的逗号分隔列表，每一项包含一个类型名以及一个变量名。这些具名形参均可在函数体内被访问。函数体\textit{subcontents}内为一条条的\hyperref[yuju]{语句}。
+\textit{suffix} is an optional \verb|no_overload| keyword. Parameter lists are comma-separated list of \textit{parameter declaration}, each of which contains a type name and a variable name. These named formal parameters can be approached inside function body. Function body \textit{subcontents} contains serveral \hyperref[yuju]{statements}.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 sub MainSub01(float x) no_overload
@@ -228,53 +228,53 @@ sub Boss_at1(int num, float angle) {
 }
 \end{MUAvbt}
 
-子程序之间允许同名（\textbf{重载}），只要参数数或类型不同。调用重载的函数时遵循\hyperref[chongzai]{重载决议}（后述）。
+Sub-programs are allowed to have same names (\textbf{overload}), as long as parameter number or type differs. \hyperref[chongzai]{Overload resolution} will take place when calling overloaded function.
 
-默认情况下，编译器输出ecl文件时会使用输入参数类型名装饰sub名。\verb|no_overload|关键字指示编译器在输出至ecl文件时不装饰sub名，同时禁止了对此函数的重载。
+By default, the compiler will use the parameter types to decorate the sub name. Keyword \verb|no_overload| will tell the compiler not to decorate the sub name, and in result, forbid the overload of the current function.
 
-子程序名为全局，也即允许\textbf{后声明先调用}。
+The sub-program name is global, which means \textbf{usage before declaration} is allowed.
 
-\section{表达式}
+\section{EXPRESSIONS}
 
-表达式是\textit{运算符}和它们的\textit{运算数}的序列，它指定一项计算。
+An expression is a sequence of \textit{operators} and their \textit{operands}, that specifies a computation.
 
-\subsection{类型与值类型}
+\subsection{TYPES AND VALUE CATEGORIES}
 
-每个表达式有一个类型，和一个值类型。值类型为左值或右值。左值指示其求值确定一个对象个体，右值指示其求值没有结果对象。
+Each expression is characterized by two independent properties: a type and a value category. There are two value categories: lvalue and rvalue. Lvalue indicates its evaluation determines the identity of an object, while rvalue indicates its evaluation do not produce a long-lived object.
 
-下列表达式是左值表达式：
+The following expressions are lvalue expressions:
 \begin{enumerate}
-	\item 变量名\verb|a|。
-	\item 赋值及复合赋值表达式，如\verb|a = b|。
-	\item 间接寻址表达式，如\verb|*p|。
+	\item The name of a variable.
+	\item Assignment and compound assignment expressions, such as \verb|a = b|.
+	\item Indirection expressions, such as \verb|*p|.
 \end{enumerate}
 
-左值可以取地址\verb|&(i = 1)|，左值可以作为赋值运算符的左操作数。
+Lvalue's address may be taken\verb|&(i = 1)|, and lvalue may be used as left-hand operand of the assignment and compound assignment operators.
 
-下列表达式是右值表达式：
+The following expressions are rvalue expressions:
 \begin{enumerate}
-	\item 字面量，如\verb|72|。
-	\item 函数调用表达式，如\verb|g(1)|。
-	\item 算术表达式、逻辑表达式、比较表达式，如\verb|a + 1|、\verb|c && d|等。
-	\item 取地址表达式，如\verb|&a|。
-	\item 转型表达式，如\verb|(int)f|。
+	\item Literals, such as \verb|72|.
+	\item Function call expressions, such as \verb|g(1)|.
+	\item Arithmetic expressions, logical expressions, or comparision expressions, such as \verb|a + 1|、\verb|c && d|.
+	\item Address-of expressions, such as \verb|&a|.
+	\item Type cast expressions, such as \verb|(int)f|.
 \end{enumerate}
 
-右值不能被取地址，右值不能作为赋值运算符的左操作数。
+Rvalue's address may not be taken, and rvalue can't be used as left-hand operand of the assignment and compound assignment operators.
 
-\subsection{初等表达式}
+\subsection{PRIMARY EXPRESSIONS}
 
-初等表达式包括字面量与标识符。
+Primary expressions includes literals and identifiers.
 
-\paragraph{整数字面量} 整数字面量包含以下几种：
+\paragraph{Integer literals} Integer literals contains:
 
 \begin{enumerate}
-	\item 十进制字面量，由\verb|1-9|的数位后随零或多个\verb|0-9|的数位组成；
-	\item 八进制字面量，由\verb|0|后随多个\verb|0-7|的数位组成；
-	\item 十六进制字面量，由\verb|0x|后随多个\verb|0-9|或\verb|A-F|或\verb|a-f|组成。
+	\item Decimal literals, which is a non-zero decimal digit \verb|1-9| followed by zero or more decimal digits \verb|0-9|;
+	\item Octal literals, which is the digit \verb|0| followed by zero or more octal digits \verb|0-7|;
+	\item Hex literals, which is the character sequence \verb|0x| followed by zero or more hexadecimal digits \verb|0-9| or \verb|A-F| or \verb|a-f|.
 \end{enumerate}
 
-例如下列变量被初始化到相同值：
+For example, the following variables are initialized to the same value:
 
 \begin{MUAvbt}
 int d = 42;
@@ -283,13 +283,13 @@ int x = 0x2a;
 int X = 0x2A;
 \end{MUAvbt}
 
-\paragraph{浮点数字面量} 浮点数字面量为一个包含且仅包含一个小数点的十进制数，后随一个可选的\verb|f|组成的字面量。如：\verb|2.34|, \verb|.1f|, \verb|1.|。
+\paragraph{Floating-point literal} Floating-point literal is a decimal number which contains and only contains one decimal separator, and a optional \verb|f| in the end, such as \verb|2.34|, \verb|.1f|, \verb|1.|.
 
-\paragraph{字符串字面量} 字符串字面量为用一对双引号\verb|""|围起来的字符序列。反斜杠可以用于escape，在单个反斜杠后的字符以本义被录入，可用于在字符串中添加双引号字符本身。字符串字面量拥有string类型。
+\paragraph{String literal} String literal is a character sequence surrounded by a pair of double-quote \verb|""|. The backslash can be used to escape characters, since the character followed by a backslash will be recognized as itself. So it can be used to escape the double-quote character itself. String literals are of type string.
 
-\paragraph{预定义常量} 预定义常量在ins.ini中定义，被转义成等效的整数字面量或浮点数字面量。支持的预定义常量将在对应的instruction处列出。
+\paragraph{Predefined constant} Predefined constant are defined in ins.ini, and will be converted to corresponding integer or float literal. Predefined constant supported will be listed around corresponding instruction.
 
-\paragraph{标识符} 标识符可以用于函数名，或者指代一个变量。%未来可能支持成员名
+\paragraph{Identifier} Identifier can be used as function name, or to refer a variable.%May support point.x y in future
 
 \subsection{运算符}
 
@@ -300,10 +300,7 @@ int X = 0x2A;
 	\begin{tabular}{|c|c|c|c|c|c|}
 		\hline
 		\hyperref[fuzhi]{赋值} & \hyperref[suanshu]{算术} & \hyperref[luoji]{逻辑} & \hyperref[bijiao]{比较} & \hyperref[chengyuan]{成员访问} & \hyperref[qita]{其他} \\\hline
-		% \begin{comment}
-\begin{minipage}{0.6in}
-\begin{verbatim}
-
+		\begin{BVerbatim}{baseline=c}
 a = b
 a += b
 a -= b
@@ -315,12 +312,8 @@ a ||= b
 a &= b
 a |= b
 a ^= b
-
-\end{verbatim}
-\end{minipage}
-&
-\begin{minipage}{0.5in}
-\begin{verbatim}
+\end{BVerbatim} &
+\begin{BVerbatim}{baseline=c}
 -a
 a + b
 a - b
@@ -330,49 +323,34 @@ a % b
 a & b
 a | b
 a ^ b
-\end{verbatim}
-\end{minipage}
-&
-\begin{minipage}{0.6in}
-\begin{verbatim}
+\end{BVerbatim} &
+\begin{BVerbatim}{baseline=c}
 !a
 a && b
 a || b
 a and b
 a or b
-\end{verbatim}
-\end{minipage}
-&
-\begin{minipage}{0.5in}
-\begin{verbatim}
+\end{BVerbatim} &
+\begin{BVerbatim}{baseline=c}
 a == b
 a != b
 a < b
 a <= b
 a > b
 a >= b
-\end{verbatim}
-\end{minipage}
-&
-\begin{minipage}{0.4in}
-\begin{verbatim}
+\end{BVerbatim} &
+\begin{BVerbatim}{baseline=c}
 a.b
 a[b]
 *a
 &a
-\end{verbatim}
-\end{minipage}
-&
-\begin{minipage}{1.3in}
-\begin{verbatim}
+\end{BVerbatim} &
+\begin{BVerbatim}{baseline=c}
 id(...)
 a1 : a2 : a3 : a4
 (type)a
 (a)
-\end{verbatim}
-\end{minipage}
-\\\hline
-% \end{comment}
+\end{BVerbatim} \\\hline
 	\end{tabular}
 \end{table}
 
@@ -469,12 +447,12 @@ I& operator*=(I&, I)
 point& operator*=(point&, float)
 I& operator/=(I&, I)
 point& operator/=(point&, float)
-int& operator%=(int&, int)
-int& operator&&=(int&, int)
-int& operator||=(int&, int)
-int& operator&=(int&, int)
-int& operator|=(int&, int)
-int& operator^=(int&, int)
+int operator%=(int, int)
+int operator&&=(int, int)
+int operator||=(int, int)
+int operator&=(int, int)
+int operator|=(int, int)
+int operator^=(int, int)
 \end{MUAvbt}
 
 \subsubsection{成员访问运算符}
@@ -543,7 +521,7 @@ T operator:(T, T, T, T)
 		12 & \verb|a or b| & 非短路逻辑或 & \\\cline{1-3}
 		13 & \verb|a&&b| & 短路逻辑与 & \\\cline{1-3}
 		14 & \verb&a||b& & 短路逻辑或 & \\\hline
-		\multirow{2}{*}{15} & \verb|= += -= *= /=| & \multirow{2}{*}{所有赋值} & \multirow{2}{*}{右到左} \\\cline{2-2}
+		\multirow{2}{*}{15} & \verb|= += -= *= /=| & \multirow{2}{*}{所有赋值} & \multirow{2}{*}{右到左} \\\cline{2}
 		& \verb"%= &&= ||= &= ^= |=" &  & \\\hline
 		16 & \verb|a1:a2:a3:a4| & 冒号分隔 & - \\\hline
 	\end{tabular}
@@ -556,7 +534,7 @@ T operator:(T, T, T, T)
 
 对该函数或运算符的所有重载判断输入参数个数是否相等，以及能否将每个输入参数类型隐式转换至目标类型。之后在所有可以转换到的重载函数集中选取最优的。最优定义为：有高优先级的某转换的隐式转换优于无该转换的。隐式转换的优先级由高到低为：
 
-\verb|void&|$\to$\verb|point|, \verb|void&|$\to$\verb|string|, \verb|void&|$\to$\verb|float|, \verb|void&|$\to$\verb|int|, \verb|int|$\to$\verb|float|, \verb|lvalue|$\to$\verb|rvalue|.
+void\&$\to$point, void\&$\to$string, void\&$\to$float, void\&$\to$int, int$\to$float, lvalue$\to$rvalue.
 
 \subsection{字面量优化}
 
@@ -567,7 +545,7 @@ T operator:(T, T, T, T)
 
 mecl的每条语句（\textit{stmt}）有以下几种类型：
 
-\subsection{表达式语句}
+\section{表达式语句}
 
 跟随分号的表达式是语句。
 
@@ -576,10 +554,9 @@ mecl的每条语句（\textit{stmt}）有以下几种类型：
 示例：
 
 \begin{MUAvbt}
-a += 1;		//赋值语句
+a += 1;			//赋值语句
 wait(20);		//ins调用
-MainSub00();		//函数调用
-a;		//弃值表达式
+a;				//弃值表达式
 \end{MUAvbt}
 
 \subsection{语句块}
@@ -621,18 +598,18 @@ point p1 = {1., 2.}:{3., 4.}:{5., 6.}:{7., 8.};
 
 选择语句在数个控制流中选择一个。形式为：
 
-\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
 if ( \textit{condition} ) \textit{true_stmt}
 if ( \textit{condition} ) \textit{true_stmt} else \textit{false_stmt}
 \end{Verbatim}
 
-若\textit{condition}为非0则执行\textit{true\_stmt}（常为复合语句），否则执行\textit{false\_stmt}。
+若\textit{condition}为非0则执行\textit{true_stmt}（常为复合语句），否则执行\textit{false_stmt}。
 
 \textit{condition}需可以隐式转换至int右值。
 
-在第二形式的\verb|if|语句（包含\verb|else|者）中，若\textit{true\_stmt}亦是\verb|if|语句，则内层\verb|if|语句必须也含有\verb|else|部分。换言之，嵌套\verb|if|语句中，\verb|else|关联到最近的尚未有\verb|else|的\verb|if|。
+在第二形式的\verb|if|语句（包含\verb|else|者）中，若\textit{true_stmt}亦是\verb|if|语句，则内层\verb|if|语句必须也含有\verb|else|部分。换言之，嵌套\verb|if|语句中，\verb|else|关联到最近的尚未有\verb|else|的\verb|if|。
 
-若通过\verb|goto|进入\textit{true\_stmt}，则不执行\textit{false\_stmt}。
+若通过\verb|goto|进入\textit{true_stmt}，则不执行\textit{false_stmt}。
 
 示例：
 
@@ -653,7 +630,7 @@ else if (i == 2)
 
 循环语句重复执行一些代码。形式为：
 
-\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
 while ( \textit{condition} ) \textit{stmt}
 do \textit{stmt} while ( \textit{condition} ) ;
 loop ( \textit{times} ) \textit{stmt}
@@ -715,7 +692,7 @@ loop (100) {
 
 标号语句建立一个标号，以供goto语句跳转。形式为：
 
-\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
 \textit{id} :
 \end{Verbatim}
 
@@ -723,7 +700,7 @@ loop (100) {
 
 跳转语句无条件地转移控制流。形式为：
 
-\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
 break ;
 continue ;
 goto \textit{id} ;
@@ -771,7 +748,7 @@ goto语句跳转至指定的标签处。goto语句必须在与它所用的标签
 
 thread语句开启一个线程，与后续程序同步进行。形式为：
 
-\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
+\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
 thread \textit{id} ( \textit{exprf}, \textit{exprf}, ... ) ;
 \end{Verbatim}
 
@@ -788,16 +765,16 @@ while (1) wait(1000);
 
 rawins语句使用数据直接构建ecl内容。形式为：
 
-\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\[\]]
-__rawins {
-	\textit[insdata] ;
-	\textit[insdata] ;
+\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
+__rawins \{
+	\textit{insdata} ;
+	\textit{insdata} ;
 	...
-}
+\}
 \end{Verbatim}
 
 每条\textit{insdata}为：
 
-\verb|{| \textit{id difficulty\_mask pop\_count param\_count param\_mask, param1 param2 ...} \verb|}|
+\verb|{| \textit{id difficulty_mask pop_count param_count param_mask, param1 param2 ...} \verb|}|
 
 \end{document}

@@ -59,7 +59,7 @@ namespace Template {
 map<int, map<Op::TokenType, int>*> Parser::Action;
 
 const map<Op::NonTerm, map<int, int>> Parser::Goto = {
-	{ NonTerm::stmt, map<int, int>({ { 7, 7 }, { 9, 7 }, { 58, 60 }, { 70, 71 }, { 73, 74 }, { 75, 76 }, { 77, 7 }, { 160, 161 } }) },
+	{ NonTerm::stmt, map<int, int>({ { 7, 7 }, { 9, 7 }, { 58, 60 }, { 70, 71 }, { 73, 74 }, { 75, 76 }, { 77, 7 }, { 160, 161 }, { 179, 7 }, { 184, 7 } }) },
 	{ NonTerm::stmts, map<int, int>({ { 7, 17 }, { 9, 49 }, { 77, 78 }, { 179, 180 }, { 184, 185 } }) },
 	{ NonTerm::subs, map<int, int>({ { 0, 255 }, { 50, 51 }, { 181, 182 }, { 186, 187 } }) },
 	{ NonTerm::subv, map<int, int>({ { 24, 52 }, { 61, 69 }, { 64, 68 } }) },
@@ -69,7 +69,7 @@ const map<Op::NonTerm, map<int, int>> Parser::Goto = {
 	{ NonTerm::inif, map<int, int>({ { 53, 80 } }) },
 	{ NonTerm::inia, map<int, int>({ { 20, 26 }, { 23, 25 } }) },
 	{ NonTerm::exprf, map<int, int>({ { 5, 16 }, { 10, 42 }, { 43, 42 }, { 121, 122 }, { 156, 42 } }) },
-	{ NonTerm::expr, map<int, int>({ { 3, 13 }, { 4, 14 }, { 5, 15 }, { 7, 87 }, { 9, 87 }, { 10, 15 }, { 20, 22 }, { 23, 22 }, { 28, 19 }, { 30, 19 }, { 32, 19 }, { 36, 37 }, { 38, 39 }, { 40, 41 }, { 43, 15 }, { 53, 19 }, { 58, 87 }, { 70, 87 }, { 73, 87 }, { 75, 87 }, { 77, 87 }, { 82, 88 }, { 83, 89 }, { 84, 92 }, { 85, 90 }, { 86, 91 }, { 101, 131 }, { 102, 132 }, { 103, 133 }, { 104, 134 }, { 105, 135 }, { 106, 136 }, { 107, 137 }, { 108, 138 }, { 109, 139 }, { 110, 140 }, { 111, 141 }, { 112, 142 }, { 113, 143 }, { 114, 144 }, { 115, 145 }, { 116, 146 }, { 117, 147 }, { 118, 148 }, { 119, 149 }, { 120, 150 }, { 121, 15 }, { 152, 153 }, { 156, 15 }, { 160, 87 }, { 163, 164 } }) },
+	{ NonTerm::expr, map<int, int>({ { 3, 13 }, { 4, 14 }, { 5, 15 }, { 7, 87 }, { 9, 87 }, { 10, 15 }, { 20, 22 }, { 23, 22 }, { 28, 19 }, { 30, 19 }, { 32, 19 }, { 36, 37 }, { 38, 39 }, { 40, 41 }, { 43, 15 }, { 53, 19 }, { 58, 87 }, { 70, 87 }, { 73, 87 }, { 75, 87 }, { 77, 87 }, { 82, 88 }, { 83, 89 }, { 84, 92 }, { 85, 90 }, { 86, 91 }, { 101, 131 }, { 102, 132 }, { 103, 133 }, { 104, 134 }, { 105, 135 }, { 106, 136 }, { 107, 137 }, { 108, 138 }, { 109, 139 }, { 110, 140 }, { 111, 141 }, { 112, 142 }, { 113, 143 }, { 114, 144 }, { 115, 145 }, { 116, 146 }, { 117, 147 }, { 118, 148 }, { 119, 149 }, { 120, 150 }, { 121, 15 }, { 152, 153 }, { 156, 15 }, { 160, 87 }, { 163, 164 }, { 179, 87 }, { 184, 87 } }) },
 	{ NonTerm::data, map<int, int>({ { 168, 170 }, { 176, 177 } }) },
 	{ NonTerm::insdata, map<int, int>({ { 169, 173 }, { 172, 174 } }) }
 };
@@ -422,7 +422,7 @@ int Parser::action(int s, Op::TokenType t) {
 	auto m = Action.find(s)->second;
 	auto it = m->find(t);
 	if (it == m->end())
-		throw(ErrDesignApp("Parser::action("s + to_string(s) + ", "s + Op::Ch::ToString(t)));
+		throw(ErrDesignApp("Parser::action("s + to_string(s) + ", " + Op::Ch::ToString(t) + ")"));
 	return it->second;
 }
 
@@ -430,6 +430,6 @@ int Parser::gotostat(int s, Op::NonTerm t) {
 	const auto& i = Goto.find(t)->second;
 	const auto& it = i.find(s);
 	if (it == i.end())
-		throw(ErrDesignApp("Parser::gotostat("s + to_string(s) + ", "s + to_string((int)t)));
+		throw(ErrDesignApp("Parser::gotostat("s + to_string(s) + ", " + to_string((int)t) + ")"));
 	return it->second;
 }

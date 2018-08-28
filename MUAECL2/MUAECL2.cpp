@@ -153,10 +153,13 @@ int main(int argc, char* argv[]) {
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	}
-	// TODO: Exception handling for ErrDesignApp & std::exception?
 	catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
 	}
+	catch (ErrFileNotFound& e) {
+		cerr << e.what() << endl;
+	}
+	// TODO: Exception handling for std::exception?
 	/*catch (exception &e) {
 		cerr << e.what() << endl;
 	}*/
@@ -269,8 +272,8 @@ static void preprocess(PreprocessArguments& preprocess_args) {
 }
 
 static void compile(CompileArguments& compile_args) {
-	ReadIns::Read();
 	Parser::initialize();
+	ReadIns::Read();
 	Tokenizer tokenizer(*compile_args.in, compile_args.filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
