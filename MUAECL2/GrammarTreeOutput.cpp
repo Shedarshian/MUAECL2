@@ -1072,7 +1072,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::PlusEqual, 51 },
 			{ Op::TokenType::MinusEqual, 53 },
 			{ Op::TokenType::TimesEqual, 55 },
-			{ Op::TokenType::DividesEqual, 57 }
+			{ Op::TokenType::DividesEqual, 57 },
+			{ Op::TokenType::Mod, 2031 }
 			});
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
 			{ Op::TokenType::PlusEqual, 2050 },
@@ -1135,7 +1136,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 		}
 		case Op::TokenType::TimesEqual:[[fallthrough]];
-		case Op::TokenType::DividesEqual: {
+		case Op::TokenType::DividesEqual:[[fallthrough]];
+		case Op::TokenType::ModEqual: {
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			shared_ptr<LvalueResult> lvres_l = cast_to_expr(this->branchs[2])->OutputLvalueExpr(sub_ctx, stmt_ctx, false);
 			shared_ptr<LvalueResult> lvres_assign = lvres_l;
@@ -1145,17 +1147,18 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			shared_ptr<RvalueResult> rvres;
 			switch (this->_type.type) {
 			case Op::mType::Int:
-				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_int.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
 				break;
 			case Op::mType::Float:
-				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_float.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				break;
 			case Op::mType::Point:
-				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (this->branchs[1]->getToken()->type() == Op::TokenType::ModEqual) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
+				if (cast_to_exprf(this->branchs[0])->_type.type != Op::mType::Float) throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -1);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
@@ -1165,7 +1168,6 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 			lvres_assign->Assign(sub_ctx, stmt_ctx, rvres);
 			return discard_result ? shared_ptr<LvalueResult>(new DiscardedLvalueResult(sub_ctx, stmt_ctx, this->_type.type)) : lvres_l;
 		}
-		case Op::TokenType::ModEqual:[[fallthrough]];
 		case Op::TokenType::BitOrEqual:[[fallthrough]];
 		case Op::TokenType::BitAndEqual:[[fallthrough]];
 		case Op::TokenType::BitXorEqual: {
@@ -1475,7 +1477,6 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::BitOr, 76 },
 			{ Op::TokenType::BitXor, 75 },
 			{ Op::TokenType::BitAnd, 77 },
-			{ Op::TokenType::Mod, 58 },
 			{ Op::TokenType::EqualTo, 59 },
 			{ Op::TokenType::NotEqual, 61 },
 			{ Op::TokenType::Greater, 67 },
@@ -1485,7 +1486,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::Plus, 50 },
 			{ Op::TokenType::Minus, 52 },
 			{ Op::TokenType::Times, 54 },
-			{ Op::TokenType::Divide, 56 }
+			{ Op::TokenType::Divide, 56 },
+			{ Op::TokenType::Mod, 58 }
 			});
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_float({
 			{ Op::TokenType::EqualTo, 60 },
@@ -1497,7 +1499,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			{ Op::TokenType::Plus, 51 },
 			{ Op::TokenType::Minus, 53 },
 			{ Op::TokenType::Times, 55 },
-			{ Op::TokenType::Divide, 57 }
+			{ Op::TokenType::Divide, 57 },
+			{ Op::TokenType::Mod, 2031 }
 			});
 		static const unordered_map<Op::TokenType, int> map_ins_id_op_point({
 			{ Op::TokenType::Plus, 2050 },
@@ -1562,8 +1565,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		case Op::TokenType::And:[[fallthrough]];
 		case Op::TokenType::BitOr:[[fallthrough]];
 		case Op::TokenType::BitXor:[[fallthrough]];
-		case Op::TokenType::BitAnd:[[fallthrough]];
-		case Op::TokenType::Mod: {
+		case Op::TokenType::BitAnd: {
 			if (cast_to_expr(this->branchs[0])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (cast_to_expr(this->branchs[2])->_type.type != this->_type.type) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 			if (this->_type.type != Op::mType::Int) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : this->_type.type != Op::mType::Int"s).c_str()));
@@ -1637,7 +1639,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			}
 		}
 		case Op::TokenType::Times:[[fallthrough]];
-		case Op::TokenType::Divide: {
+		case Op::TokenType::Divide:[[fallthrough]];
+		case Op::TokenType::Mod: {
 			if (discard_result) {
 				cast_to_expr(this->branchs[2])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
 				cast_to_expr(this->branchs[0])->OutputRvalueExpr(sub_ctx, stmt_ctx, true)->DiscardResult(sub_ctx, stmt_ctx);
@@ -1661,6 +1664,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float));
 				}
 				case Op::mType::Point: {
+					if (this->branchs[1]->getToken()->type() == Op::TokenType::Mod) throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : type mismatch"s).c_str()));
 					tNoVars* branch_scalar = nullptr;
 					tNoVars* branch_point = nullptr;
 					if (cast_to_expr(this->branchs[0])->_type.type == Op::mType::Float && cast_to_expr(this->branchs[2])->_type.type == Op::mType::Point) {
@@ -1965,6 +1969,58 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 		}
 		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : danmaku transformation mode not found"));
 	}
+	case 36:// expr->id ( insv )//internal func
+	{
+		int32_t stackptr_delta = 0;
+		const tNoVars* insv = cast_to_insv(this->branchs[0]);
+		// From left to right.
+		vector<shared_ptr<StackRvalueResult>> vec_result;
+		for_each(insv->branchs.crbegin(), insv->branchs.crend(),
+			[&sub_ctx, &stmt_ctx, &vec_result, &stackptr_delta](const GrammarTree* val_branch) {
+				const tNoVars* exprf = cast_to_exprf(val_branch);
+				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false)->ToStackRvalueResult(sub_ctx, stmt_ctx));
+				stackptr_delta -= get_count_id_var(vec_result.back()->GetMType());
+			}
+		);
+		{
+			// Call internal function.
+			// From right to left.
+			vector<Op::mType> vec_type_result;
+			vec_type_result.reserve(vec_result.size());
+			for_each(vec_result.crbegin(), vec_result.crend(),
+				[&sub_ctx, &stmt_ctx, &vec_type_result](const shared_ptr<StackRvalueResult>& val_result) {
+					vec_type_result.push_back(val_result->GetMType());
+				}
+			);
+			pair<
+				multimap<string, tuple<Op::mVType, vector<Op::mVType>, int>>::const_iterator,
+				multimap<string, tuple<Op::mVType, vector<Op::mVType>, int>>::const_iterator
+			> range_internal_function_name(Op::mVType::internalFunction.equal_range(this->branchs[1]->getToken()->getId()));
+			multimap<string, tuple<Op::mVType, vector<Op::mVType>, int>>::const_iterator it_internal_function;
+			for (it_internal_function = range_internal_function_name.first; it_internal_function != range_internal_function_name.second; ++it_internal_function) {
+				vector<Op::mType> vec_type_internal_function;
+				vector<Op::mVType>::const_iterator it_operand;
+				for (
+					it_operand = get<1>(it_internal_function->second).cbegin();
+					it_operand != get<1>(it_internal_function->second).cend();
+					++it_operand) {
+					if (it_operand->valuetype != Op::LRvalue::rvalue) break;
+					vec_type_internal_function.push_back(it_operand->type);
+				}
+				if (it_operand != get<1>(it_internal_function->second).cend()) continue;
+				if (vec_type_result != vec_type_internal_function) continue;
+				if (get<0>(it_internal_function->second).valuetype != Op::LRvalue::rvalue) continue;
+				if (get<0>(it_internal_function->second).type != this->_type.type) continue;
+				stackptr_delta += get_count_id_var(get<0>(it_internal_function->second).type);
+				break;
+			}
+			if (it_internal_function != range_internal_function_name.second) {
+				sub_ctx.insert_ins(stmt_ctx, get<2>(it_internal_function->second), {}, stackptr_delta);
+				return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, this->_type.type));
+			}
+		}
+		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=36 : subroutine not found"));
+	}
 	default:
 		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : unknown expr id"));
 	}
@@ -2095,8 +2151,12 @@ void tStmts::Output(SubOutputContext& sub_ctx) const {
 }
 
 string tSub::getDecoratedName() const {
-	vector<mType> vec_type_param_lr(this->varpara.crbegin(), this->varpara.crend());
-	return NameDecorator::decorateSubName(this->name, this->typeReturn, vec_type_param_lr);
+	if (this->no_overload) {
+		return this->name;
+	} else {
+		vector<mType> vec_type_param_lr(this->varpara.crbegin(), this->varpara.crend());
+		return NameDecorator::decorateSubName(this->name, this->typeReturn, vec_type_param_lr);
+	}
 }
 
 fSub tSub::Output(const tRoot& root) const {
@@ -2123,18 +2183,22 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 		return id;
 	} else {
 		pair<
-			multimap<string, pair<mType, vector<mType>>>::const_iterator,
-			multimap<string, pair<mType, vector<mType>>>::const_iterator
+			multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator,
+			multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator
 		> range_subdecl_id(this->subdecl.equal_range(id));
 		for (
-			multimap<string, pair<mType, vector<mType>>>::const_iterator it_subdecl = range_subdecl_id.first;
+			multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator it_subdecl = range_subdecl_id.first;
 			it_subdecl != range_subdecl_id.second;
 			++it_subdecl
 			) {
-			if (it_subdecl->second.second == types_params) {
-				// From left to right.
-				vector<mType> vec_type_param_lr(it_subdecl->second.second.crbegin(), it_subdecl->second.second.crend());
-				return NameDecorator::decorateSubName(id, it_subdecl->second.first, vec_type_param_lr);
+			if (get<1>(it_subdecl->second) == types_params) {
+				if (get<2>(it_subdecl->second)) {
+					return id;
+				} else {
+					// From left to right.
+					vector<mType> vec_type_param_lr(get<1>(it_subdecl->second).crbegin(), get<1>(it_subdecl->second).crend());
+					return NameDecorator::decorateSubName(id, get<0>(it_subdecl->second), vec_type_param_lr);
+				}
 			}
 		}
 		throw(ErrDesignApp("tRoot::getSubDecoratedName : subroutine not found"));

@@ -174,9 +174,7 @@ struct fSub {
 	vector<shared_ptr<fSubDataEntry>> data_entries;
 
 	template<class ... Types>
-	void emplaceVar(Types&& ... args) { variables.emplace(args); }
-	template<class ... Types>
-	void emplaceIns(Types&& ... args) { inses.emplace(args); }
+	void emplaceIns(vector<shared_ptr<fSubDataEntry>>::const_iterator position, Types&& ... args) { data_entries.emplace(position, new Ins(args)); }
 };
 
 struct fRoot {
