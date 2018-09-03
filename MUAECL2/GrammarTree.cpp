@@ -937,6 +937,24 @@ void tRoot::addSub(tSub* s) {
 	s->insertDecl(subdecl);
 }
 
+void tRoot::addSubDecl(string name, int lineNo, tSubVars* subv, mType typeReturn, bool no_overload) {
+	vector<mType> varpara;
+	transform(subv->vars.begin(), subv->vars.end(), inserter(varpara, varpara.end()), [](const mVar& t) { return t.type; });
+	delete subv;
+	if (no_overload)
+		if (subdecl.find(name) != subdecl.end())
+			throw(ErrFuncRedeclared(lineNo, name));
+		else
+			subdecl.insert(make_pair(name, make_tuple(typeReturn, varpara, true)));
+	else {
+		auto[it_begin, it_end] = subdecl.equal_range(name);
+		for (; it_begin != it_end; ++it_begin)
+			if (get<2>(it_begin->second) || get<1>(it_begin->second) == varpara)
+				throw(ErrFuncRedeclared(lineNo, name));
+		subdecl.insert(make_pair(name, make_tuple(typeReturn, varpara, false)));
+	}
+}
+
 decltype(declval<multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) tRoot::checkSub(const string& id) {
 	return subdecl.equal_range(id);
 }

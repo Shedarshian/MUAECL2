@@ -437,3 +437,11 @@ public:
 private:
 	string id;
 };
+
+class ErrIncludeFileNotFound : public ExceptionWithLineNo {
+public:
+	ErrIncludeFileNotFound(int lineNo, string name) :ExceptionWithLineNo(lineNo), id("include file \"" + name + "\"not found.") {}
+	virtual const char* what() const throw() { return id.c_str(); }
+private:
+	string id;
+};
