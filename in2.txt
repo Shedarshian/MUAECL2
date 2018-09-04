@@ -1,13 +1,5 @@
-#include in2.txt
-/*sub test_1(){}
-sub test_2(int a){}
-sub test_3(float a){}
-sub test_4(int a, float b){}
-//sub test_4_error(int a, float a){}
-sub test_5(int a, float b, point c){}*/
-//sub test_6(){}
-
-sub A2(int a){
+sub A(int 
+		a){
 	//zhushi
 	/*zhushi*/
 biaoqian:
@@ -21,7 +13,7 @@ biaoqian:
 	goto biaoqian;
 }
 
-sub B2(){
+sub B(){
 	__rawins{
 		{23 0 0 1 0 60};
 		{23 0 0 10 60};
@@ -45,7 +37,7 @@ sub B2(){
 	while(1);
 }
 
-sub C2(float c){
+sub C(float c){
 	c=0;// */
 	int a;
 	if(a==1){
@@ -54,3 +46,4 @@ sub C2(float c){
 	}
 }
 // vim:ft=c:
+

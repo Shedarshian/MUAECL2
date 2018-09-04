@@ -2,6 +2,7 @@
 #include "Preprocessor.h"
 #include "Misc.h"
 #include <list>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <regex>
@@ -11,7 +12,7 @@
 using namespace std;
 #define CAP_DEFAULT 128
 
-pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream &out) {
+pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream &out, const vector<filesystem::path>& searchpath) {
 	vector<string> ecli, anim;
 	string v;
 	int lineNo = 1;
@@ -125,6 +126,32 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 					if (it == subs.end())
 						throw(ErrEndsNotFound(lineNo, name, "undef"));
 					subs.erase(it);
+				}
+				else if (v.compare(0, 8, "include ") == 0) {
+					//#include file
+					string file = v.substr(8);
+					//absolute path
+					ifstream includefile;
+					includefile.open(file);
+					if (!includefile.is_open()) {
+						//search path
+						for (auto path : searchpath) {
+							includefile.open(path.append(file));
+							if (includefile.is_open())
+								break;
+						}
+						if (!includefile.is_open())
+							throw(ErrIncludeFileNotFound(lineNo, file));
+					}
+					string all_file(istreambuf_iterator<char>(includefile), istreambuf_iterator<char>{});
+					auto it_begin = all_file.cbegin(), it_end = all_file.cend();
+					smatch match;
+					string strout;
+					while (regex_search(it_begin, it_end, match, regex("(?:no_overload[\\s\\n]*)?sub[\\s\\n]+[_[:alnum:]]+(?:[\\s\\n]+no_overload)?[\\s\\n]*\\([\\s\\S\\n]*?\\)"))) {
+						strout += match.str() += ';';
+						it_begin = match.suffix().first;
+					}
+					out << regex_replace(strout, regex("\\r|\\n"), "");
 				}
 				else if (v.compare(0, 5, "ecli ") == 0) {
 					//#ecli space name
