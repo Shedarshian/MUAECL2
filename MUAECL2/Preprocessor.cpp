@@ -12,7 +12,34 @@
 using namespace std;
 #define CAP_DEFAULT 128
 
-pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream &out, const vector<filesystem::path>& searchpath) {
+void Preprocessor::search(string filename, filesystem::path currentpath, const vector<filesystem::path>& extrasearchpath, int lineNo, ostream& out) {
+	//current path
+	ifstream includefile;
+	includefile.open(currentpath.append(filename).make_preferred());
+	if (!includefile.is_open()) {
+		//search path
+		for (auto path : extrasearchpath) {
+			includefile.open(path.append(filename).make_preferred());
+			if (includefile.is_open())
+				break;
+		}
+		if (!includefile.is_open())
+			throw(ErrIncludeFileNotFound(lineNo, filename));
+	}
+	string all_file(istreambuf_iterator<char>(includefile), istreambuf_iterator<char>{});
+	auto it_begin = all_file.cbegin(), it_end = all_file.cend();
+	smatch match;
+	string strout;
+	while (regex_search(it_begin, it_end, match, regex("((?:no_overload[\\s\\n]*)?sub[\\s\\n]+[_[:alnum:]]+(?:[\\s\\n]+no_overload)?[\\s\\n]*\\([\\s\\S\\n]*?\\))|(#include (.*))"))) {
+		if (match[1].matched)
+			out << regex_replace(match.str() + ';', regex("\\r|\\n"), "");
+		else
+			search(match.str(3), currentpath.remove_filename(), extrasearchpath, lineNo, out);
+		it_begin = match.suffix().first;
+	}
+}
+
+pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream &out, filesystem::path originalpath, const vector<filesystem::path>& extrasearchpath) {
 	vector<string> ecli, anim;
 	string v;
 	int lineNo = 1;
@@ -130,28 +157,7 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 				else if (v.compare(0, 8, "include ") == 0) {
 					//#include file
 					string file = v.substr(8);
-					//absolute path
-					ifstream includefile;
-					includefile.open(file);
-					if (!includefile.is_open()) {
-						//search path
-						for (auto path : searchpath) {
-							includefile.open(path.append(file));
-							if (includefile.is_open())
-								break;
-						}
-						if (!includefile.is_open())
-							throw(ErrIncludeFileNotFound(lineNo, file));
-					}
-					string all_file(istreambuf_iterator<char>(includefile), istreambuf_iterator<char>{});
-					auto it_begin = all_file.cbegin(), it_end = all_file.cend();
-					smatch match;
-					string strout;
-					while (regex_search(it_begin, it_end, match, regex("(?:no_overload[\\s\\n]*)?sub[\\s\\n]+[_[:alnum:]]+(?:[\\s\\n]+no_overload)?[\\s\\n]*\\([\\s\\S\\n]*?\\)"))) {
-						strout += match.str() += ';';
-						it_begin = match.suffix().first;
-					}
-					out << regex_replace(strout, regex("\\r|\\n"), "");
+					search(file, originalpath, extrasearchpath, lineNo, out);
 				}
 				else if (v.compare(0, 5, "ecli ") == 0) {
 					//#ecli space name

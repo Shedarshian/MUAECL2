@@ -91,7 +91,7 @@ static void display_help() throw();
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
 /// <summary>Command line action: Preprocess (and not compile) an MUAECL2 source file to a preprocessed source file.</summary>
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
-static void preprocess(PreprocessArguments& preprocess_args, const vector<filesystem::path>& searchpath);
+static void preprocess(PreprocessArguments& preprocess_args, filesystem::path currentpath, const vector<filesystem::path>& searchpath);
 static void compile(CompileArguments& compile_args);
 
 int main(int argc, char* argv[]) {
@@ -201,6 +201,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	string filename;	//used for macro substitute
+	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
 
 	unique_ptr<ifstream> in_f;
@@ -208,7 +209,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		filename = map_cmdarg_input["input-file"s].value;
 		in_f = unique_ptr<ifstream>(new ifstream(filename));
 		in = in_f.get();
-		searchpath.push_back(filesystem::path(filename).remove_filename());
+		currentpath = filesystem::path(filename).remove_filename();
 	} else {
 		in = &cin;
 		filename = "std::cin"s;
@@ -234,7 +235,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		PreprocessArguments preprocess_args;
 		preprocess_args.in = in;
 		preprocess_args.out = &preprocessed;
-		preprocess(preprocess_args, searchpath);
+		preprocess(preprocess_args, currentpath, searchpath);
 
 		CompileArguments compile_args;
 		compile_args.in = &preprocessed;
@@ -248,13 +249,14 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
 	PreprocessArguments preprocess_args;
+	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
 
 	unique_ptr<ifstream> in_f;
 	if (map_cmdarg_input["input-file"s].is_specified) {
 		in_f = unique_ptr<ifstream>(new ifstream(map_cmdarg_input["input-file"s].value));
 		preprocess_args.in = in_f.get();
-		searchpath.push_back(filesystem::path(map_cmdarg_input["input-file"s].value).remove_filename());
+		currentpath = filesystem::path(map_cmdarg_input["input-file"s].value).remove_filename();
 	} else {
 		preprocess_args.in = &cin;
 	}
@@ -267,11 +269,11 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 		preprocess_args.out = &cout;
 	}
 
-	preprocess(preprocess_args, searchpath);
+	preprocess(preprocess_args, currentpath, searchpath);
 }
 
-static void preprocess(PreprocessArguments& preprocess_args, const vector<filesystem::path>& searchpath) {
-	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, searchpath);
+static void preprocess(PreprocessArguments& preprocess_args, filesystem::path currentpath, const vector<filesystem::path>& searchpath) {
+	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, currentpath, searchpath);
 	preprocess_args.ecli = ecli_and_anim.first;
 	preprocess_args.anim = ecli_and_anim.second;
 }
