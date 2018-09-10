@@ -1,57 +1,58 @@
-//#include in2.txt
-/*sub test_1(){}
-sub test_2(int a){}
-sub test_3(float a){}
-sub test_4(int a, float b){}
-//sub test_4_error(int a, float a){}
-sub test_5(int a, float b, point c){}*/
-//sub test_6(){}
-
-sub A2(int a){
-	//zhushi
-	/*zhushi*/
-biaoqian:
-	int d;
-	float f=1;
-	point p1,p2={1.,2.},p3={1.,2.}:{3.,4.}:{5.,6.}:{7.,8.};
-	d=(int)f;d+=(int)f+1;d-=(int)(f-1);d*=d*1;d/=d/1;d%=d%2;
-	d||=p2==p3||p2<=p3;d&&=p2!=p3&&p2>=p3;
-	d&=d&1;d|=d|1;d^=d^1;
-	d=!(p2>p3 and p2<p3 or -f==-(1+2*9.));
-	goto biaoqian;
+sub main()
+{
+    option(32);
+    wait(1);
+    chapter(0);
+    if (SCNum >= 0) {
+        if (SCNum <= 1) {
+            MainMBossSpell();
+        } else {
+            MainBossSpell();
+        }
+        while (1) {
+            wait(1000);
+        }
+    }
+    ins_22(1, "MainMBossDebug");
+    ins_22(2, "MainBossDebug");
+    ins_22(3, "MainBossDebug2");
+    ins_22(4, "MainMsgDebug");
+    ins_22(5, "MainLatter");
+    thread LogoEnemy();
+    wait(60);
+    begin();
+    MainFront();
+    clear_unit();
+    et_clear0(640.0f);
+    chapter(2);
+    wait(2);
+    objAbs("MBoss", 192.0f, -32.0f, 40, 1000, 1);
+    wait(160);
+    MainLatter();
+    wait(120);
+    et_clear0(640.0f);
+    chapter(4);
+    wait(2);
+    objAbs("MBossB", -192.0f, -32.0f, 40, 1000, 1);
+    wait(160);
+    MainLatter2();
+    wait(300);
+    clear_unit();
+    et_clear0(640.0f);
+    chapter(41);
+    wait(160);
+    talk(0);
+    MainBoss();
+    while (1) {
+        wait(1000);
+    }
+    end();
 }
 
-sub B2(){
-	__rawins{
-		{23 0 0 1 0 60};
-		{23 0 0 10 60};
-	}
-	int d=1:2:3:*d;
-	if (d)
-		loop (8:10:15:0x20)
-			{
-			//C(1.:2:3:4);
-		//	thread C(10);
-			if(0)
-				break;
-			else {
-				continue;
-			}
-		}
-	*d=(int)1.5;
-	while(1)
-		wait(1000);
-	do
-		wait(1000);
-	while(1);
-}
-
-sub C2(float c){
-	c=0;// */
-	int a;
-	if(a==1){
-		int i=0,j=1;
-		return();
-	}
-}
-// vim:ft=c:
+sub MainBossSpell();
+sub MainMBossSpell();
+sub MainBoss();
+sub MainLatter2();
+sub MainLatter();
+sub MainFront();
+sub LogoEnemy();
