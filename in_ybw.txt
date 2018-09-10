@@ -1,0 +1,56 @@
+sub LogoEnemy();
+sub MainFront();
+sub MainLatter();
+sub MainLatter2();
+sub MainBoss();
+
+sub main()
+{
+    option(32);
+    wait(1);
+    chapter(0);
+    if (SCNum >= 0) {
+        if (SCNum <= 1) {
+            MainMBossSpell();
+        } else {
+            MainBossSpell();
+        }
+        while (1) {
+            wait(1000);
+        }
+    }
+    ins_22(1, "MainMBossDebug");
+    ins_22(2, "MainBossDebug");
+    ins_22(3, "MainBossDebug2");
+    ins_22(4, "MainMsgDebug");
+    ins_22(5, "MainLatter");
+    thread LogoEnemy();
+    wait(60);
+    begin();
+    MainFront();
+    clear_unit();
+    et_clear0(640.0f);
+    chapter(2);
+    wait(2);
+    objAbs("MBoss", 192.0f, -32.0f, 40, 1000, 1);
+    wait(160);
+    MainLatter();
+    wait(120);
+    et_clear0(640.0f);
+    chapter(4);
+    wait(2);
+    objAbs("MBossB", -192.0f, -32.0f, 40, 1000, 1);
+    wait(160);
+    MainLatter2();
+    wait(300);
+    clear_unit();
+    et_clear0(640.0f);
+    chapter(41);
+    wait(160);
+    talk(0);
+    MainBoss();
+    while (1) {
+        wait(1000);
+    }
+    end();
+}
