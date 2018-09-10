@@ -1,4 +1,4 @@
-#include in2.txt
+//#include in2.txt
 /*sub test_1(){}
 sub test_2(int a){}
 sub test_3(float a){}
@@ -27,8 +27,9 @@ sub B2(){
 		{23 0 0 10 60};
 	}
 	int d=1:2:3:*d;
-	if(d)
-		for(8:10:15:0x20){
+	if (d)
+		loop (8:10:15:0x20)
+			{
 			//C(1.:2:3:4);
 		//	thread C(10);
 			if(0)

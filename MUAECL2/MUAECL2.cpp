@@ -67,6 +67,7 @@ struct PreprocessArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	vector<filesystem::path> searchpath;
+	filesystem::path currentpath;
 	vector<string> ecli;
 	vector<string> anim;
 };
@@ -218,6 +219,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	string filename;	//used for macro substitute
+	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
 
 	unique_ptr<ifstream> in_f;
@@ -225,7 +227,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		filename = map_cmdarg_input["input-file"s].value;
 		in_f = unique_ptr<ifstream>(new ifstream(filename));
 		in = in_f.get();
-		searchpath.push_back(filesystem::path(filename).remove_filename());
+		currentpath = filesystem::path(filename).remove_filename();
 	} else {
 		in = &cin;
 		filename = "std::cin"s;
@@ -254,6 +256,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		PreprocessArguments preprocess_args;
 		preprocess_args.in = in;
 		preprocess_args.out = &preprocessed;
+		preprocess_args.currentpath = currentpath;
 		preprocess_args.searchpath = searchpath;
 		preprocess(preprocess_args);
 
@@ -269,13 +272,14 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
 	PreprocessArguments preprocess_args;
+	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
 
 	unique_ptr<ifstream> in_f;
 	if (map_cmdarg_input["input-file"s].is_specified) {
 		in_f = unique_ptr<ifstream>(new ifstream(map_cmdarg_input["input-file"s].value));
 		preprocess_args.in = in_f.get();
-		searchpath.push_back(filesystem::path(map_cmdarg_input["input-file"s].value).remove_filename());
+		currentpath = filesystem::path(map_cmdarg_input["input-file"s].value).remove_filename();
 	} else {
 		preprocess_args.in = &cin;
 	}
@@ -291,12 +295,13 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
 
+	preprocess_args.currentpath = currentpath;
 	preprocess_args.searchpath = searchpath;
 	preprocess(preprocess_args);
 }
 
 static void preprocess(PreprocessArguments& preprocess_args) {
-	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, preprocess_args.searchpath);
+	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, preprocess_args.currentpath, preprocess_args.searchpath);
 	preprocess_args.ecli = ecli_and_anim.first;
 	preprocess_args.anim = ecli_and_anim.second;
 }
