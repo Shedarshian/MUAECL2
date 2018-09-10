@@ -348,6 +348,8 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 			auto declTypes = begin_it->second.second;
 			if (declTypes == decltype(declTypes){ ReadIns::NumType::String, ReadIns::NumType::Call }) {
 				//TODO only check "str"
+				for (auto tree : insv->branchs)
+					tree->TypeCheck(sub, subs, whileBlock);
 			}
 			else if (declTypes != decltype(declTypes){ ReadIns::NumType::Anything }) {
 				auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs,
@@ -363,6 +365,9 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 				if (typ.type == Op::mType::type_error)
 					throw(ErrNoOverloadFunction(lineNo, name));
 			}
+			else
+				for (auto tree : insv->branchs)
+					tree->TypeCheck(sub, subs, whileBlock);
 			_type = VTYPE(Void, r);
 			this->id = 34;
 		}
