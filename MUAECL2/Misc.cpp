@@ -47,7 +47,7 @@ Rank& Op::Rank::operator+=(const Rank & operand) {
 }
 
 bool Op::operator<(const Rank& rankL, const Rank& rankR) {
-	for (size_t i = Rank::SIZE - 1; i >= 0; i--)
+	for (intptr_t i = Rank::SIZE - 1; i >= 0; i--)
 		if (rankL.rank[i] != rankR.rank[i])
 			return !rankL.rank[i] && rankR.rank[i];
 	return false;

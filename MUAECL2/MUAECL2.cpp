@@ -36,30 +36,38 @@ class cmdarg_def_t final {
 public:
 	/// <param name="vec_alias">Aliases of this argument.</param>
 	/// <param name="is_value_arg">Whether this argument has a value (like "-o"), or is a command line switch.</param>
-	cmdarg_def_t(const vector<string>& vec_alias, bool is_value_arg) : vec_alias(vec_alias), is_value_arg(is_value_arg) {}
+	/// <param name="is_multivalue_arg">Whether this value argument can be specified multiple times to represent multiple values.</param>
+	cmdarg_def_t(const vector<string>& vec_alias, bool is_value_arg = false, bool is_multivalue_arg = false) : vec_alias(vec_alias), is_value_arg(is_value_arg), is_multivalue_arg(is_multivalue_arg) {}
 	/// <param name="vec_alias">Aliases of this argument.</param>
 	/// <param name="is_value_arg">Whether this argument has a value (like "-o"), or is a command line switch.</param>
-	cmdarg_def_t(vector<string>&& vec_alias, bool is_value_arg) : vec_alias(vec_alias), is_value_arg(is_value_arg) {}
+	/// <param name="is_multivalue_arg">Whether this value argument can be specified multiple times to represent multiple values.</param>
+	cmdarg_def_t(vector<string>&& vec_alias, bool is_value_arg = false, bool is_multivalue_arg = false) : vec_alias(vec_alias), is_value_arg(is_value_arg), is_multivalue_arg(is_multivalue_arg) {}
 	/// <param name="il_alias">Aliases of this argument.</param>
 	/// <param name="is_value_arg">Whether this argument has a value (like "-o"), or is a command line switch.</param>
-	cmdarg_def_t(initializer_list<string>&& il_alias, bool is_value_arg) : vec_alias(il_alias), is_value_arg(is_value_arg) {}
+	/// <param name="is_multivalue_arg">Whether this value argument can be specified multiple times to represent multiple values.</param>
+	cmdarg_def_t(initializer_list<string>&& il_alias, bool is_value_arg = false, bool is_multivalue_arg = false) : vec_alias(il_alias), is_value_arg(is_value_arg), is_multivalue_arg(is_multivalue_arg) {}
 	bool isValueArg() const { return this->is_value_arg; }
+	bool isMultiValueArg() const { return this->is_multivalue_arg; }
 	const vector<string>* getVecAlias() const { return &this->vec_alias; }
 private:
 	vector<string> vec_alias;
 	bool is_value_arg = false;
+	bool is_multivalue_arg = false;
 };
 
 /// <summary>Command line argument input.</summary>
 struct cmdarg_input_t {
 	bool is_specified = false;
 	string value;
+	vector<string> vec_value;
 };
 
 /// <summary>Parsed arguments passed to the preprocessing routine.</summary>
 struct PreprocessArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	vector<filesystem::path> searchpath;
+	filesystem::path currentpath;
 	vector<string> ecli;
 	vector<string> anim;
 };
@@ -77,12 +85,13 @@ struct CompileArguments final {
 /// From the internally used identifier of an argument to the <c>cmdarg_def_t</c> object that contains its definition.
 /// </summary>
 static const unordered_map<string, cmdarg_def_t> map_cmdarg_def({
-	{ "help"s, cmdarg_def_t({ "-h"s, "--help"s }, false) },
-	{ "compile"s, cmdarg_def_t({ "-c"s, "--compile"s }, false) },
-	{ "preprocess"s, cmdarg_def_t({ "-p"s, "--preprocess"s }, false) },
+	{ "help"s, cmdarg_def_t({ "-h"s, "--help"s }) },
+	{ "compile"s, cmdarg_def_t({ "-c"s, "--compile"s }) },
+	{ "preprocess"s, cmdarg_def_t({ "-p"s, "--preprocess"s }) },
 	{ "input-file"s, cmdarg_def_t({ "-i"s, "--input-file"s }, true) },
 	{ "output-file"s, cmdarg_def_t({ "-o"s, "--output-file"s }, true) },
-	{ "no-preprocess"s, cmdarg_def_t({ "-n"s, "--no-preprocess"s }, false) },
+	{ "search-path"s, cmdarg_def_t({ "-s"s, "--search-path"s }, true, true) },
+	{ "no-preprocess"s, cmdarg_def_t({ "-n"s, "--no-preprocess"s }) }
 	});
 
 /// <summary>Display help.</summary>
@@ -91,7 +100,7 @@ static void display_help() throw();
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
 /// <summary>Command line action: Preprocess (and not compile) an MUAECL2 source file to a preprocessed source file.</summary>
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
-static void preprocess(PreprocessArguments& preprocess_args, filesystem::path currentpath, const vector<filesystem::path>& searchpath);
+static void preprocess(PreprocessArguments& preprocess_args);
 static void compile(CompileArguments& compile_args);
 
 int main(int argc, char* argv[]) {
@@ -126,10 +135,17 @@ int main(int argc, char* argv[]) {
 			const cmdarg_def_t* cmdarg_def = &map_cmdarg_def.at(str_id);
 			if (map_cmdarg_input.count(str_id)) cerr << "Warning: command line argument "s + str_id + " specified more than once." << endl;
 			if (cmdarg_def->isValueArg()) {
-				++it_vec_rawcmdarg;
-				if (it_vec_rawcmdarg == vec_rawcmdarg.end()) throw(WrongCmdlineException("unexpected end of command line, expected value for argument "s + str_id));
-				map_cmdarg_input[str_id].is_specified = true;
-				map_cmdarg_input[str_id].value = *it_vec_rawcmdarg;
+				if (cmdarg_def->isMultiValueArg()) {
+					++it_vec_rawcmdarg;
+					if (it_vec_rawcmdarg == vec_rawcmdarg.end()) throw(WrongCmdlineException("unexpected end of command line, expected value for argument "s + str_id));
+					map_cmdarg_input[str_id].is_specified = true;
+					map_cmdarg_input[str_id].vec_value.push_back(*it_vec_rawcmdarg);
+				} else {
+					++it_vec_rawcmdarg;
+					if (it_vec_rawcmdarg == vec_rawcmdarg.end()) throw(WrongCmdlineException("unexpected end of command line, expected value for argument "s + str_id));
+					map_cmdarg_input[str_id].is_specified = true;
+					map_cmdarg_input[str_id].value = *it_vec_rawcmdarg;
+				}
 			} else {
 				map_cmdarg_input[str_id].is_specified = true;
 			}
@@ -153,11 +169,9 @@ int main(int argc, char* argv[]) {
 		char str_offs[1024];
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
-	}
-	catch (ErrDesignApp &e) {
+	} catch (ErrDesignApp &e) {
 		cerr << e.what() << endl;
-	}
-	catch (ErrFileNotFound& e) {
+	} catch (ErrFileNotFound& e) {
 		cerr << e.what() << endl;
 	}
 	// TODO: Exception handling for std::exception?
@@ -182,6 +196,8 @@ Compile an MUAECL2 source file to a raw ECL file.\n\
 \n\
     {-i|--input-file} <input-filename>              The filename of the input file.\n\
     {-o|--output-file} <output-filename>            The filename of the output file.\n\
+    {-s|--search-path} <search-path>                The path in which includes are searched.\n\
+                                                    Multiple paths can be specified.\n\
     {-n|--no-preprocess}                            Bypass the preprocessing step.\n\
 \n\
   MUAECL2 {-p|--preprocess} [options]\n\
@@ -189,6 +205,8 @@ Preprocess (and not compile) an MUAECL2 source file to a preprocessed source fil
 \n\
     {-i|--input-file} <input-filename>              The filename of the input file.\n\
     {-o|--output-file} <output-filename>            The filename of the output file.\n\
+    {-s|--search-path} <search-path>                The path in which includes are searched.\n\
+                                                    Multiple paths can be specified.\n\
 \n\
 Examples:\n\
   MUAECL2 -h\n\
@@ -223,6 +241,9 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		out = &cout;
 	}
 
+	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
+		searchpath.emplace_back(val_search_path);
+
 	if (map_cmdarg_input["no-preprocess"s].is_specified) {
 		CompileArguments compile_args;
 		compile_args.in = in;
@@ -235,7 +256,9 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		PreprocessArguments preprocess_args;
 		preprocess_args.in = in;
 		preprocess_args.out = &preprocessed;
-		preprocess(preprocess_args, currentpath, searchpath);
+		preprocess_args.currentpath = currentpath;
+		preprocess_args.searchpath = searchpath;
+		preprocess(preprocess_args);
 
 		CompileArguments compile_args;
 		compile_args.in = &preprocessed;
@@ -269,11 +292,16 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 		preprocess_args.out = &cout;
 	}
 
-	preprocess(preprocess_args, currentpath, searchpath);
+	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
+		searchpath.emplace_back(val_search_path);
+
+	preprocess_args.currentpath = currentpath;
+	preprocess_args.searchpath = searchpath;
+	preprocess(preprocess_args);
 }
 
-static void preprocess(PreprocessArguments& preprocess_args, filesystem::path currentpath, const vector<filesystem::path>& searchpath) {
-	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, currentpath, searchpath);
+static void preprocess(PreprocessArguments& preprocess_args) {
+	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, preprocess_args.currentpath, preprocess_args.searchpath);
 	preprocess_args.ecli = ecli_and_anim.first;
 	preprocess_args.anim = ecli_and_anim.second;
 }
