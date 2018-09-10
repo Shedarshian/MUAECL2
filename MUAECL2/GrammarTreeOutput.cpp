@@ -1875,6 +1875,10 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					it_numtype != vec_numtype->cend();
 					++it_numtype) {
 					switch (*it_numtype) {
+					case ReadIns::NumType::Anything: {
+						for (; !queue_param_result.empty(); queue_param_result.pop()) vec_param.push_back(queue_param_result.front());
+						break;
+					}
 					case ReadIns::NumType::Int: {
 						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
 						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
@@ -1885,6 +1889,13 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					case ReadIns::NumType::Float: {
 						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
 						if (!queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : !queue_param_result.front()->isFloat()"));
+						vec_param.push_back(queue_param_result.front());
+						queue_param_result.pop();
+						break;
+					}
+					case ReadIns::NumType::String: {
+						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
+						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
 						vec_param.push_back(queue_param_result.front());
 						queue_param_result.pop();
 						break;
@@ -2075,8 +2086,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 
 shared_ptr<RvalueResult> tNoVars::OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
 	if (this->type() != Op::NonTerm::exprf) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->type() != Op::NonTerm::exprf"));
-	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue)
-		throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->_type.valuetype != Op::LRvalue::rvalue"));
+	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->_type.valuetype != Op::LRvalue::rvalue"));
 	switch (this->id) {
 	case 20:// exprf->expr
 	{

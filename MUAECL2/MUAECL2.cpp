@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "Version.h"
 #include "Preprocessor.h"
 #include "Tokenizer.h"
 #include "Parser.h"
@@ -86,6 +87,7 @@ struct CompileArguments final {
 /// </summary>
 static const unordered_map<string, cmdarg_def_t> map_cmdarg_def({
 	{ "help"s, cmdarg_def_t({ "-h"s, "--help"s }) },
+	{ "version"s, cmdarg_def_t({ "-V"s, "--version"s }) },
 	{ "compile"s, cmdarg_def_t({ "-c"s, "--compile"s }) },
 	{ "preprocess"s, cmdarg_def_t({ "-p"s, "--preprocess"s }) },
 	{ "input-file"s, cmdarg_def_t({ "-i"s, "--input-file"s }, true) },
@@ -96,6 +98,8 @@ static const unordered_map<string, cmdarg_def_t> map_cmdarg_def({
 
 /// <summary>Display help.</summary>
 static void display_help() throw();
+/// <summary>Display version.</summary>
+static void display_version() throw();
 /// <summary>Command line action: Compile an MUAECL2 source file to a raw ECL file.</summary>
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
 /// <summary>Command line action: Preprocess (and not compile) an MUAECL2 source file to a preprocessed source file.</summary>
@@ -153,6 +157,8 @@ int main(int argc, char* argv[]) {
 
 		if (map_cmdarg_input["help"s].is_specified) {
 			display_help();
+		} else if (map_cmdarg_input["version"s].is_specified) {
+			display_version();
 		} else if (map_cmdarg_input["compile"s].is_specified) {
 			cmd_compile(map_cmdarg_input);
 		} else if (map_cmdarg_input["preprocess"s].is_specified) {
@@ -191,6 +197,9 @@ Command line syntax help:\n\
   MUAECL2 {-h|--help}\n\
 Display this help.\n\
 \n\
+  MUAECL2 {-V|--version}\n\
+Display version information.\n\
+\n\
   MUAECL2 {-c|--compile} [options]\n\
 Compile an MUAECL2 source file to a raw ECL file.\n\
 \n\
@@ -213,6 +222,11 @@ Examples:\n\
   MUAECL2 -c -i st01.mecl -o st01.ecl\n\
   MUAECL2 -p -i st01.mecl -o st01p.mecl\n"s;
 	cerr << str_help << endl;
+}
+
+static void display_version() throw() {
+	static const string str_version = "MUAECL "s + MUAECL_VERSION_STRING;
+	cerr << str_version << endl;
 }
 
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
