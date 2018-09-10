@@ -225,7 +225,7 @@ Examples:\n\
 }
 
 static void display_version() throw() {
-	static const string str_version = MUAECL_VERSION_STRING;
+	static const string str_version = "MUAECL "s + MUAECL_VERSION_STRING;
 	cerr << str_version << endl;
 }
 
