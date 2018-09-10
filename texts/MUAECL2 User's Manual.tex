@@ -41,11 +41,11 @@ MUAECL是MUA制作组制作的ecl编译器，可以将一种比较类似C的语�
 	\begin{tabular}{c|c}
 		\hline
 		文件名 & 用途 \\\hline
-		MUAECL2.exe & 程序本体 \\\hline
-		action.csv & 跳转表 \\\hline
-		ins.ini & ins对照表 \\\hline
-		default.ini & default.ecl中包含的子程序名 \\\hline
-		include.ini & 预定义预处理指令 \\\hline
+		\verb|MUAECL2.exe| & 程序本体 \\\hline
+		\verb|action.csv| & 跳转表 \\\hline
+		\verb|ins.ini| & ins对照表 \\\hline
+		\verb|default.ini| & default.ecl中包含的子程序名 \\\hline
+		\verb|include.ini| & 预定义预处理指令 \\\hline
 	\end{tabular}
 \end{table}
 
@@ -58,12 +58,13 @@ MUAECL是MUA制作组制作的ecl编译器，可以将一种比较类似C的语�
 	\begin{tabular}{l|l|c}
 		\hline
 		\multicolumn{2}{c|}{命令行参数} & 用途 \\\hline
-		-h & --help & 显示命令行帮助 \\\hline
-		-c & --compile & 将MUAECL2源代码编译成ecl文件 \\\hline
-		-p & --preprocess & 预处理MUAECL2源代码，但不编译 \\\hline
-		-i <filename> & --input-file <filename> & 输入文件名 \\\hline
-		-o <filename> & --output-file <filename> & 输出文件名 \\\hline
-		-n & -no-preprocess & 在编译时不进行预处理 \\\hline
+		\verb|-h| & \verb|--help| & 显示命令行帮助 \\\hline
+		\verb|-c| & \verb|--compile| & 将MUAECL2源代码编译成ecl文件 \\\hline
+		\verb|-p| & \verb|--preprocess| & 预处理MUAECL2源代码，但不编译 \\\hline
+		\verb|-i <filename>| & \verb|--input-file <filename>| & 输入文件名 \\\hline
+		\verb|-o <filename>| & \verb|--output-file <filename>| & 输出文件名 \\\hline
+		\verb|-s <filepath>| & \verb|--search-path <filepath>| & include文件的搜索路径，可以指定多个 \\\hline
+		\verb|-n| & \verb|-no-preprocess| & 在编译时不进行预处理 \\\hline
 	\end{tabular}
 \end{table}
 
@@ -140,6 +141,10 @@ MUAECL的预处理指令由\verb|#|开始，共有以下几种：
 \paragraph{undef指令} \verb|#undef| \textit{space name}
 
 结束\textit{name}的后续匹配。等价于\verb|#ends|\ \textit{name}。
+
+\paragraph{include指令} \verb|#include| \textit{space includefile}
+
+将目标mecl文件中的sub定义与声明在本文档中声明一遍。允许嵌套包含。
 
 \paragraph{ecli包含} \verb|#ecli| \textit{space eclfile}
 \paragraph{anim包含} \verb|#anim| \textit{space anmfile}
@@ -233,6 +238,12 @@ sub Boss_at1(int num, float angle) {
 默认情况下，编译器输出ecl文件时会使用输入参数类型名装饰sub名。\verb|no_overload|关键字指示编译器在输出至ecl文件时不装饰sub名，同时禁止了对此函数的重载。
 
 子程序名为全局，也即允许\textbf{后声明先调用}。
+
+\subsection{子程序声明}
+
+可以只声明不定义子程序：\textit{suffix} \verb|sub| \textit{subname} \verb|(| \textit{subvars} \verb|)| \textit{suffix} \verb|;|
+
+常用于该子程序定义在其他文档中的情况。注意声明会将函数签名注册到列表里，意味着同一函数不可重复声明与定义（也不需要）。
 
 \section{表达式}
 
@@ -403,7 +414,7 @@ string operator+(string, string)
 \begin{MUAvbt}
 I operator*(I, I)
 I operator/(I, I)
-int operator%(int, int)
+I operator%(I, I)
 point operator*(float, point)
 point operator*(point, float)
 point operator/(point, float)
@@ -501,7 +512,7 @@ int operator&(T&)
 \subsubsection{其他运算符}
 \label{qita}
 
-\paragraph{函数调用运算符} 形式为：\verb|id(exprf, exprf, ...)|。\verb|id|为标识函数名的标识符，可以为用户定义的sub名或是内建的ins名或mode名。函数传入的参数列表可以为冒号分隔表达式或者普通表达式。用户定义的sub名可以重载，\hyperref[chongzai]{重载决议}规则决定调用哪个重载。需注意的是，几乎所有内建的ins与mode均返回void。
+\paragraph{函数调用运算符} 形式为：\verb|id(exprf, exprf, ...)|。\verb|id|为标识函数名的标识符，可以为用户定义的sub名或是内建的ins名或mode名。函数传入的参数列表可以为冒号分隔表达式或者普通表达式。用户定义的sub名可以重载，\hyperref[chongzai]{重载决议}规则决定调用哪个重载。需注意的是，几乎所有内建的ins与mode均返回void，仅有的一些有返回值的内建ins为一些数学运算。
 
 当前版本所有函数返回void右值。
 
@@ -659,11 +670,11 @@ do \textit{stmt} while ( \textit{condition} ) ;
 loop ( \textit{times} ) \textit{stmt}
 \end{Verbatim}
 
-在循环语句中可以使用break语句和continue语句进行\hyperref[break]{流程控制}。
+在循环语句中可以使用\verb|break|语句和\verb|continue|语句进行\hyperref[break]{流程控制}。
 
 \subsubsection{while循环}
 
-while循环重复执行\textit{stmt}，直到\textit{condition}变为0。
+\verb|while|循环重复执行\textit{stmt}，直到\textit{condition}变为0。
 
 \textit{condition}需可以隐式转换至int右值。
 
@@ -684,7 +695,7 @@ while (1)
 
 \subsubsection{do-while循环}
 
-do-while循环类似while循环，但至少执行一次\textit{stmt}。
+\verb|do-while|循环类似\verb|while|循环，但至少执行一次\textit{stmt}。
 
 示例：
 
@@ -698,7 +709,7 @@ do {
 
 \subsubsection{loop循环}
 
-loop循环执行\textit{times}次\textit{stmt}。
+\verb|loop|循环执行\textit{times}次\textit{stmt}。
 
 \textit{times}需可以隐式转换至int右值。
 
@@ -713,7 +724,7 @@ loop (100) {
 
 \subsection{标号语句}
 
-标号语句建立一个标号，以供goto语句跳转。形式为：
+标号语句建立一个标号，以供\verb|goto|语句跳转。形式为：
 
 \begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 \textit{id} :
@@ -731,9 +742,9 @@ goto \textit{id} ;
 
 \subsubsection{break语句}
 
-break语句退出外围的while、do-while、loop语句。
+\verb|break|语句退出外围的\verb|while|、\verb|do-while|、\verb|loop|语句。
 
-break语句不能用于跳出多重嵌套循环。这种情况可以使用goto语句。
+\verb|break|语句不能用于跳出多重嵌套循环。这种情况可以使用\verb|goto|语句。
 
 示例：
 
@@ -749,7 +760,7 @@ et_shoot(1);
 
 \subsubsection{continue语句}
 
-continue语句跳过外围的while、do-while、loop语句中的剩余部分，继续下一次循环。如同用goto跳转到循环体尾。
+\verb|continue|语句跳过外围的\verb|while|、\verb|do-while|、\verb|loop|语句中的剩余部分，继续下一次循环。如同用\verb|goto|跳转到循环体尾。
 
 示例：
 
@@ -765,11 +776,11 @@ loop (1000) {
 
 \subsubsection{goto语句}
 
-goto语句跳转至指定的标签处。goto语句必须在与它所用的标签相同的函数中，它可出现于标签前后。
+\verb|goto|语句跳转至指定的标签处。\verb|goto|语句必须在与它所用的标签相同的函数中，它可出现于标签前后。
 
 \subsection{thread语句}
 
-thread语句开启一个线程，与后续程序同步进行。形式为：
+\verb|thread|语句开启一个线程，与后续程序同步进行。形式为：
 
 \begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 thread \textit{id} ( \textit{exprf}, \textit{exprf}, ... ) ;
@@ -786,7 +797,7 @@ while (1) wait(1000);
 
 \subsection{rawins语句}
 
-rawins语句使用数据直接构建ecl内容。形式为：
+\verb|rawins|语句使用数据直接构建ecl内容。形式为：
 
 \begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\[\]]
 __rawins {

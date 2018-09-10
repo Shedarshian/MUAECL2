@@ -18,7 +18,7 @@
 \usepackage{fancyvrb}
 
 \author{MUA Group(Modification Ultraman Alliance)}
-\title{MUAECL2 User's Manual  ver. 2.0.0\_alpha}
+\title{MUAECL2 User's Manual  ver. 2.0.1\_alpha(Eng. ver.)}
 \date{today}
 
 \DefineVerbatimEnvironment{MUAvbt}{Verbatim}{frame=single, rulecolor=\color{magenta}}
@@ -41,11 +41,11 @@ Download and unzip to any folder. The unzipped folder contains:
 	\begin{tabular}{c|c}
 		\hline
 		File name & Usage \\\hline
-		MUAECL2.exe & the program \\\hline
-		action.csv & jumping table \\\hline
-		ins.ini & instruction translate table \\\hline
-		default.ini & sub names contained in default.ecl \\\hline
-		include.ini & predefined preprocess directive \\\hline
+		\verb|MUAECL2.exe| & the program \\\hline
+		\verb|action.csv| & jumping table \\\hline
+		\verb|ins.ini| & instruction translate table \\\hline
+		\verb|default.ini| & sub names contained in default.ecl \\\hline
+		\verb|include.ini| & predefined preprocess directive \\\hline
 	\end{tabular}
 \end{table}
 
@@ -58,12 +58,13 @@ MUAECL run in command line. Running ``\verb|MUAECL2.x.x.exe -h|''(The real exe n
 	\begin{tabular}{l|l|c}
 		\hline
 		\multicolumn{2}{c|}{Command Line Argument} & Usage \\\hline
-		-h & --help & Display command line syntax help \\\hline
-		-c & --compile & Compile an MUAECL2 source file to a raw ECl file \\\hline
-		-p & --preprocess & Preprocess (and not compile) an MUAECL2 source file \\\hline
-		-i <filename> & --input-file <filename> & Input filename \\\hline
-		-o <filename> & --output-file <filename> & Output filename \\\hline
-		-n & -no-preprocess & Bypass the preprocessing step during compiling \\\hline
+		\verb|-h| & \verb|--help| & Display command line syntax help \\\hline
+		\verb|-c| & \verb|--compile| & Compile an MUAECL2 source file to a raw ECl file \\\hline
+		\verb|-p| & \verb|--preprocess| & Preprocess (and not compile) an MUAECL2 source file \\\hline
+		\verb|-i <filename>| & \verb|--input-file <filename>| & Input filename \\\hline
+		\verb|-o <filename>| & \verb|--output-file <filename>| & Output filename \\\hline
+		\verb|-s <filepath>| & \verb|--search-path <filepath>| & Search path for includes, can assign multiple path \\\hline
+		\verb|-n| & \verb|-no-preprocess| & Bypass the preprocessing step during compiling \\\hline
 	\end{tabular}
 \end{table}
 
@@ -140,6 +141,10 @@ Example: \verb|#define abc{d,e,f} (d+e+f+def)| \\ Will substitute \verb|abc{1,3,
 \paragraph{undef directive} \verb|#undef| \textit{space name}
 
 Usage: End the matching of \textit{name}. Same as \verb|#ends| \textit{name}.
+
+\paragraph{include directive} \verb|#include| \textit{space includefile}
+
+Declares in current file the subs defination and declaration in the target mecl file. Recursive including is allowed.
 
 \paragraph{ecli including} \verb|#ecli| \textit{space eclfile}
 \paragraph{anim including} \verb|#anim| \textit{space anmfile}
@@ -234,6 +239,12 @@ By default, the compiler will use the parameter types to decorate the sub name. 
 
 The sub-program name is global, which means \textbf{usage before declaration} is allowed.
 
+\subsection{SUB-PROGRAM DECLARATION}
+
+Sub-programs can be declared without defination: \textit{suffix} \verb|sub| \textit{subname} \verb|(| \textit{subvars} \verb|)| \textit{suffix} \verb|;|
+
+This is often used when the sub-program is defined in some other files. Declaration will assign the function signature into the list, which means that the same function is not allowed (and not needed) to be both declared and defined.
+
 \section{EXPRESSIONS}
 
 An expression is a sequence of \textit{operators} and their \textit{operands}, that specifies a computation.
@@ -291,16 +302,19 @@ int X = 0x2A;
 
 \paragraph{Identifier} Identifier can be used as function name, or to refer a variable.%May support point.x y in future
 
-\subsection{运算符}
+\subsection{OPERATORS}
 
-运算符有以下几类：
+Operators contain following categories:
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{|c|c|c|c|c|c|}
 		\hline
-		\hyperref[fuzhi]{赋值} & \hyperref[suanshu]{算术} & \hyperref[luoji]{逻辑} & \hyperref[bijiao]{比较} & \hyperref[chengyuan]{成员访问} & \hyperref[qita]{其他} \\\hline
-		\begin{BVerbatim}{baseline=c}
+		\hyperref[fuzhi]{Assignment} & \hyperref[suanshu]{Arithmetic} & \hyperref[luoji]{Logical} & \hyperref[bijiao]{Comparison} & \hyperref[chengyuan]{Member access} & \hyperref[qita]{Others} \\\hline
+		% \begin{comment}
+\begin{minipage}{0.6in}
+\begin{verbatim}
+
 a = b
 a += b
 a -= b
@@ -312,8 +326,12 @@ a ||= b
 a &= b
 a |= b
 a ^= b
-\end{BVerbatim} &
-\begin{BVerbatim}{baseline=c}
+
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.5in}
+\begin{verbatim}
 -a
 a + b
 a - b
@@ -323,85 +341,100 @@ a % b
 a & b
 a | b
 a ^ b
-\end{BVerbatim} &
-\begin{BVerbatim}{baseline=c}
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.6in}
+\begin{verbatim}
 !a
 a && b
 a || b
 a and b
 a or b
-\end{BVerbatim} &
-\begin{BVerbatim}{baseline=c}
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.5in}
+\begin{verbatim}
 a == b
 a != b
 a < b
 a <= b
 a > b
 a >= b
-\end{BVerbatim} &
-\begin{BVerbatim}{baseline=c}
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{0.4in}
+\begin{verbatim}
 a.b
 a[b]
 *a
 &a
-\end{BVerbatim} &
-\begin{BVerbatim}{baseline=c}
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{1.3in}
+\begin{verbatim}
 id(...)
 a1 : a2 : a3 : a4
 (type)a
 (a)
-\end{BVerbatim} \\\hline
+\end{verbatim}
+\end{minipage}
+\\\hline
+% \end{comment}
 	\end{tabular}
 \end{table}
 
-内建运算符有几种内建的重载，\hyperref[chongzai]{重载决议}规则决定调用哪个重载。
+Built-in operators have serveral built-in overload, \hyperref[chongzai]{overload resolution} rule is used to specify which overload is used.
 
-\subsubsection{算术运算符}
+\subsubsection{ARITHMETIC OPERATOR}
 \label{suanshu}
 
-\paragraph{一元负运算符} 返回运算数的相反数。形式为：\verb|-expr|。
+\paragraph{Unary minus operator} Returns the negative of its operand. Has the form \verb|-expr|.
 
-对于算术类型\verb|A|，下列函数签名参与\hyperref[chongzai]{重载决议}：%算术类型：href
+For every arithmetic type \verb|A|, the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 A operator-(A)
 \end{MUAvbt}
 
-\paragraph{加减运算符} 返回运算数之和或差。形式为：\verb|expr + expr|，\verb|expr - expr|。
+\paragraph{Add and minus operators} Return the sum or subtract of its operand. Have the form \verb|expr + expr|, \verb|expr - expr|.
 
-对于算术类型\verb|A|，下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every arithmetic type \verb|A|, the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 A operator+(A, A)
 A operator-(A, A)
 string operator+(string, string)
 \end{MUAvbt}
 
-\paragraph{乘法性运算符} 返回运算数之积、商或余数。对于整数之商，向零截断小数部分。形式为：\verb|expr * expr|，\verb|expr / expr|，\verb|expr % expr|
+\paragraph{Multiplicative operators} Return the product, division or remainder of its operand. Have the form \verb|expr * expr|, \verb|expr / expr|, \verb|expr % expr|
 
-对于基本算术类型\verb|I|，下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every fundamental arithmetic type \verb|I|, the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 I operator*(I, I)
 I operator/(I, I)
-int operator%(int, int)
+I operator%(I, I)
 point operator*(float, point)
 point operator*(point, float)
 point operator/(point, float)
 \end{MUAvbt}
 
-\paragraph{按位逻辑运算符} 返回运算数之按位与、按位或、按位异或。形式为：\verb|expr & expr|，\verb&expr | expr&，\verb|expr ^ expr|。
+\paragraph{Bitwise logic operators} Return the bitwise AND, bitwise OR, or bitwise XOR of its operand. Have the form \verb|expr & expr|, \verb&expr | expr&, \verb|expr ^ expr|。
 
-下列函数签名参与\hyperref[chongzai]{重载决议}：
+The following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 int operator&(int, int)
 int operator|(int, int)
 int operator^(int, int)
 \end{MUAvbt}
 
-\subsubsection{逻辑运算符}
+\subsubsection{LOGICAL OPERATORS}
 \label{luoji}
 
-逻辑运算符返回运算数之逻辑与、逻辑或、逻辑非。此处以int代替布尔值，非0为真，0为假。返回值以1代表真，0代表假。形式为：\verb|expr && expr|，\verb&expr || expr&，\verb|expr and expr|，\verb&expr or expr&，\verb|! expr|。提供两种版本的与、或运算符：符号形式短路求值，单词形式不短路求值。短路求值即：对于\verb|&&|，若第一运算数为假则不求值第二运算数；对于\verb&||&，若第一运算数为真则不求值第二运算数。
+Logical operators return the logical AND, logical OR, or logical NOT of the operand. Use integer to represent boolean value, non-zero for true and zero for false. For return value, 1 for true and 0 for false. They have the form \verb|expr && expr|, \verb&expr || expr&, \verb|expr and expr|, \verb&expr or expr&, \verb|! expr|. There are two types of logical AND and OR: the symbol types are short-circuiting, while the word types are not short-circuiting. Short-circuiting stands for: for \verb|&&|, if the first operand is false, the second operand is not evaluated; for \verb&||&, if the first operand is true, the second operand is not evaluated.
 
-下列函数签名参与\hyperref[chongzai]{重载决议}：
+The following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 int operator&&(int, int)
 int operator||(int, int)
@@ -410,12 +443,12 @@ int operator or(int, int)
 int operator!(int)
 \end{MUAvbt}
 
-\subsubsection{比较运算符}
+\subsubsection{COMPARISON OPERATORS}
 \label{bijiao}
 
-比较运算符返回运算数间是否相等以及大小关系。形式为：\verb|expr == expr|，\verb|expr != expr|，\verb|expr < expr|，\verb|expr <= expr|，\verb|expr > expr|，\verb|expr >= expr|。
+Comparison operators return the compares the operands. They have the form \verb|expr == expr|, \verb|expr != expr|, \verb|expr < expr|, \verb|expr <= expr|, \verb|expr > expr|, \verb|expr >= expr|。
 
-对于全部四种类型之一\verb|T|（int, float, point, string），下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every one of the four types \verb|T| (int, float, point, string), the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 int operator==(T, T)
 int operator!=(T, T)
@@ -425,21 +458,21 @@ int operator>(T, T)
 int operator>=(T, T)
 \end{MUAvbt}
 
-\subsubsection{赋值运算符}
+\subsubsection{ASSIGNMENT OPERATORS}
 \label{fuzhi}
 
-赋值运算符的右操作数允许直接使用冒号分隔表达式，其余运算符则不允许。赋值运算符期待可修改左值为其左运算数，右值表达式为其右运算数。
+Colon-separated expression are allowed to be the right operand of assignment operators, and not allowed in other operators. Assignment operators expects a modifiable lvalue as its left operand and an rvalue expression as its right operand.
 
-\paragraph{简单赋值运算符} 简单赋值运算符以右操作数的值修改左操作数。形式为：\verb|expr = exprf|。赋值运算符返回左操作数的左值。
+\paragraph{Direct assignment operator} Direct assignment operator modifies its left operand with the value of its right operand. It has the form \verb|expr = exprf|. It returns an lvalue identifying the left operand after modification.
 
-对于全部四种类型\verb|T|（int, float, point, string），下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every one of the four types \verb|T| (int, float, point, string), the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 T& operator=(T&, T)
 \end{MUAvbt}
 
-\paragraph{复合赋值运算符} 复合赋值运算符以左操作数与右操作数运算后的值修改左操作数，\verb|E1 op= E2|的行为与表达式\verb|E1 = E1 op E2|行为相同，除了只求值表达式\verb|E1|一次。形式为：\verb|expr += exprf|，\verb|expr -= exprf|，\verb|expr *= exprf|，\verb|expr /= exprf|，\verb|expr %= exprf|，\verb|expr &&= exprf|，\verb&expr ||= exprf&，\verb|expr &= exprf|，\verb&expr |= exprf&，\verb|expr ^= exprf|。其中逻辑与赋值运算符、逻辑或赋值运算符有短路求值。
+\paragraph{Compound assignment operators} Compound assignment operators computes the result of its operand, and use it to modify its left operand. \verb|E1 op= E2| is exactly the same as the behavior of the expression \verb|E1 = E1 op E2|, except that the expression \verb|E1| is evaluated only once. They have the form \verb|expr += exprf|, \verb|expr -= exprf|, \verb|expr *= exprf|, \verb|expr /= exprf|, \verb|expr %= exprf|, \verb|expr &&= exprf|, \verb&expr ||= exprf&, \verb|expr &= exprf|, \verb&expr |= exprf&, \verb|expr ^= exprf|. Here the logical AND assignment operator and the logical OR assignment operator are short-circuiting.
 
-对于算术类型\verb|A|、基本算术类型\verb|I|、全部四种类型之一\verb|T|（int, float, point, string），下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every arithmetic type \verb|A|, every fundamental arithmetic type \verb|I|, every one of the four types \verb|T| (int, float, point, string), the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 T& operator+=(T&, T)
 A& operator-=(A&, A)
@@ -455,127 +488,125 @@ int operator|=(int, int)
 int operator^=(int, int)
 \end{MUAvbt}
 
-\subsubsection{成员访问运算符}
+\subsubsection{MEMBER ACCESS OPERATORS}
 \label{chengyuan}
 
-\paragraph{间接寻址运算符} 间接寻址运算符取出指针指向的操作数。形式为：\verb|*expr|。由于当前版本无指针类型，以int代替指针，故间接寻址运算符返回void左值对象，需使用类型转换表达式指定取出对象的类型。特别的是，此void左值对象可以隐式转换到任意类型，故可以利用此特性靠上下文推断出取出的对象类型。而不能推断出类型的表达式则视为错误。更多信息请参考\hyperref[chongzai]{重载决议}。
+\paragraph{Indirection operator} Indirection operator takes out the object pointed-to by the pointer operand. It has the form \verb|*expr|. Since there is no pointer type in current version, integer is used to replace pointer, so indirection operator returns a void lvalue, and type cast is needed to specify the type of the object taken out. Especially, void lvalue can be implicitly type-cast to any type, so the object type may be deduced by context. Expression whose type cannot be deduced is an error. More information can be approached in \hyperref[chongzai]{overload resolution}.
 
-下列函数签名参与\hyperref[chongzai]{重载决议}：
+The following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 void& operator*(int)
 \end{MUAvbt}
 
-\paragraph{取地址运算符} 取地址运算符获得指向该对象的指针。形式为：\verb|&expr|。由于当前版本无指针类型，故取地址运算符返回int类型。
+\paragraph{Address-of operator} Address-of operator creates a pointer pointing to the object operand. It has the form \verb|&expr|. Since there is no pointer type in current version, address-of operator returns a integer.
 
-对于全部四种类型之一\verb|T|（int, float, point, string）下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every one of the four types \verb|T| (int, float, point, string), the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 int operator&(T&)
 \end{MUAvbt}
 
-\paragraph{成员运算符} \verb|expr.expr|，当前版本未加载其作用。
+\paragraph{Member of object operator} \verb|expr.expr|, no effect in current version.
 
-\paragraph{数组下标运算符} \verb|expr[expr]|，当前版本未加载其作用。
+\paragraph{Subscript operator} \verb|expr[expr]|, no effect in current version.
 
-\subsubsection{其他运算符}
+\subsubsection{OTHER OPERATORS}
 \label{qita}
 
-\paragraph{函数调用运算符} 形式为：\verb|id(exprf, exprf, ...)|。\verb|id|为标识函数名的标识符，可以为用户定义的sub名或是内建的ins名或mode名。函数传入的参数列表可以为冒号分隔表达式或者普通表达式。用户定义的sub名可以重载，\hyperref[chongzai]{重载决议}规则决定调用哪个重载。需注意的是，几乎所有内建的ins与mode均返回void。
+\paragraph{Function call operator} Has the form \verb|id(exprf, exprf, ...)|. \verb|id| is a identifier identifies function name. The name may be a sub-program defined by user, or a built-in instruction name or mode name. The parameter can be a colon-separated expression or normal expression. User-defined sub-program name may be overloaded, \hyperref[chongzai]{overload resolution} rule will take place when calling overloaded function. Almost all built-in instruction and mode will return void. Only a few built-in instruction that has a return value are math calculation.
 
-当前版本所有函数返回void右值。
+\paragraph{Colon separated expression} Colon separated expression is a easy-to-use difficulty switch. It receives four parameters, which stand for ENHL four difficulty. It has the form \verb|expr : expr : expr : expr|. It can only be used in assignment operator's right operand and function calling.
 
-\paragraph{冒号分隔表达式} 冒号分隔表达式是一种简便的难度switch，接受对应ENHL四种难度的四个参数，形式为\verb|expr : expr : expr : expr|。只有赋值表达式的右侧与函数调用支持冒号分隔表达式。
-
-对于全部四种类型之一\verb|T|（int, float, point, string）下列函数签名参与\hyperref[chongzai]{重载决议}：
+For every one of the four types \verb|T| (int, float, point, string), the following function signatures participate in \hyperref[chongzai]{overload resolution}:
 \begin{MUAvbt}
 T operator:(T, T, T, T)
 \end{MUAvbt}
 
-\paragraph{C风格转型表达式} 转型表达式可以将一种类型转换为另一种类型。形式为：\verb|(type)expr|。转型表达式无转换类型限制（？？？）。
+\paragraph{C-style type cast} Type cast expression can convert one type to another type. It has the form \verb|(type)expr|. There is no restrict on type cast.(???)
 
-\paragraph{括号表达式} 括号表达式用于指定运算顺序。形式为：\verb|(expr)|。
+\paragraph{Round braket expression} Round braket expression is used to specify order of operations. It has the form \verb|(expr)|.
 
-\subsection{运算符优先级}
+\subsection{OPERATOR PRECEDENCE}
 
-下表列出mecl运算符的优先级和结合性。运算符从顶到底以降序列出。
+The following table lists the precedence and associativity of mecl operators. Operators are listed top to bottom, in descending precedence.
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{|c|c|c|c|}
 		\hline
-		优先级 & 运算符 & 描述 & 结合性 \\\hline
-		1 & \verb|()| & 括号 & 左到右 \\\hline
-		\multirow{2}{*}{2} & \verb|a.b| & 取成员 & \multirow{2}{*}{左到右} \\\cline{2-3}
-		& \verb|a[b]| & 取下标 & \\\hline
-		\multirow{3}{*}{3} & \verb|!| & 逻辑非 & \multirow{3}{*}{右到左}\\\cline{2-3}
-		& \verb|*a &a| & 寻址与取址 & \\\cline{2-3}
-		& \verb|-a| & 一元负 & \\\hline
-		4 & \verb|a*b a/b a%b| & 乘法 除法 余数 & 左到右 \\\hline
-		5 & \verb|a+b a-b| & 加法 减法 & 左到右 \\\hline
-		\multirow{2}{*}{6} & \verb|a<b a<=b| & 小于 小于等于 & \multirow{2}{*}{左到右} \\\cline{2-3}
-		& \verb|a>b a>=b| & 大于 大于等于 & \\\hline
-		7 & \verb|a==b a!=b| & 等于 不等于 & 左到右 \\\hline
-		8 & \verb|a&b| & 按位与 & \multirow{7}{*}{左到右} \\\cline{1-3}
-		9 & \verb|a^b| & 按位异或 & \\\cline{1-3}
-		10 & \verb&a|b& & 按位或 & \\\cline{1-3}
-		11 & \verb|a and b| & 非短路逻辑与 & \\\cline{1-3}
-		12 & \verb|a or b| & 非短路逻辑或 & \\\cline{1-3}
-		13 & \verb|a&&b| & 短路逻辑与 & \\\cline{1-3}
-		14 & \verb&a||b& & 短路逻辑或 & \\\hline
-		\multirow{2}{*}{15} & \verb|= += -= *= /=| & \multirow{2}{*}{所有赋值} & \multirow{2}{*}{右到左} \\\cline{2}
+		Precedence & Operator & Description & Associativity \\\hline
+		1 & \verb|()| & Round braket & Left-to-right \\\hline
+		\multirow{2}{*}{2} & \verb|a.b| & Member-of & \multirow{2}{*}{Left-to-right} \\\cline{2-3}
+		& \verb|a[b]| & Subscript & \\\hline
+		\multirow{3}{*}{3} & \verb|!| & Logical NOT & \multirow{3}{*}{Right-to-left}\\\cline{2-3}
+		& \verb|*a &a| & Reference and dereference & \\\cline{2-3}
+		& \verb|-a| & Unary minus & \\\hline
+		4 & \verb|a*b a/b a%b| & Multiplication Division Remainder & Left-to-right \\\hline
+		5 & \verb|a+b a-b| & Addition Subtraction & Left-to-right \\\hline
+		\multirow{2}{*}{6} & \verb|a<b a<=b| & Less-than Less-or-equal & \multirow{2}{*}{Left-to-right} \\\cline{2-3}
+		& \verb|a>b a>=b| & Larger-than Large-or-equal & \\\hline
+		7 & \verb|a==b a!=b| & Equal Not-equal & Left-to-right \\\hline
+		8 & \verb|a&b| & Bitwise AND & \multirow{7}{*}{Left-to-right} \\\cline{1-3}
+		9 & \verb|a^b| & Bitwise XOR & \\\cline{1-3}
+		10 & \verb&a|b& & Bitwise OR & \\\cline{1-3}
+		11 & \verb|a and b| & Non-short-circuiting Logical AND & \\\cline{1-3}
+		12 & \verb|a or b| & Non-short-circuiting Logical OR & \\\cline{1-3}
+		13 & \verb|a&&b| & Short-circuiting Logical AND & \\\cline{1-3}
+		14 & \verb&a||b& & Short-circuiting Logical OR & \\\hline
+		\multirow{2}{*}{15} & \verb|= += -= *= /=| & \multirow{2}{*}{All assignment} & \multirow{2}{*}{Right-to-left} \\\cline{2-2}
 		& \verb"%= &&= ||= &= ^= |=" &  & \\\hline
-		16 & \verb|a1:a2:a3:a4| & 冒号分隔 & - \\\hline
+		16 & \verb|a1:a2:a3:a4| & Colon-separated & - \\\hline
 	\end{tabular}
 \end{table}
 
-\subsection{重载决议}
+\subsection{OVERLOAD RESOLUTION}
 \label{chongzai}
 
-选取一个函数或运算符的重载时，使用如下规则：
+When choosing a overload of a function or operator, use the following rules:
 
-对该函数或运算符的所有重载判断输入参数个数是否相等，以及能否将每个输入参数类型隐式转换至目标类型。之后在所有可以转换到的重载函数集中选取最优的。最优定义为：有高优先级的某转换的隐式转换优于无该转换的。隐式转换的优先级由高到低为：
+For each overload of the function or operator, the compiler first test whether the parameter number are the same, and whether the type of each input parameter can implicitly type cast to the target type. Then the compiler choose a BEST in all overloads that can be changed to. ``BEST'' is defined as follow: a implicit type cast that has high precedence is better than a implicit that does not have it. The precedence of implicit cast is:
 
-void\&$\to$point, void\&$\to$string, void\&$\to$float, void\&$\to$int, int$\to$float, lvalue$\to$rvalue.
+\verb|void&|$\to$\verb|point|, \verb|void&|$\to$\verb|string|, \verb|void&|$\to$\verb|float|, \verb|void&|$\to$\verb|int|, \verb|int|$\to$\verb|float|, \verb|lvalue|$\to$\verb|rvalue|.
 
-\subsection{字面量优化}
+\subsection{LITERAL OPERATION OPTIMIZATION}
 
-编译器会对于字面量运算在编译时进行运算，优化后存入ecl脚本。如\verb|a*(1./2)|在ecl文件中会变成\verb|a*0.5|。
+The compiler will compute operation on literal value during compile time, and saves the result in ecl file. For example, \verb|a*(1./2)| will change to \verb|a*0.5| in ecl files.
 
-\section{语句}
+\section{STATEMENTS}
 \label{yuju}
 
-mecl的每条语句（\textit{stmt}）有以下几种类型：
+Mecl has following types of statements (\textit{stmt}):
 
-\section{表达式语句}
+\section{EXPRESSION STATEMENTS}
 
-跟随分号的表达式是语句。
+An expression followed by a semicolon is a statement.
 
 \textit{expr} \verb|;|
 
-示例：
+Example:
 
 \begin{MUAvbt}
-a += 1;			//赋值语句
-wait(20);		//ins调用
-a;				//弃值表达式
+a += 1;			//assignment statement
+wait(20);		//ins calling
+a;				//discard value expression
 \end{MUAvbt}
 
-\subsection{语句块}
+\subsection{STATEMENTS BLOCK}
 
 \verb|{| \textit{stmts} \verb|}|
 
-可以使用大括号括起多条语句，将其合并成一条。
+Using brace to enclose sequences of statements will be treated as one statement.
 
-\subsection{变量声明}
+\subsection{VARIABLE DECLARATION}
 
-变量声明语句声明（并可选的初始化）一个或多个变量。形式为：\verb|type| \textit{vdecl} \verb|;|
+Variable declaration statement declares (and optionally initialize) one or more variables. It has the form \verb|type| \textit{vdecl} \verb|;|
 
-其中\textit{vdecl}为一个或多个下列项的逗号分隔列表：\verb|id|或\verb|id =| \textit{inif}。
+Where \textit{vdecl} is a comma-separated list of one or more following term: \verb|id| or \verb|id =| \textit{inif}。
 
-\textit{inif}可以为有或无冒号分隔的初始化列表或者表达式。
+\textit{inif} can be a initializer-list or expression with or without colon-separated.
 
-mecl的每条变量声明均为子程序局域，也即只要在同一个子程序中，允许\textbf{后声明先调用}。同样无局部作用域的概念。
+Each variable declared in mecl are sub-program local, which means \textbf{usage before declaration} is allowed as long as they are in the same sub-program. Also there are no \textbf{scopes} in mecl.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 int i;
@@ -583,35 +614,35 @@ float a = 1., b;
 int j = 123 * 456 : 234 * 567 : 345 * 678 : 456 * 789;
 \end{MUAvbt}
 
-\subsubsection{初始化列表}
+\subsubsection{INITIALIZER LIST}
 
 \verb|{| \textit{expr1, expr2,...} \verb|}|
 
-初始化列表是用来初始化复杂算术类型（如point）的手段。示例：
+Initializer-list is used to initialize compound arithmetic type (such as point). For example:
 
 \begin{MUAvbt}
 point p = {1., 2.};
 point p1 = {1., 2.}:{3., 4.}:{5., 6.}:{7., 8.};
 \end{MUAvbt}
 
-\subsection{选择语句}
+\subsection{SELECTION STATEMENTS}
 
-选择语句在数个控制流中选择一个。形式为：
+Selection statements choose between one of several flows of control. They have the form:
 
-\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 if ( \textit{condition} ) \textit{true_stmt}
 if ( \textit{condition} ) \textit{true_stmt} else \textit{false_stmt}
 \end{Verbatim}
 
-若\textit{condition}为非0则执行\textit{true_stmt}（常为复合语句），否则执行\textit{false_stmt}。
+If the condition yields \textbf{NOT ZERO}, \textit{true\_stmt} is executed. Otherwise \textit{false\_stmt} is executed.
 
-\textit{condition}需可以隐式转换至int右值。
+\textit{condition} need to be implicitly casted to int rvalue.
 
-在第二形式的\verb|if|语句（包含\verb|else|者）中，若\textit{true_stmt}亦是\verb|if|语句，则内层\verb|if|语句必须也含有\verb|else|部分。换言之，嵌套\verb|if|语句中，\verb|else|关联到最近的尚未有\verb|else|的\verb|if|。
+In the second form of \verb|if| statement (the one including \verb|else|), if \textit{true\_stmt} is also an \verb|if| statement then that inner \verb|if| statement must contain an \verb|else| part as well (in other words, in nested \verb|if|-statements, the \verb|else| is associated with the closest \verb|if| that doesn't have an \verb|else|)
 
-若通过\verb|goto|进入\textit{true_stmt}，则不执行\textit{false_stmt}。
+If \textit{true\_stmt} is entered by goto, \textit{false\_stmt} is not executed.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 if (i == 1) {
@@ -622,29 +653,29 @@ if (i == 1) {
 else if (i == 2)
 	if (j == 2)
 		wait(20);
-	else			//此else与j == 2的if对应
+	else			//This else is associated with 'j == 2'
 		wait(30);
 \end{MUAvbt}
 
-\subsection{循环语句}
+\subsection{Looping statements}
 
-循环语句重复执行一些代码。形式为：
+Loopint statements repeatedly execute some code. They has the form:
 
-\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 while ( \textit{condition} ) \textit{stmt}
 do \textit{stmt} while ( \textit{condition} ) ;
 loop ( \textit{times} ) \textit{stmt}
 \end{Verbatim}
 
-在循环语句中可以使用break语句和continue语句进行\hyperref[break]{流程控制}。
+\verb|break| and \verb|continue| may be used to \hyperref[break]{control flow} in looping statements.
 
-\subsubsection{while循环}
+\subsubsection{WHILE LOOP}
 
-while循环重复执行\textit{stmt}，直到\textit{condition}变为0。
+\verb|while| loop executes \textit{stmt} repeatedly, until the value of \textit{condition} becomes 0.
 
-\textit{condition}需可以隐式转换至int右值。
+\textit{condition} need to be implicitly casted to int rvalue.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 float s = 10.;
@@ -656,14 +687,14 @@ while (s >= 0) {
 	s -= 0.1;
 }
 while (1)
-	wait(1000);			//这是死循环
+	wait(1000);			//This is a dead loop
 \end{MUAvbt}
 
-\subsubsection{do-while循环}
+\subsubsection{DO-WHILE LOOP}
 
-do-while循环类似while循环，但至少执行一次\textit{stmt}。
+\verb|do-while|acts just like \verb|while| loop, excepts that \textit{stmt} is always executed at least once.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 float c = 1, s = 0;
@@ -673,13 +704,13 @@ do {
 } while (c > 0.00001);
 \end{MUAvbt}
 
-\subsubsection{loop循环}
+\subsubsection{LOOP LOOP}
 
-loop循环执行\textit{times}次\textit{stmt}。
+\verb|loop| loop executes \textit{stmt} \textit{times} time。
 
-\textit{times}需可以隐式转换至int右值。
+\textit{times} need to be implicitly casted to int rvalue.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 loop (100) {
@@ -688,31 +719,31 @@ loop (100) {
 }
 \end{MUAvbt}
 
-\subsection{标号语句}
+\subsection{LABEL STATEMENT}
 
-标号语句建立一个标号，以供goto语句跳转。形式为：
+Label statement set up a label for \verb|goto| statement to jump. It has the form:
 
-\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 \textit{id} :
 \end{Verbatim}
 
-\subsection{跳转语句}
+\subsection{JUMP STATEMENTS}
 
-跳转语句无条件地转移控制流。形式为：
+Jump statements unconditionally transfer flow control. They have the form:
 
-\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 break ;
 continue ;
 goto \textit{id} ;
 \end{Verbatim}
 
-\subsubsection{break语句}
+\subsubsection{BREAK STATEMENT}
 
-break语句退出外围的while、do-while、loop语句。
+\verb|break| statement terminates the enclosing \verb|while|, \verb|do-while|, \verb|loop| loop.
 
-break语句不能用于跳出多重嵌套循环。这种情况可以使用goto语句。
+A \verb|break| statement cannot be used to break out of multiple nested loops. The \verb|goto| statement may be used for this purpose.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 while (1) {
@@ -724,11 +755,11 @@ while (1) {
 et_shoot(1);
 \end{MUAvbt}
 
-\subsubsection{continue语句}
+\subsubsection{CONTINUE STATEMENT}
 
-continue语句跳过外围的while、do-while、loop语句中的剩余部分，继续下一次循环。如同用goto跳转到循环体尾。
+\verb|continue| statement skips the remaining portion of enclosing \verb|while|, \verb|do-while|, \verb|loop| and continue next loop, as if by \verb|goto| to the end of the loop body.
 
-示例：
+Example:
 
 \begin{MUAvbt}
 loop (1000) {
@@ -740,19 +771,19 @@ loop (1000) {
 }
 \end{MUAvbt}
 
-\subsubsection{goto语句}
+\subsubsection{GOTO STATEMENT}
 
-goto语句跳转至指定的标签处。goto语句必须在与它所用的标签相同的函数中，它可出现于标签前后。
+\verb|goto| statement transfers control to the location specified by label. The \verb|goto| statement must be in the same sub-program as the label it is referring, it may appear before or after the label.
 
-\subsection{thread语句}
+\subsection{THREAD STATEMENT}
 
-thread语句开启一个线程，与后续程序同步进行。形式为：
+\verb|thread| statement opens a thread, which simultaneously execute with the following program. It has the form:
 
-\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}]
 thread \textit{id} ( \textit{exprf}, \textit{exprf}, ... ) ;
 \end{Verbatim}
 
-示例：
+Example:
 
 \begin{MUAvbt}
 thread BossCard1_at1(1., 20, pi/20, RED32);
@@ -761,20 +792,20 @@ thread BossCard1_at1(1.5, 10, pi/10, CYAN32);
 while (1) wait(1000);
 \end{MUAvbt}
 
-\subsection{rawins语句}
+\subsection{RAWINS STATEMENT}
 
-rawins语句使用数据直接构建ecl内容。形式为：
+\verb|rawins| construct raw ecl content using data. It has the form:
 
-\begin{Verbatim}{frame=single, rulecolor=\color{magenta}, commandchars=\\\{\}}
-__rawins \{
-	\textit{insdata} ;
-	\textit{insdata} ;
+\begin{Verbatim}[frame=single, rulecolor=\color{magenta}, commandchars=\\\[\]]
+__rawins {
+	\textit[insdata] ;
+	\textit[insdata] ;
 	...
-\}
+}
 \end{Verbatim}
 
-每条\textit{insdata}为：
+Each \textit{insdata} are:
 
-\verb|{| \textit{id difficulty_mask pop_count param_count param_mask, param1 param2 ...} \verb|}|
+\verb|{| \textit{id difficulty\_mask pop\_count param\_count param\_mask, param1 param2 ...} \verb|}|
 
 \end{document}
