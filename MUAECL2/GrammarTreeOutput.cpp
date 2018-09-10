@@ -203,6 +203,8 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 45, { new Parameter_variable(id_var_dummy + 1, true) }, -1);
 			break;
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("StackRvalueResult::DiscardResult : unknown type"));
 		}
@@ -227,6 +229,8 @@ public:
 				shared_ptr<Parameter>(new Parameter_stack(this->GetStackId(sub_ctx, stmt_ctx, stackptr_rel_parameval) - 1, true))
 			};
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("StackRvalueResult::ToParameters : unknown type"));
 		}
@@ -248,6 +252,8 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 2005, { new Parameter_int(-this->GetStackId(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current)) }, 1);
 			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("StackRvalueResult::Duplicate : unknown type"));
 		}
@@ -285,6 +291,10 @@ public:
 			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			if (!params[1]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
+		case Op::mType::String:
+			if (params.size() != 1) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : String : wrong parameter count"));
+			if (params[0]->isFloat()) throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : type mismatch"));
+			break;
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
 		}
@@ -308,6 +318,8 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 44, { this->params[0]->Duplicate() }, 1);
 			return shared_ptr<StackRvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
 		}
@@ -323,6 +335,9 @@ public:
 			return vector<shared_ptr<Parameter>>(params);
 		}
 		case Op::mType::Point: {
+			return vector<shared_ptr<Parameter>>(params);
+		}
+		case Op::mType::String: {
 			return vector<shared_ptr<Parameter>>(params);
 		}
 		default:
@@ -446,6 +461,8 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 2107, { new Parameter_variable(id_var_addr, false), new Parameter_int(0) }, 1);
 			return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("StackAddrLvalueResult::ToRvalueResult : unknown type"));
 		}
@@ -481,6 +498,8 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 2114, { new Parameter_variable(id_var_addr, false), new Parameter_int(1) }, 1);
 			break;
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
 		}
@@ -518,6 +537,8 @@ public:
 			if (!params[0]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			if (!params[1]->isFloat()) throw(ErrDesignApp("ParametersLvalueResult::ToStackRvalueResult : type mismatch"));
 			break;
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToStackRvalueResult : unknown type"));
 		}
@@ -553,6 +574,8 @@ public:
 			sub_ctx.insert_ins(stmt_ctx, 45, { this->params[1]->Duplicate() }, -1);
 			break;
 		}
+		case Op::mType::String:
+			throw(ErrDesignApp("dynamic string not supported yet"));
 		default:
 			throw(ErrDesignApp("StackAddrLvalueResult::Assign : unknown type"));
 		}
@@ -575,7 +598,7 @@ static inline uint32_t get_count_id_var(Op::mType type) {
 	case Op::mType::Point:
 		return 2;
 	case Op::mType::String:
-		[[fallthrough]];
+		throw(ErrDesignApp("dynamic string not supported yet"));
 	case Op::mType::inilist:
 		[[fallthrough]];
 	default:
@@ -884,6 +907,8 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 						vec_param.emplace_back(vec_param_result[1], true, true);
 						break;
 					}
+					case Op::mType::String:
+						throw(ErrDesignApp("dynamic string not supported yet"));
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
 					}
@@ -992,6 +1017,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 						shared_ptr<Parameter>(new Parameter_variable(id_var + 1, true))
 						})));
 				}
+			case Op::mType::String:
+				throw(ErrDesignApp("dynamic string not supported yet"));
 			default:
 				throw(ErrDesignApp("tNoVars::OutputLvalueExpr : id=22 : unknown type"));
 			}
@@ -1031,6 +1058,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 						shared_ptr<Parameter>(new Parameter_env(val_global_var->first - 1, true))
 						})));
 				}
+			case Op::mType::String:
+				throw(ErrDesignApp("dynamic string not supported yet"));
 			default:
 				throw(ErrDesignApp("tNoVars::OutputLvalueExpr : id=22 : unknown type"));
 			}
@@ -1129,6 +1158,8 @@ shared_ptr<LvalueResult> tNoVars::OutputLvalueExpr(SubOutputContext& sub_ctx, St
 				sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -2);
 				rvres = shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Point));
 				break;
+			case Op::mType::String:
+				throw(ErrDesignApp("dynamic string not supported yet"));
 			default:
 				throw(ErrDesignApp(("tNoVars::OutputLvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 			}
@@ -1326,6 +1357,13 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				float val = *this->branchs[0]->getToken()->getFloat();
 				return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, Op::mType::Float, vector<shared_ptr<Parameter>>({ shared_ptr<Parameter>(new Parameter_float(val)) })));
 			}
+		case Op::mType::String:
+			if (discard_result) {
+				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::String));
+			} else {
+				string val(*this->branchs[0]->getToken()->getString());
+				return shared_ptr<RvalueResult>(new ParametersRvalueResult(sub_ctx, stmt_ctx, Op::mType::String, vector<shared_ptr<Parameter>>({ shared_ptr<Parameter>(new Parameter_string(val)) })));
+			}
 		default:
 			throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=23 : unknown type"));
 		}
@@ -1384,6 +1422,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 							vec_param.emplace_back(vec_param_result[1], true, true);
 							break;
 						}
+						case Op::mType::String:
+							throw(ErrDesignApp("dynamic string not supported yet"));
 						default:
 							throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
 						}
@@ -1607,6 +1647,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					stmt_ctx.stackptr_rel_current -= 3;
 					// TODO: Implement comparative operators for Point.
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+				case Op::mType::String:
+					throw(ErrDesignApp("dynamic string not supported yet"));
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 				}
@@ -1633,6 +1675,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				case Op::mType::Point:
 					sub_ctx.insert_ins(stmt_ctx, map_ins_id_op_point.at(this->branchs[1]->getToken()->type()), {}, -2);
 					return shared_ptr<RvalueResult>(new StackRvalueResult(sub_ctx, stmt_ctx, Op::mType::Int));
+				case Op::mType::String:
+					throw(ErrDesignApp("dynamic string not supported yet"));
 				default:
 					throw(ErrDesignApp(("tNoVars::OutputRvalueExpr : id=26 : "s + Op::Ch::ToString(this->branchs[1]->getToken()->type()) + " : unknown type"s).c_str()));
 				}
@@ -1793,6 +1837,9 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					case Op::mType::Point:
 						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
 						is_res_match = is_res_match && *(it_numtype++) == ReadIns::NumType::Float;
+						break;
+					case Op::mType::String:
+						is_res_match = *(it_numtype++) == ReadIns::NumType::String;
 						break;
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown actual parameter type"));
@@ -2028,7 +2075,8 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 
 shared_ptr<RvalueResult> tNoVars::OutputRvalueExprf(SubOutputContext& sub_ctx, StmtOutputContext& stmt_ctx, bool discard_result, bool no_check_valuetype, bool is_root_expr) const {
 	if (this->type() != Op::NonTerm::exprf) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->type() != Op::NonTerm::exprf"));
-	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue) throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->_type.valuetype != Op::LRvalue::rvalue"));
+	if (!no_check_valuetype && this->_type.valuetype != Op::LRvalue::rvalue)
+		throw(ErrDesignApp("tNoVars::OutputRvalueExprf : this->_type.valuetype != Op::LRvalue::rvalue"));
 	switch (this->id) {
 	case 20:// exprf->expr
 	{
