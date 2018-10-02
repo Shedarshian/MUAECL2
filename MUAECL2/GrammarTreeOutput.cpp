@@ -1995,7 +1995,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				++it_numtype
 				) {
 				if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.empty()"));
-				if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : queue_param_result.front()->isFloat()"));
+				if (!queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=35 : !queue_param_result.front()->isFloat()"));
 				vec_param_rsmn.push_back(queue_param_result.front());
 				queue_param_result.pop();
 			}
@@ -2006,10 +2006,10 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 			bool is_8param = (vec_param_abcd.size() > 2 || vec_param_rsmn.size() > 2);
 			if (is_8param) {
 				for (; vec_param_abcd.size() < 4; vec_param_abcd.emplace_back(new Parameter_int(-999999)));
-				for (; vec_param_rsmn.size() < 4; vec_param_abcd.emplace_back(new Parameter_float(-999999.0)));
+				for (; vec_param_rsmn.size() < 4; vec_param_rsmn.emplace_back(new Parameter_float(-999999.0)));
 			} else {
 				for (; vec_param_abcd.size() < 2; vec_param_abcd.emplace_back(new Parameter_int(-999999)));
-				for (; vec_param_rsmn.size() < 2; vec_param_abcd.emplace_back(new Parameter_float(-999999.0)));
+				for (; vec_param_rsmn.size() < 2; vec_param_rsmn.emplace_back(new Parameter_float(-999999.0)));
 			}
 			vec_param.insert(vec_param.cend(), vec_param_abcd.cbegin(), vec_param_abcd.cend());
 			vec_param.insert(vec_param.cend(), vec_param_rsmn.cbegin(), vec_param_rsmn.cend());
