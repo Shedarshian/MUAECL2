@@ -325,18 +325,43 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 				tree->TypeCheck(sub, subs, whileBlock);
 			_type = VTYPE(Void, r);
 		}
-		//此为弹幕变换
+		//此为弹幕变换，add2int/3int
 		else if (auto[begin_it, end_it] = ReadIns::mode.equal_range(name); begin_it != end_it) {
-			auto[typ, opIDPtr] = OverloadCheck<int, decltype(begin_it), vector<GrammarTree*>&>(insv->branchs,
+			struct myit {
+				decltype((begin_it)) it;
+				bool is_three_int;
+
+				bool operator==(const myit& rhs) const {
+					return it == rhs.it && is_three_int == rhs.is_three_int;
+				}
+				bool operator!=(const myit& rhs) const {
+					return !(*this == rhs);
+				}
+				myit& operator++() {
+					if (is_three_int) {
+						++it;
+						is_three_int = false;
+					}
+					else {
+						is_three_int = true;
+					}
+					return *this;
+				}
+			};
+
+			myit begin{ begin_it, false };
+			auto[typ, opIDPtr] = OverloadCheck<int, myit, vector<GrammarTree*>&>(insv->branchs,
 				[sub, subs, whileBlock](GrammarTree* tree) { return tree->TypeCheck(sub, subs, whileBlock); },
-				[](const decltype(begin_it)& it) {
-					vector<mVType> vTypes;
-					transform(it->second.second.cbegin(), it->second.second.cend(), inserter(vTypes, vTypes.begin()),
+				[](const myit& it) {
+					vector<mVType> vTypes{ VTYPE(Int, r), VTYPE(Int, r) };
+					if (it.is_three_int)
+						vTypes.push_back(VTYPE(Int, r));
+					transform(it.it->second.second.cbegin(), it.it->second.second.cend(), inserter(vTypes, vTypes.end()),
 						[](const ReadIns::NumType& t) { return mVType{ Op::Ch::ToType(t), Op::LRvalue::rvalue, false }; });
 					reverse(vTypes.begin(), vTypes.end());
-					return make_tuple(new int(get<0>(it->second)), VTYPE(Void, r), vTypes); },
+					return make_tuple(new int(get<0>(it.it->second)), VTYPE(Void, r), vTypes); },
 				[](Op::Rank rank, vector<GrammarTree*>::iterator& it) { *it = (*it)->typeChange(rank); },
-					begin_it, end_it);
+						begin, myit{ end_it, false });
 			if (typ.type == Op::mType::type_error)
 				throw(ErrNoOverloadFunction(lineNo, name));
 			_type = VTYPE(Void, r); opID = *opIDPtr; delete opIDPtr;

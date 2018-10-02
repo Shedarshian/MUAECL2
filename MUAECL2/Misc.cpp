@@ -329,6 +329,13 @@ void ReadIns::Read() {
 			}
 			ReadIns::mode.emplace(name, make_pair(n, lnt));
 		}
+		//const int
+		else if (mode == "const") {
+			stringstream s = stringstream(buffer);
+			int n; string name;
+			s >> name >> n;
+			ReadIns::constint.emplace(name, n);
+		}
 	}
 	in.close();
 	ifstream indef("default.ini");
