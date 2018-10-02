@@ -175,7 +175,7 @@ typename conditional<is_void<type_saved>::value, Op::mVType, pair<Op::mVType, ty
 	vector<Op::mVType> insvtyp;
 	for (auto it = CheckObjects.begin(); it != CheckObjects.end(); ++it)
 		insvtyp.push_back(TypeCheckFunction(*it));
-	for (; begin_it != end_it; begin_it++) {
+	for (; begin_it != end_it; ++begin_it) {
 		Op::Rank ranksum;
 		auto&&[dataSavedPtr, _returnType, inputTypes] = GetContainmentsFunction(begin_it);
 		if (inputTypes.size() != CheckObjects.size())

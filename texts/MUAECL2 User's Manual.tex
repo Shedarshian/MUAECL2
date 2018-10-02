@@ -18,7 +18,7 @@
 \usepackage{fancyvrb}
 
 \author{MUA Group(Modification Ultraman Alliance)}
-\title{MUAECL2 User's Manual  ver. 2.0.1\_alpha}
+\title{MUAECL2 User's Manual  ver. 2.0.2\_alpha}
 \date{\today}
 
 \DefineVerbatimEnvironment{MUAvbt}{Verbatim}{frame=single, rulecolor=\color{magenta}}
@@ -51,7 +51,7 @@ MUAECL是MUA制作组制作的ecl编译器，可以将一种比较类似C的语�
 
 这些文件需要被放在同一文件夹下。
 
-本程序使用命令行方式运行。在cmd中运行``\verb|MUAECL2.x.x.exe -h|''（实际exe名随版本号而不同）或``\verb|MUAECL2.x.x.exe --help|''即可查看命令行帮助。
+本程序使用命令行方式运行。在cmd中运行``\verb|MUAECL2.exe -h|''或``\verb|MUAECL2.exe --help|''即可查看命令行帮助。
 
 \begin{table}[H]
 	\centering
@@ -59,6 +59,7 @@ MUAECL是MUA制作组制作的ecl编译器，可以将一种比较类似C的语�
 		\hline
 		\multicolumn{2}{c|}{命令行参数} & 用途 \\\hline
 		\verb|-h| & \verb|--help| & 显示命令行帮助 \\\hline
+		\verb|-V| & \verb|--version| & 显示版本信息 \\\hline
 		\verb|-c| & \verb|--compile| & 将MUAECL2源代码编译成ecl文件 \\\hline
 		\verb|-p| & \verb|--preprocess| & 预处理MUAECL2源代码，但不编译 \\\hline
 		\verb|-i <filename>| & \verb|--input-file <filename>| & 输入文件名 \\\hline
