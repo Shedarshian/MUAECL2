@@ -249,7 +249,7 @@ void DummyIns_Target::set_offs(SubSerializationContext& sub_ctx, size_t offs) co
 	sub_ctx.map_offs_target[this->id_target] = offs;
 }
 
-Ins::Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask, int time)
+Ins::Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask, uint32_t time)
 	: id(id), paras(paras), difficulty_mask(difficulty_mask), time(time) {}
 
 Ins::~Ins() {
@@ -281,9 +281,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 	char* ptr_raw_ecl_ins_hdr = nullptr;
 	size += sizeof(raw_ecl_ins_hdr);
 	if (ptr && size_buf >= size) {
-		if (this->time < 0 || this->time > UINT32_MAX) throw(exception("Invalid instruction time."));
 		raw_ecl_ins_hdr.time = this->time;
-		if (this->id < 0 || this->id > UINT16_MAX) throw(exception("Invalid instruction ID."));
 		raw_ecl_ins_hdr.id = this->id;
 		//raw_ecl_ins_hdr.size;
 		raw_ecl_ins_hdr.param_mask = 0;
