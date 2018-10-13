@@ -367,18 +367,19 @@ void ReadIns::Read() {
 		}
 		else if (v.compare(0, 7, "define ") == 0) {
 			//#define space identifier space string
-			//#define space identifier ( identifier_list ) space string
-			int delim2 = v.find_first_of(" (", 7);
+			//#define space identifier { identifier_list } space string
+			int delim2 = v.find_first_of(" {", 7);
 			string identifier = v.substr(7, delim2 - 7);
+			
 			if (v[delim2] == ' ') {
 				string replace_string = v.substr(delim2 + 1);
 				include.emplace_back(regex("\\b" + identifier + "\\b"), replace_string);
 			}
 			else {
-				int delim3 = v.find_first_of(')', 7);
+				int delim3 = v.find_first_of('}', 7);
 				string replace_string = v.substr(delim3 + 2);
 				string identifier_list = v.substr(delim2 + 1, delim3 - delim2 - 1);
-				if (identifier_list !="") {
+				if (identifier_list != "") {
 					regex word = regex("[_[:alpha:]][_[:alnum:]]*");
 					auto it_begin = sregex_iterator(identifier_list.begin(), identifier_list.end(), word);
 					auto it_end = sregex_iterator();
@@ -391,10 +392,10 @@ void ReadIns::Read() {
 						identifier_replace_list += "\\s*([^,\\s]*)\\s*,";
 					}
 					identifier_replace_list.erase(identifier_replace_list.end() - 1);
-					include.emplace_back(regex("\\b" + identifier + "\\s*\\(" + identifier_replace_list + "\\)"), replace_string);
+					include.emplace_back(regex("\\b" + identifier + "\\s*\\{" + identifier_replace_list + "\\}"), replace_string);
 				}
 				else {
-					include.emplace_back(regex("\\b" + identifier + "\\s*\\(\\s*\\)"), replace_string);
+					include.emplace_back(regex("\\b" + identifier + "\\s*\\{\\s*\\}"), replace_string);
 				}
 			}
 		}

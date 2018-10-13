@@ -265,7 +265,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		}
 		if (auto globalVarit = ReadIns::globalVariable.find(tok->getId()); globalVarit != ReadIns::globalVariable.end()) {
 			opID = globalVarit->second.first;
-			_type = mVType{ Op::Ch::ToType(globalVarit->second.second), Op::LRvalue::rvalue };
+			_type = mVType{ Op::Ch::ToType(globalVarit->second.second), Op::LRvalue::lvalue };
 			if constexpr (debug)clog << tok->getId() << " " << opID << " ";
 			break;
 		}
@@ -475,6 +475,8 @@ GrammarTree* tNoVars::typeChange(Op::Rank rank) {
 	if (rank.test(Op::Rank::LTOR)) {
 		//左值到右值直接赋值进去
 		_type.valuetype = Op::LRvalue::rvalue;
+		if (id == 14 || id == 16 || id == 20) //inif->ini, ini->expr, exprf->expr
+			branchs[0]->typeChange(Op::Rank().set(Op::Rank::LTOR));
 	}
 	if (rank.test(Op::Rank::ITOF)) {
 		//整数转浮点

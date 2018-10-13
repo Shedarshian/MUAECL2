@@ -267,6 +267,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	} else {
 		stringstream preprocessed;
 
+		ReadIns::Read();
 		PreprocessArguments preprocess_args;
 		preprocess_args.in = in;
 		preprocess_args.out = &preprocessed;
@@ -309,6 +310,7 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
 
+	ReadIns::Read();
 	preprocess_args.currentpath = currentpath;
 	preprocess_args.searchpath = searchpath;
 	preprocess(preprocess_args);
@@ -322,7 +324,6 @@ static void preprocess(PreprocessArguments& preprocess_args) {
 
 static void compile(CompileArguments& compile_args) {
 	Parser::initialize();
-	ReadIns::Read();
 	Tokenizer tokenizer(*compile_args.in, compile_args.filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();

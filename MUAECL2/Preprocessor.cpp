@@ -98,7 +98,7 @@ pair<vector<string>, vector<string>> Preprocessor::process(istream &in, ostream 
 				}
 				else if (v.compare(0, 7, "define ") == 0) {
 					//#define space identifier space string
-					//#define space identifier ( identifier_list ) space string
+					//#define space identifier { identifier_list } space string
 					int delim2 = v.find_first_of(" {", 7);
 					string identifier = v.substr(7, delim2 - 7);
 					if (!regex_match(identifier, regex("[_[:alpha:]][_[:alnum:]]*")))
