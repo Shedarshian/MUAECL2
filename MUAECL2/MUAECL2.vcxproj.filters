@@ -54,6 +54,9 @@
     <ClInclude Include="Version.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Misc3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -94,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="Preprocessor.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc3.cpp">
+      <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
