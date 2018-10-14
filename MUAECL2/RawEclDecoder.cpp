@@ -44,8 +44,7 @@ DecodedParam::~DecodedParam() {}
 
 DecodedParam_Int* DecodedParam_Int::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Int) throw(ErrDesignApp("DecodedParam_Int::CastToMe : p->param_type != ParamType::Int"));
-	DecodedParam_Int* ret = dynamic_cast<DecodedParam_Int*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Int::CastToMe : cannot cast p to type \"DecodedParam_Int*\""));
+	DecodedParam_Int* ret = static_cast<DecodedParam_Int*>(p);
 	return ret;
 }
 
@@ -55,8 +54,7 @@ DecodedParam_Int::~DecodedParam_Int() {}
 
 DecodedParam_Float* DecodedParam_Float::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Float) throw(ErrDesignApp("DecodedParam_Float::CastToMe : p->param_type != ParamType::Float"));
-	DecodedParam_Float* ret = dynamic_cast<DecodedParam_Float*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Float::CastToMe : cannot cast p to type \"DecodedParam_Float*\""));
+	DecodedParam_Float* ret = static_cast<DecodedParam_Float*>(p);
 	return ret;
 }
 
@@ -66,8 +64,7 @@ DecodedParam_Float::~DecodedParam_Float() {}
 
 DecodedParam_String* DecodedParam_String::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::String) throw(ErrDesignApp("DecodedParam_String::CastToMe : p->param_type != ParamType::String"));
-	DecodedParam_String* ret = dynamic_cast<DecodedParam_String*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_String::CastToMe : cannot cast p to type \"DecodedParam_String*\""));
+	DecodedParam_String* ret = static_cast<DecodedParam_String*>(p);
 	return ret;
 }
 
@@ -77,8 +74,7 @@ DecodedParam_String::~DecodedParam_String() {}
 
 DecodedParam_Variable* DecodedParam_Variable::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Variable) throw(ErrDesignApp("DecodedParam_Variable::CastToMe : p->param_type != ParamType::Variable"));
-	DecodedParam_Variable* ret = dynamic_cast<DecodedParam_Variable*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Variable::CastToMe : cannot cast p to type \"DecodedParam_Variable*\""));
+	DecodedParam_Variable* ret = static_cast<DecodedParam_Variable*>(p);
 	return ret;
 }
 
@@ -88,8 +84,7 @@ DecodedParam_Variable::~DecodedParam_Variable() {}
 
 DecodedParam_AbnormalVariable* DecodedParam_AbnormalVariable::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::AbnormalVariable) throw(ErrDesignApp("DecodedParam_AbnormalVariable::CastToMe : p->param_type != ParamType::AbnormalVariable"));
-	DecodedParam_AbnormalVariable* ret = dynamic_cast<DecodedParam_AbnormalVariable*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_AbnormalVariable::CastToMe : cannot cast p to type \"DecodedParam_AbnormalVariable*\""));
+	DecodedParam_AbnormalVariable* ret = static_cast<DecodedParam_AbnormalVariable*>(p);
 	return ret;
 }
 
@@ -99,8 +94,7 @@ DecodedParam_AbnormalVariable::~DecodedParam_AbnormalVariable() {}
 
 DecodedParam_Stack* DecodedParam_Stack::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Stack) throw(ErrDesignApp("DecodedParam_Stack::CastToMe : p->param_type != ParamType::Stack"));
-	DecodedParam_Stack* ret = dynamic_cast<DecodedParam_Stack*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Stack::CastToMe : cannot cast p to type \"DecodedParam_Stack*\""));
+	DecodedParam_Stack* ret = static_cast<DecodedParam_Stack*>(p);
 	return ret;
 }
 
@@ -110,8 +104,7 @@ DecodedParam_Stack::~DecodedParam_Stack() {}
 
 DecodedParam_Env* DecodedParam_Env::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Env) throw(ErrDesignApp("DecodedParam_Env::CastToMe : p->param_type != ParamType::Env"));
-	DecodedParam_Env* ret = dynamic_cast<DecodedParam_Env*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Env::CastToMe : cannot cast p to type \"DecodedParam_Env*\""));
+	DecodedParam_Env* ret = static_cast<DecodedParam_Env*>(p);
 	return ret;
 }
 
@@ -121,8 +114,7 @@ DecodedParam_Env::~DecodedParam_Env() {}
 
 DecodedParam_Jmp* DecodedParam_Jmp::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Jmp) throw(ErrDesignApp("DecodedParam_Jmp::CastToMe : p->param_type != ParamType::Jmp"));
-	DecodedParam_Jmp* ret = dynamic_cast<DecodedParam_Jmp*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Jmp::CastToMe : cannot cast p to type \"DecodedParam_Jmp*\""));
+	DecodedParam_Jmp* ret = static_cast<DecodedParam_Jmp*>(p);
 	return ret;
 }
 
@@ -132,8 +124,7 @@ DecodedParam_Jmp::~DecodedParam_Jmp() {}
 
 DecodedParam_Call* DecodedParam_Call::CastToMe(DecodedParam* p) {
 	if (p->param_type != ParamType::Call) throw(ErrDesignApp("DecodedParam_Call::CastToMe : p->param_type != ParamType::Call"));
-	DecodedParam_Call* ret = dynamic_cast<DecodedParam_Call*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedParam_Call::CastToMe : cannot cast p to type \"DecodedParam_Call*\""));
+	DecodedParam_Call* ret = static_cast<DecodedParam_Call*>(p);
 	return ret;
 }
 
@@ -147,8 +138,7 @@ DecodedSubDataEntry:: ~DecodedSubDataEntry() {}
 
 DecodedJmpTarget* DecodedJmpTarget::CastToMe(DecodedSubDataEntry* p) {
 	if (p->data_entry_type != DataEntryType::JmpTarget) throw(ErrDesignApp("DecodedJmpTarget::CastToMe : p->data_entry_type != DataEntryType::JmpTarget"));
-	DecodedJmpTarget* ret = dynamic_cast<DecodedJmpTarget*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedJmpTarget::CastToMe : cannot cast p to type \"DecodedJmpTarget*\""));
+	DecodedJmpTarget* ret = static_cast<DecodedJmpTarget*>(p);
 	return ret;
 }
 
@@ -158,8 +148,7 @@ DecodedJmpTarget::~DecodedJmpTarget() {}
 
 DecodedIns* DecodedIns::CastToMe(DecodedSubDataEntry* p) {
 	if (p->data_entry_type != DataEntryType::Ins) throw(ErrDesignApp("DecodedIns::CastToMe : p->data_entry_type != DataEntryType::Ins"));
-	DecodedIns* ret = dynamic_cast<DecodedIns*>(p);
-	if (!ret) throw(ErrDesignApp("DecodedIns::CastToMe : cannot cast p to type \"DecodedIns*\""));
+	DecodedIns* ret = static_cast<DecodedIns*>(p);
 	return ret;
 }
 
