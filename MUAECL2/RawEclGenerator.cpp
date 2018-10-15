@@ -2,6 +2,7 @@
 #include <climits>
 #include <memory>
 #include <algorithm>
+#include <random>
 #include "RawEclGenerator.h"
 
 using namespace std;
@@ -29,7 +30,7 @@ static inline void align4_data(char*& ptr, size_t size_buf, size_t& size) {
 }
 
 RawEclGenerator::RawEclGenerator(const fRoot& root)
-	:root(root) {}
+	: root(root) {}
 
 RawEclGenerator::~RawEclGenerator() {}
 
@@ -207,10 +208,28 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 SubSerializationContext::SubSerializationContext(uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
 	:count_var(count_var) {
 	if (count_var > INT32_MAX / 4) throw(exception("Too many local variables."));
+	mt19937 randengine;
+	{
+		vector<uint_least32_t> vec_seed;
+		for (const shared_ptr<fSubDataEntry>& val_data_entry : data_entries) {
+			std::shared_ptr<Ins> ins = dynamic_pointer_cast<Ins, fSubDataEntry>(val_data_entry);
+			if (ins) vec_seed.push_back(ins->id);
+		}
+		seed_seq seedseq(vec_seed.cbegin(), vec_seed.cend());
+		randengine.seed(seedseq);
+	}
 	this->vec_data_entry.emplace_back(new Ins(40, vector<Parameter*>({ new Parameter_int(count_var * 4) })));
 	this->vec_data_entry.insert(this->vec_data_entry.cend(), data_entries.cbegin(), data_entries.cend());
 	this->vec_data_entry.emplace_back(new Ins(41, vector<Parameter*>()));
 	this->vec_data_entry.emplace_back(new Ins(10, vector<Parameter*>()));
+	{
+		vector<Parameter*> vec_param_dummy;
+		unsigned int count_param_dummy = randengine() % 4;
+		for (unsigned int i = 0; i < count_param_dummy; ++i) {
+			vec_param_dummy.push_back((randengine() & 1) ? static_cast<Parameter*>(new Parameter_float((float)0.261799388 * (randengine() % 24))) : static_cast<Parameter*>(new Parameter_int(randengine() % 0x1000)));
+		}
+		this->vec_data_entry.emplace_back(new Ins((uint16_t)-1919, vec_param_dummy));
+	}
 	this->vec_offs_data_entry.resize(this->vec_data_entry.size() + 1);
 	this->vec_offs_data_entry[0] = 0;
 	this->i_data_entry_current = 0;

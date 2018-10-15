@@ -146,11 +146,11 @@ public:
 
 //语句类型
 struct Ins :public fSubDataEntry {
-	Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask = 0xFF, int time = 0);
+	Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask = 0xFF, uint32_t time = 0);
 	virtual ~Ins();
 	uint8_t difficulty_mask;
-	int time;
-	int id;
+	uint32_t time;
+	uint16_t id;
 	vector<Parameter*> paras;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 };

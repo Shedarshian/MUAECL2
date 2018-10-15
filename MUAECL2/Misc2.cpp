@@ -74,7 +74,7 @@ size_t Parameter_variable::serialize(char* ptr, size_t size_buf, const SubSerial
 		static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
 		if (ptr && size_buf >= sizeof(float)) {
 			// If ref_id is more than 24 bits, storing it in a single-precision floating point value would result in inaccuracy.
-			if (ref_id & 0x7F000000) throw(exception("Too many variables."));
+			if ((ref_id < 0 ? -ref_id : ref_id) & 0x7F000000) throw(exception("Too many variables."));
 #pragma warning(push)
 #pragma warning(disable:4244)
 			float f_ref_id = ref_id;
@@ -109,7 +109,7 @@ size_t Parameter_stack::serialize(char* ptr, size_t size_buf, const SubSerializa
 		static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
 		if (ptr && size_buf >= sizeof(float)) {
 			// If ref_id is more than 24 bits, storing it in a single-precision floating point value would result in inaccuracy.
-			if (ref_id & 0x7F000000) throw(exception("Too large stack reference ID."));
+			if ((ref_id < 0 ? -ref_id : ref_id) & 0x7F000000) throw(exception("Too large stack reference ID."));
 #pragma warning(push)
 #pragma warning(disable:4244)
 			float f_ref_id = ref_id;
@@ -145,7 +145,7 @@ size_t Parameter_env::serialize(char* ptr, size_t size_buf, const SubSerializati
 		static_assert(sizeof(float) == sizeof(uint32_t), "sizeof(float) is not equal to sizeof(uint32_t).");
 		if (ptr && size_buf >= sizeof(float)) {
 			// If ref_id is more than 24 bits, storing it in a single-precision floating point value would result in inaccuracy.
-			if (ref_id & 0x7F000000) throw(exception("Too large environment reference ID."));
+			if ((ref_id < 0 ? -ref_id : ref_id) & 0x7F000000) throw(exception("Too large environment reference ID."));
 #pragma warning(push)
 #pragma warning(disable:4244)
 			float f_ref_id = ref_id;
@@ -249,7 +249,7 @@ void DummyIns_Target::set_offs(SubSerializationContext& sub_ctx, size_t offs) co
 	sub_ctx.map_offs_target[this->id_target] = offs;
 }
 
-Ins::Ins(int id, const vector<Parameter*>& paras, uint8_t difficulty_mask, int time)
+Ins::Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask, uint32_t time)
 	: id(id), paras(paras), difficulty_mask(difficulty_mask), time(time) {}
 
 Ins::~Ins() {
@@ -281,9 +281,7 @@ size_t Ins::serialize(char* ptr, size_t size_buf, const SubSerializationContext&
 	char* ptr_raw_ecl_ins_hdr = nullptr;
 	size += sizeof(raw_ecl_ins_hdr);
 	if (ptr && size_buf >= size) {
-		if (this->time < 0 || this->time > UINT32_MAX) throw(exception("Invalid instruction time."));
 		raw_ecl_ins_hdr.time = this->time;
-		if (this->id < 0 || this->id > UINT16_MAX) throw(exception("Invalid instruction ID."));
 		raw_ecl_ins_hdr.id = this->id;
 		//raw_ecl_ins_hdr.size;
 		raw_ecl_ins_hdr.param_mask = 0;

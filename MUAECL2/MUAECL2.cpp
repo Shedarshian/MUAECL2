@@ -180,10 +180,9 @@ int main(int argc, char* argv[]) {
 	} catch (ErrFileNotFound& e) {
 		cerr << e.what() << endl;
 	}
-	// TODO: Exception handling for std::exception?
-	/*catch (exception &e) {
+	catch (exception &e) {
 		cerr << e.what() << endl;
-	}*/
+	}
 #ifdef _DEBUG
 	system("pause");
 #endif
