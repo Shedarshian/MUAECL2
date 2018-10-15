@@ -183,6 +183,16 @@ const multimap<string, tuple<mVType, vector<mVType>, int>> makeInternalFunction(
 }
 const multimap<string, tuple<mVType, vector<mVType>, int>> Op::mVType::internalFunction = makeInternalFunction();
 
+template<typename T1, typename T2, typename T3, typename T4>
+const map<T4, tuple<T2, T3, T1>> map_rev(const multimap<T1, tuple<T2, T3, T4>>& m) {
+	map<T4, tuple<T2, T3, T1>> m_r;
+	for (auto&&[t1, t] : m)
+		m_r.emplace(get<2>(t), make_tuple(get<0>(t), get<1>(t), t1));
+	return m_r;
+}
+
+const map<int, tuple<mVType, vector<mVType>, string>> Op::mVType::internalFunctionRev = map_rev(Op::mVType::internalFunction);
+
 Op::Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	Rank rank;
 	//左值到右值转换

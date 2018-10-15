@@ -10,5 +10,7 @@ class Decompiler final {
 public:
 	Decompiler();
 	~Decompiler();
-	void DecompileRoot(const DecodedRoot& root, ostream& stream);
+	void DecompileRoot(istream& instream, ostream& outstream);
+private:
+
 };

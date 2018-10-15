@@ -4,9 +4,19 @@
 #include <istream>
 #include <vector>
 #include <memory>
+#include <utility>
 #include "Misc.h"
 
 using namespace std;
+
+struct dVar {
+	Op::mType type;
+	string name;
+
+	explicit dVar(string name);
+	/// return true if type conflict.
+	bool assign_type(Op::mType type);
+};
 
 /// <summary>Decoded ECL instruction parameter.</summary>
 struct DecodedParam abstract {
@@ -98,7 +108,8 @@ struct DecodedParam_Call : public DecodedParam {
 struct DecodedSubDataEntry abstract {
 	enum DataEntryType {
 		JmpTarget,
-		Ins
+		Ins,
+		Expression
 	};
 	const DataEntryType data_entry_type;
 	explicit DecodedSubDataEntry(DataEntryType data_entry_type);
@@ -148,6 +159,40 @@ struct DecodedRoot final {
 	vector<string> anim;
 	vector<string> ecli;
 	vector<shared_ptr<DecodedSub>> subs;
+};
+
+/// <summary>Expression type.</summary>
+struct DecodedExp : public DecodedSubDataEntry {
+	DecodedExp();
+	virtual ~DecodedExp() = default;
+};
+
+class DecodedExpCom : public DecodedExp {
+public:
+	DecodedExpCom();
+	virtual ~DecodedExpCom() = default;
+private:
+	vector<shared_ptr<DecodedExp>> operand;
+	bool isInternalFunction;
+	int opId;			//or internal function id
+};
+
+/// <summary>Variable type in expression.</summary>
+class DecodedVar final : public DecodedExp {
+public:
+	explicit DecodedVar(const dVar& var);
+	virtual ~DecodedVar() = default;
+private:
+	const dVar* var;
+};
+
+/// <summary>Literal type in expression.</summary>
+class DecodedLiteral final : public DecodedExp {
+public:
+	explicit DecodedLiteral(shared_ptr<DecodedParam> param);
+	virtual ~DecodedLiteral() = default;
+private:
+	shared_ptr<DecodedParam> data;
 };
 
 /// <summary>An exception during the decoding phase, due to invalid or corrupted raw ECL file.</summary>

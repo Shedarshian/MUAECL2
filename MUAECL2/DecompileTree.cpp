@@ -1,6 +1,19 @@
-#include "Misc3.h"
+#include <algorithm>
+#include "DecompileTree.h"
 
 using namespace std;
+
+dVar::dVar(string name) :type(Op::mType::unknown), name(name) {}
+
+bool dVar::assign_type(Op::mType type) {
+	if (this->type == Op::mType::unknown)
+		this->type = type;
+	else if (this->type != type) {
+		this->type = Op::mType::type_error;
+		return true;
+	}
+	return false;
+}
 
 DecodedParam::DecodedParam(ParamType param_type) : param_type(param_type) {}
 
@@ -162,6 +175,22 @@ DecodedIns::~DecodedIns() {
 			this->params = nullptr;
 		}
 	}
+}
+
+DecodedExp::DecodedExp() : DecodedSubDataEntry(DecodedSubDataEntry::Expression) {}
+
+DecodedExpCom::DecodedExpCom() {
+	//TODO
+}
+
+DecodedVar::DecodedVar(const dVar& var) {
+	this->var = &var;
+}
+
+DecodedLiteral::DecodedLiteral(shared_ptr<DecodedParam> param) {
+	if (param->param_type != DecodedParam::Int && param->param_type != DecodedParam::Float && param->param_type != DecodedParam::String)
+		throw(ErrDesignApp("DecodedLiteral() param_type is not int or float or string"));
+	this->data = param;
 }
 
 DecoderException::DecoderException(size_t offset) throw() : offset(offset) {}

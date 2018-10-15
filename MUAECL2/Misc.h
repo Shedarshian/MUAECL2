@@ -50,7 +50,7 @@ namespace Op {
 	/// all types of tokens
 	enum TokenType { Identifier, Number, LogicalOr, LogicalAnd, Or, And, BitOr, BitXor, BitAnd, EqualTo, NotEqual, Greater, GreaterEqual, Less, LessEqual, Plus, Minus, Times, Divide, Mod, Negative, Not, Deref, Address, Dot, MidBra, MidKet, Equal, PlusEqual, MinusEqual, TimesEqual, DividesEqual, ModEqual, LogicalOrEqual, LogicalAndEqual, BitOrEqual, BitAndEqual, BitXorEqual, Sub, NoOverload, Type, If, Else, While, For, Goto, Break, Continue, Thread, Do, Rawins, Colon, Semicolon, Comma, Bra, Ket, BigBra, BigKet, End };
 	/// built-in types
-	enum class mType { type_error, Void, Int, Float, String, Point, inilist };
+	enum class mType { type_error, Void, Int, Float, String, Point, inilist, unknown = 0xFF };
 	/// nonterminators used for parser
 	enum NonTerm { stmt, stmts, subs, subv, vdecl, insv, ini, inif, inia, exprf, expr, data, insdata };
 	
@@ -110,6 +110,7 @@ namespace Op {
 		static Rank canChangeTo(const mVType& typ, const mVType& typto);
 		/// saves : name->return type + operand + ins ID
 		static const multimap<string, tuple<mVType, vector<mVType>, int>> internalFunction;
+		static const map<int, tuple<mVType, vector<mVType>, string>> internalFunctionRev;
 	};
 };
 
