@@ -255,3 +255,7 @@ public:
 	virtual ~ErrDecoderInvalidParameters() throw();
 	virtual const char* what() const throw();
 };
+
+class ErrDecoderIns40 : public DecoderException {
+public:
+};

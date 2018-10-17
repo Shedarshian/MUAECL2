@@ -11,6 +11,4 @@ public:
 	Decompiler();
 	~Decompiler();
 	void DecompileRoot(istream& instream, ostream& outstream);
-private:
-
 };
