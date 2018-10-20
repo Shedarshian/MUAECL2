@@ -171,11 +171,10 @@ DecodedIns::DecodedIns(const DecodedIns& t) : DecodedSubDataEntry(DecodedSubData
 	this->id = t.id;
 	this->difficulty_mask = t.difficulty_mask;
 	this->post_pop_count = t.post_pop_count;
+	this->rawins_params = t.rawins_params;
 	this->is_rawins = t.is_rawins;
-	if (t.is_rawins) {
-		this->rawins_params = t.rawins_params ? new rawins_params_t(*t.rawins_params) : nullptr;
-	} else {
-		this->params = t.params ? new vector<shared_ptr<DecodedParam>>(*t.params) : nullptr;
+	if (!t.is_rawins) {
+		this->params = t.params;
 	}
 }
 
@@ -184,29 +183,16 @@ DecodedIns::DecodedIns(DecodedIns&& t) : DecodedSubDataEntry(DecodedSubDataEntry
 	this->id = t.id;
 	this->difficulty_mask = t.difficulty_mask;
 	this->post_pop_count = t.post_pop_count;
+	this->rawins_params = t.rawins_params;
+	t.rawins_params.str_raw_params.clear();
 	this->is_rawins = t.is_rawins;
-	if (t.is_rawins) {
-		this->rawins_params = t.rawins_params;
-		t.rawins_params = nullptr;
-	} else {
+	if (!t.is_rawins) {
 		this->params = t.params;
-		t.params = nullptr;
+		t.params.clear();
 	}
 }
 
-DecodedIns::~DecodedIns() {
-	if (this->is_rawins) {
-		if (this->rawins_params) {
-			delete this->rawins_params;
-			this->rawins_params = nullptr;
-		}
-	} else {
-		if (this->params) {
-			delete this->params;
-			this->params = nullptr;
-		}
-	}
-}
+DecodedIns::~DecodedIns() {}
 
 RawEclDecoder::RawEclDecoder() {
 	for (const pair<string, pair<int, vector<ReadIns::NumType>>>& val_readins_ins : ReadIns::ins) {
@@ -377,6 +363,10 @@ void RawEclDecoder::DecodeRawEclSubDataEntries(const char* ptr, size_t size_buf,
 		ins.id = raw_ecl_ins_hdr.id;
 		ins.difficulty_mask = raw_ecl_ins_hdr.diff_mask;
 		ins.post_pop_count = raw_ecl_ins_hdr.post_pop_count;
+		ins.rawins_params.param_count = raw_ecl_ins_hdr.param_count;
+		ins.rawins_params.param_mask = raw_ecl_ins_hdr.param_mask;
+		ins.rawins_params.str_raw_params = string(ptr, raw_ecl_ins_hdr.size - sizeof(raw_ecl_ins_hdr));
+		ins.is_rawins = true;
 		if (size_buf < raw_ecl_ins_hdr.size - sizeof(raw_ecl_ins_hdr)) throw(ErrDecoderUnexpEof(ptr, size_buf, ptr_initial));
 		try {
 			try {
@@ -388,24 +378,13 @@ void RawEclDecoder::DecodeRawEclSubDataEntries(const char* ptr, size_t size_buf,
 						// Seek to the beginning of the instruction actual parameter list.
 						seek_to(0, ptr, size_buf, ptr_initial);
 						// Clear the instruction's parameter list.
-						if (ins.is_rawins) {
-							if (ins.rawins_params) {
-								delete ins.rawins_params;
-								ins.rawins_params = nullptr;
-							}
-						} else {
-							if (ins.params) {
-								delete ins.params;
-								ins.params = nullptr;
-							}
-						}
+						ins.params.clear();
 						ins.is_rawins = false;
-						ins.params = new vector<shared_ptr<DecodedParam>>();
 						int32_t offs_jmp;
 						extract_data(&offs_jmp, sizeof(int32_t), ptr, size_buf, ptr_initial);
 						// The target ID of this parameter has not been set to a correct one yet.
 						DecodedParam_Jmp* param_jmp = new DecodedParam_Jmp(UINT32_MAX);
-						ins.params->emplace_back(param_jmp);
+						ins.params.emplace_back(param_jmp);
 						vec_param_jmp_pending.emplace_back(param_jmp, offs_ins + offs_jmp);
 						int32_t rawval_time;
 						extract_data(&rawval_time, sizeof(int32_t), ptr, size_buf, ptr_initial);
@@ -413,19 +392,19 @@ void RawEclDecoder::DecodeRawEclSubDataEntries(const char* ptr, size_t size_buf,
 							int32_t ref_id = rawval_time;
 							if (ref_id > 0) {
 								if (ref_id & 0x3) {
-									ins.params->emplace_back(new DecodedParam_AbnormalVariable(ref_id, false));
+									ins.params.emplace_back(new DecodedParam_AbnormalVariable(ref_id, false));
 								} else {
-									ins.params->emplace_back(new DecodedParam_Variable((uint32_t)ref_id >> 2, false));
+									ins.params.emplace_back(new DecodedParam_Variable((uint32_t)ref_id >> 2, false));
 								}
 							} else if (ref_id < 0 && ref_id >= -100) {
-								ins.params->emplace_back(new DecodedParam_Stack(ref_id, false));
+								ins.params.emplace_back(new DecodedParam_Stack(ref_id, false));
 							} else if (ref_id < -100) {
-								ins.params->emplace_back(new DecodedParam_Env(-ref_id, false));
+								ins.params.emplace_back(new DecodedParam_Env(-ref_id, false));
 							} else {
 								throw(ErrDecoderInvalidParameters(ptr - ptr_initial - sizeof(int32_t)));
 							}
 						} else {
-							ins.params->emplace_back(new DecodedParam_Int(rawval_time));
+							ins.params.emplace_back(new DecodedParam_Int(rawval_time));
 						}
 						return;
 					}
@@ -436,17 +415,7 @@ void RawEclDecoder::DecodeRawEclSubDataEntries(const char* ptr, size_t size_buf,
 						// Seek to the beginning of the instruction actual parameter list.
 						seek_to(0, ptr, size_buf, ptr_initial);
 						// Clear the instruction's parameter list.
-						if (ins.is_rawins) {
-							if (ins.rawins_params) {
-								delete ins.rawins_params;
-								ins.rawins_params = nullptr;
-							}
-						} else {
-							if (ins.params) {
-								delete ins.params;
-								ins.params = nullptr;
-							}
-						}
+						ins.params.clear();
 						ins.is_rawins = false;
 						try {
 							this->DecodeRawEclParams(
@@ -521,14 +490,9 @@ void RawEclDecoder::DecodeRawEclParams(
 	if (ins_def.params.size() == 1 && ins_def.params.at(0) == ReadIns::NumType::Anything) {
 		// If the parameter type specified for this instruction slot is "anything", succeed immediately and decode this instruction to a rawins.
 		ins.is_rawins = true;
-		unique_ptr<DecodedIns::rawins_params_t> params(new DecodedIns::rawins_params_t());
-		params->param_count = param_count;
-		params->param_mask = param_mask;
-		params->str_raw_params = string(ptr, size_buf);
-		ins.rawins_params = params.release();
 	} else {
 		ins.is_rawins = false;
-		unique_ptr<vector<shared_ptr<DecodedParam>>> params(new vector<shared_ptr<DecodedParam>>());
+		vector<shared_ptr<DecodedParam>> params;
 		vector<ReadIns::NumType>::const_iterator it_numtype;
 		uint8_t i_param;
 		for (
@@ -544,19 +508,19 @@ void RawEclDecoder::DecodeRawEclParams(
 					int32_t ref_id = rawval;
 					if (ref_id > 0) {
 						if (ref_id & 0x3) {
-							params->emplace_back(new DecodedParam_AbnormalVariable(ref_id, false));
+							params.emplace_back(new DecodedParam_AbnormalVariable(ref_id, false));
 						} else {
-							params->emplace_back(new DecodedParam_Variable((uint32_t)ref_id >> 2, false));
+							params.emplace_back(new DecodedParam_Variable((uint32_t)ref_id >> 2, false));
 						}
 					} else if (ref_id < 0 && ref_id >= -100) {
-						params->emplace_back(new DecodedParam_Stack(ref_id, false));
+						params.emplace_back(new DecodedParam_Stack(ref_id, false));
 					} else if (ref_id < -100) {
-						params->emplace_back(new DecodedParam_Env(-ref_id, false));
+						params.emplace_back(new DecodedParam_Env(-ref_id, false));
 					} else {
 						throw(ErrDecoderInvalidParameters(ptr - ptr_initial - sizeof(int32_t)));
 					}
 				} else {
-					params->emplace_back(new DecodedParam_Int(rawval));
+					params.emplace_back(new DecodedParam_Int(rawval));
 				}
 				++i_param;
 				break;
@@ -570,19 +534,19 @@ void RawEclDecoder::DecodeRawEclParams(
 					int32_t ref_id = (int32_t)rawval;
 					if (ref_id > 0) {
 						if (ref_id & 0x3) {
-							params->emplace_back(new DecodedParam_AbnormalVariable(ref_id, true));
+							params.emplace_back(new DecodedParam_AbnormalVariable(ref_id, true));
 						} else {
-							params->emplace_back(new DecodedParam_Variable((uint32_t)ref_id >> 2, true));
+							params.emplace_back(new DecodedParam_Variable((uint32_t)ref_id >> 2, true));
 						}
 					} else if (ref_id < 0 && ref_id >= -100) {
-						params->emplace_back(new DecodedParam_Stack(ref_id, true));
+						params.emplace_back(new DecodedParam_Stack(ref_id, true));
 					} else if (ref_id < -100) {
-						params->emplace_back(new DecodedParam_Env(-ref_id, true));
+						params.emplace_back(new DecodedParam_Env(-ref_id, true));
 					} else {
 						throw(ErrDecoderInvalidParameters(ptr - ptr_initial - sizeof(float)));
 					}
 				} else {
-					params->emplace_back(new DecodedParam_Float(rawval));
+					params.emplace_back(new DecodedParam_Float(rawval));
 				}
 				++i_param;
 				break;
@@ -593,7 +557,7 @@ void RawEclDecoder::DecodeRawEclParams(
 				size_t len_str = strnlen(ptr, size_buf);
 				if (len_str < 0) throw(ErrDecoderInvalidParameters(ptr - ptr_initial));
 				if (size_buf < len_str + 1) throw(ErrDecoderUnexpEof(ptr, size_buf, ptr_initial));
-				params->emplace_back(new DecodedParam_String(string(ptr, len_str)));
+				params.emplace_back(new DecodedParam_String(string(ptr, len_str)));
 				seek_delta(len_str + 1, ptr, size_buf, ptr_initial);
 				seek_align4(ptr, size_buf, ptr_initial);
 				++i_param;
@@ -658,7 +622,7 @@ void RawEclDecoder::DecodeRawEclParams(
 							param_in = shared_ptr<DecodedParam>(new DecodedParam_Int(rawval_int));
 						}
 					}
-					params->emplace_back(new DecodedParam_Call(param_in, is_from_float, is_to_float));
+					params.emplace_back(new DecodedParam_Call(param_in, is_from_float, is_to_float));
 					++i_param;
 				}
 				break;
@@ -671,7 +635,7 @@ void RawEclDecoder::DecodeRawEclParams(
 		if (it_numtype != ins_def.params.cend() || i_param != param_count) {
 			throw(ErrDecoderInvalidParameters(ptr - ptr_initial));
 		}
-		ins.params = params.release();
+		ins.params = params;
 	}
 }
 

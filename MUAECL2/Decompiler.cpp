@@ -182,11 +182,11 @@ void Decompiler::DecompileRoot(const DecodedRoot& root, ostream& stream) {
 			if (val_data_entry->data_entry_type == DecodedSubDataEntry::DataEntryType::Ins) {
 				const DecodedIns* ins = DecodedIns::CastToMe(val_data_entry.get());
 				if (ins->id == 11 || ins->id == 15) {
-					if (ins->params->size() < 1) throw(ErrDesignApp("Decompiler::DecompileRoot : too few parameters for a call instruction"));
-					const DecodedParam_String* param_sub_name = DecodedParam_String::CastToMe(ins->params->at(0).get());
+					if (ins->params.size() < 1) throw(ErrDesignApp("Decompiler::DecompileRoot : too few parameters for a call instruction"));
+					const DecodedParam_String* param_sub_name = DecodedParam_String::CastToMe(ins->params.at(0).get());
 					vector<Op::mType> vec_subv;
-					for (size_t i_param = 1; i_param < ins->params->size(); ++i_param) {
-						if (DecodedParam_Call::CastToMe(ins->params->at(i_param).get())->is_to_float) {
+					for (size_t i_param = 1; i_param < ins->params.size(); ++i_param) {
+						if (DecodedParam_Call::CastToMe(ins->params.at(i_param).get())->is_to_float) {
 							vec_subv.push_back(Op::mType::Float);
 						} else {
 							vec_subv.push_back(Op::mType::Int);
@@ -387,23 +387,23 @@ void Decompiler::DecompileSubPhaseB(DecompilerInternal::RootDecompileContext& ro
 				}
 				case 12: {
 					blk_seq->exit_type = BlockSeqBlock::ExitType::Goto;
-					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params->at(0).get())->id_target;
-					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params->at(1).get())->val;
+					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params.at(0).get())->id_target;
+					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params.at(1).get())->val;
 					blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(map_blk_target.at(id_target), time_exit_target);
 					break;
 				}
 				case 13: {
 					blk_seq->exit_type = BlockSeqBlock::ExitType::GotoIfZero;
-					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params->at(0).get())->id_target;
-					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params->at(1).get())->val;
+					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params.at(0).get())->id_target;
+					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params.at(1).get())->val;
 					blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(map_blk_target.at(id_target), time_exit_target);
 					blk_seq->vec_exit[1] = BlockSeqBlock::exit_def_t(blk_seq_fallthrough, blk_seq->GetEnterTime());
 					break;
 				}
 				case 14: {
 					blk_seq->exit_type = BlockSeqBlock::ExitType::GotoIfNonZero;
-					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params->at(0).get())->id_target;
-					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params->at(1).get())->val;
+					uint32_t id_target = DecodedParam_Jmp::CastToMe(blk_child->ins->params.at(0).get())->id_target;
+					uint32_t time_exit_target = DecodedParam_Int::CastToMe(blk_child->ins->params.at(1).get())->val;
 					blk_seq->vec_exit[0] = BlockSeqBlock::exit_def_t(map_blk_target.at(id_target), time_exit_target);
 					blk_seq->vec_exit[1] = BlockSeqBlock::exit_def_t(blk_seq_fallthrough, blk_seq->GetEnterTime());
 					break;

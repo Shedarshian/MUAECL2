@@ -125,12 +125,9 @@ struct DecodedIns final : public DecodedSubDataEntry {
 	uint16_t id;
 	uint8_t difficulty_mask;
 	uint32_t post_pop_count;
+	rawins_params_t rawins_params;
 	bool is_rawins;
-	union {
-		uintptr_t _dummy = 0;
-		vector<shared_ptr<DecodedParam>>* params;
-		rawins_params_t* rawins_params;
-	};
+	vector<shared_ptr<DecodedParam>> params;
 	DecodedIns();
 	DecodedIns(const DecodedIns& t);
 	DecodedIns(DecodedIns&& t);

@@ -97,7 +97,7 @@ namespace NameDecorator {
 				if (i < sizeof(decorated_name_prefix) - 1) throw(ErrInvalidDecoratedName());
 			}
 			{
-				static const regex rgx_identifier(""s, regex::flag_type::optimize);
+				static const regex rgx_identifier("^[A-Za-z_][A-Za-z0-9_]*$"s, regex::flag_type::optimize);
 				for (; pstr_decorated_name != pstr_decorated_name_end && *pstr_decorated_name != '@'; ++pstr_decorated_name) {
 					name.push_back(*pstr_decorated_name);
 				}
