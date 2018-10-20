@@ -43,9 +43,9 @@ Token* Tokenizer::getToken(){
 		if (Op::Ch::OperatorChar.find(nextChar) != Op::Ch::OperatorChar.end()) {
 			//是运算符
 			string op = "";
-			//没有组合的运算符，如点，或者将来有的一些运算符
-			if (nextChar == '.') {
-				willBeNegative = true;
+			//没有组合的运算符，如点与括号，或者将来有的一些运算符
+			if (nextChar == '.' || nextChar == '(' || nextChar == ')' || nextChar == '[' || nextChar == ']' || nextChar == '{' || nextChar == '}' || nextChar == ',' || nextChar == ';' || nextChar == ':') {
+				willBeNegative = !(nextChar == ')' || nextChar == ']');
 				op += nextChar;
 				nextChar = ReadStream.get();
 				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
@@ -104,7 +104,7 @@ Token* Tokenizer::getToken(){
 				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
 			//+-*/%^<>!=
-			willBeNegative = (nextChar != ')');
+			willBeNegative = true;
 			op += nextChar;
 			nextChar = ReadStream.get();
 			if (nextChar == '=') {
