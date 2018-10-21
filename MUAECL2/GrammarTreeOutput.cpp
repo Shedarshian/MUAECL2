@@ -2229,6 +2229,12 @@ fSub tSub::Output(const tRoot& root) const {
 	);
 
 	sub_ctx.stack_difficulty_mask.push(0xFF);
+	if (this->no_overload) {
+		StmtOutputContext stmt_ctx;
+		uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(Op::mType::Int)) - get_count_id_var(Op::mType::Int);
+		sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_env(10000, false) }, 1);
+		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_dummy, false) }, -1);
+	}
 	cast_to_stmts(this->stmts)->Output(sub_ctx);
 	sub_ctx.stack_difficulty_mask.pop();
 	vector<shared_ptr<fSubDataEntry>> vec_data_entry(sub_ctx.list_data_entry.cbegin(), sub_ctx.list_data_entry.cend());
