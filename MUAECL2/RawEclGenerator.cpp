@@ -220,7 +220,6 @@ SubSerializationContext::SubSerializationContext(uint32_t count_var, const vecto
 	}
 	this->vec_data_entry.emplace_back(new Ins(40, vector<Parameter*>({ new Parameter_int(count_var * 4) })));
 	this->vec_data_entry.insert(this->vec_data_entry.cend(), data_entries.cbegin(), data_entries.cend());
-	this->vec_data_entry.emplace_back(new Ins(41, vector<Parameter*>()));
 	this->vec_data_entry.emplace_back(new Ins(10, vector<Parameter*>()));
 	{
 		vector<Parameter*> vec_param_dummy;
