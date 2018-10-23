@@ -46,13 +46,9 @@ sub main()
     while (1) {
         wait(1000);
     }
-	//reflect(0,EX_WAIT,0,1,1,1.);
-	spdadd(0, 0, 10, 3.0f:5.0f:5.0f:5.0f, -999999.0f);
-	et_dir(0, RanDEG, 0.0f);
-	ifSCB = 1;
-	//reflect(1,1,1.,0,0,0);
-	//CardStart{};
-    //end();
+	int a,b,c,d;
+	d=(a=b)=c;
+    end();
 }
 
 sub MainBossSpell();
