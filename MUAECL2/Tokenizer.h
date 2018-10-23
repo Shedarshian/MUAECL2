@@ -47,7 +47,7 @@ public:
 	int debug_lineNo() { return lineNo; }
 	inline auto&& popLineNoToPos() { return move(lineNoToPos); }
 private:
-	map<int, int> lineNoToPos;
+	map<int, streampos> lineNoToPos;
 	Token* getToken();
 	Token* bufferToken;
 	char nextChar;
