@@ -1,5 +1,6 @@
 #pragma once
 #include <ostream>
+#include <map>
 #include <unordered_map>
 #include <memory>
 #include "Misc.h"
@@ -32,4 +33,5 @@ struct SubSerializationContext final {
 	vector<size_t> vec_offs_data_entry;
 	size_t i_data_entry_current;
 	unordered_map<uint32_t, size_t> map_offs_target;
+	multimap<int, size_t> map_offs_stmt_mark;
 };

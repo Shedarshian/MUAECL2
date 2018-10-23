@@ -144,6 +144,15 @@ public:
 	uint32_t id_target;
 };
 
+struct DummyIns_StmtMark :public fSubDataEntry {
+public:
+	explicit DummyIns_StmtMark(int lineno);
+	virtual ~DummyIns_StmtMark() = default;
+	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
+	virtual void set_offs(SubSerializationContext& sub_ctx, size_t offs) const override;
+	int lineno;
+};
+
 //语句类型
 struct Ins :public fSubDataEntry {
 	Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask = 0xFF, uint32_t time = 0);

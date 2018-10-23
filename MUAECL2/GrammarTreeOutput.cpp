@@ -111,6 +111,9 @@ struct SubOutputContext final {
 	inline list<shared_ptr<fSubDataEntry>>::iterator insert_dummyins_target(uint32_t id_target) {
 		return this->list_data_entry.insert(this->it_list_data_entry_curpos, shared_ptr<fSubDataEntry>(new DummyIns_Target(id_target)));
 	}
+	inline list<shared_ptr<fSubDataEntry>>::iterator insert_dummyins_stmt_mark(int lineno) {
+		return this->list_data_entry.insert(this->it_list_data_entry_curpos, shared_ptr<fSubDataEntry>(new DummyIns_StmtMark(lineno)));
+	}
 };
 
 /// <summary>
@@ -749,6 +752,7 @@ static inline shared_ptr<StackRvalueResult> stack_rvalue_int_exprf_output(const 
 
 void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	if (this->type() != Op::NonTerm::stmt) throw(ErrDesignApp("tNoVars::OutputStmt : this->type() != Op::NonTerm::stmt"));
+	sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 	StmtOutputContext stmt_ctx;
 	switch (this->id) {
 	case 2:// stmt->expr ;

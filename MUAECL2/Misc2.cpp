@@ -249,6 +249,17 @@ void DummyIns_Target::set_offs(SubSerializationContext& sub_ctx, size_t offs) co
 	sub_ctx.map_offs_target[this->id_target] = offs;
 }
 
+DummyIns_StmtMark::DummyIns_StmtMark(int lineno)
+	: lineno(lineno) {}
+
+size_t DummyIns_StmtMark::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	return 0;
+}
+
+void DummyIns_StmtMark::set_offs(SubSerializationContext& sub_ctx, size_t offs) const {
+	sub_ctx.map_offs_stmt_mark.emplace(this->lineno, offs);
+}
+
 Ins::Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask, uint32_t time)
 	: id(id), paras(paras), difficulty_mask(difficulty_mask), time(time) {}
 
