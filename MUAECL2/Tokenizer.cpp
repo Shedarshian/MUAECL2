@@ -32,7 +32,7 @@ Token* Tokenizer::getToken(){
 	//while(1)·½±ã¿Õ°×Óë×¢ÊÍ
 	while (1) {
 		//Èô¶Áµ½¿Õ°×£¬Ôò¼ÌÐø
-		if (nextChar == ' ' || nextChar == '\t' || (nextChar == '\n' && ++lineNo)) {
+		if (nextChar == ' ' || nextChar == '\t' || addLine(nextChar)) {
 			nextChar = ReadStream.get();
 			continue;
 		}
@@ -90,7 +90,7 @@ Token* Tokenizer::getToken(){
 					nextChar = ReadStream.get();
 					while (!(isStar && nextChar == '/') && nextChar != EOF) {
 						isStar = (nextChar == '*');
-						if (nextChar == '\n') lineNo++;
+						addLine(nextChar);
 						nextChar = ReadStream.get();
 					}
 					if (nextChar != EOF) nextChar = ReadStream.get();
