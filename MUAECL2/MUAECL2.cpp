@@ -8,13 +8,16 @@
 #include "Parser.h"
 #include "RawEclGenerator.h"
 #include "RawEclDecoder.h"
+#include "Misc3.h"
 #include <memory>
 #include <string>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <streambuf>
 #include <vector>
 #include <initializer_list>
+#include <map>
 #include <unordered_map>
 #include <filesystem>
 #include <rapidjson/document.h>
@@ -71,6 +74,9 @@ struct PreprocessArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	rapidjson::Document* jsondoc_dbginfo = nullptr;
+	rapidjson::Value* jsonval_dbginfo_srcfile_in = nullptr;
+	rapidjson::Value* jsonval_dbginfo_srcfile_out = nullptr;
+	uint64_t* id_dbginfo_srcpos_next = nullptr;
 	vector<filesystem::path> searchpath;
 	filesystem::path currentpath;
 	vector<string> ecli;
@@ -82,7 +88,9 @@ struct CompileArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	rapidjson::Document* jsondoc_dbginfo = nullptr;
+	rapidjson::Value* jsonval_dbginfo_srcfile = nullptr;
 	rapidjson::Value* jsonval_dbginfo_eclfile = nullptr;
+	uint64_t* id_dbginfo_srcpos_next = nullptr;
 	string filename;
 	vector<string> ecli;
 	vector<string> anim;
@@ -115,6 +123,10 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input);
 static void preprocess(PreprocessArguments& preprocess_args);
 static void compile(CompileArguments& compile_args);
+/// <summary>Process statement marks in the debug information document.</summary>
+static void dbginfo_process_stmt_marks(rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_srcfile, rapidjson::Value& jsonval_dbginfo_eclfile);
+/// <summary>Strip intermediate information in the debug information document.</summary>
+static void dbginfo_strip_intermediate(rapidjson::Document& jsondoc_dbginfo);
 
 int main(int argc, char* argv[]) {
 	try {
@@ -237,9 +249,12 @@ static void display_version() throw() {
 }
 
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
+	ReadIns::Read();
+
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	rapidjson::Document jsondoc_dbginfo;
+	uint64_t id_dbginfo_srcpos_next = 0;
 	string filename;	//used for macro substitute
 	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
@@ -271,44 +286,65 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	}
 	jsondoc_dbginfo.SetObject();
 	jsondoc_dbginfo.AddMember(u8"type", rapidjson::Value(str_dbginfo_type.c_str(), str_dbginfo_type.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+	jsondoc_dbginfo.AddMember(u8"srcfiles", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
 	jsondoc_dbginfo.AddMember(u8"eclfiles", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
-	jsondoc_dbginfo[u8"eclfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
-	rapidjson::Value& jsonval_dbginfo_eclfile = *jsondoc_dbginfo[u8"eclfiles"].Begin();
 
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
 
 	if (map_cmdarg_input["no-preprocess"s].is_specified) {
+		jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcfile_compile = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
+		jsondoc_dbginfo[u8"eclfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_eclfile = *(jsondoc_dbginfo[u8"eclfiles"].End() - 1);
+
 		CompileArguments compile_args;
 		compile_args.in = in;
 		compile_args.out = out;
 		compile_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+		compile_args.jsonval_dbginfo_srcfile = &jsonval_dbginfo_srcfile_compile;
 		compile_args.jsonval_dbginfo_eclfile = &jsonval_dbginfo_eclfile;
+		compile_args.id_dbginfo_srcpos_next = &id_dbginfo_srcpos_next;
 		compile_args.filename = filename;
 		compile(compile_args);
 	} else {
 		stringstream preprocessed;
 
-		ReadIns::Read();
+		jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcfile_preprocess_in = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
+		jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcfile_preprocess_out = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
+
 		PreprocessArguments preprocess_args;
 		preprocess_args.in = in;
 		preprocess_args.out = &preprocessed;
 		preprocess_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+		preprocess_args.jsonval_dbginfo_srcfile_in = &jsonval_dbginfo_srcfile_preprocess_in;
+		preprocess_args.jsonval_dbginfo_srcfile_out = &jsonval_dbginfo_srcfile_preprocess_out;
+		preprocess_args.id_dbginfo_srcpos_next = &id_dbginfo_srcpos_next;
 		preprocess_args.currentpath = currentpath;
 		preprocess_args.searchpath = searchpath;
 		preprocess(preprocess_args);
+
+		jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcfile_compile = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
+		jsondoc_dbginfo[u8"eclfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_eclfile = *(jsondoc_dbginfo[u8"eclfiles"].End() - 1);
 
 		CompileArguments compile_args;
 		compile_args.in = &preprocessed;
 		compile_args.out = out;
 		compile_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+		compile_args.jsonval_dbginfo_srcfile = &jsonval_dbginfo_srcfile_compile;
 		compile_args.jsonval_dbginfo_eclfile = &jsonval_dbginfo_eclfile;
+		compile_args.id_dbginfo_srcpos_next = &id_dbginfo_srcpos_next;
 		compile_args.filename = filename;
 		compile_args.ecli = preprocess_args.ecli;
 		compile_args.anim = preprocess_args.anim;
 		compile(compile_args);
 	}
 
+	dbginfo_strip_intermediate(jsondoc_dbginfo);
 	if (dbginfo_f) {
 		rapidjson::StringBuffer jsonstrbuf_dbginfo;
 		rapidjson::Writer<rapidjson::StringBuffer> jsonwriter_dbginfo(jsonstrbuf_dbginfo);
@@ -318,8 +354,11 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 }
 
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
+	ReadIns::Read();
+
 	PreprocessArguments preprocess_args;
 	rapidjson::Document jsondoc_dbginfo;
+	uint64_t id_dbginfo_srcpos_next = 0;
 	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
 
@@ -348,17 +387,26 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 	}
 	jsondoc_dbginfo.SetObject();
 	jsondoc_dbginfo.AddMember(u8"type", rapidjson::Value(str_dbginfo_type.c_str(), str_dbginfo_type.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+	jsondoc_dbginfo.AddMember(u8"srcfiles", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
+
+	jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+	rapidjson::Value& jsonval_dbginfo_srcfile_preprocess_in = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
+	jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+	rapidjson::Value& jsonval_dbginfo_srcfile_preprocess_out = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
 
 	preprocess_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+	preprocess_args.jsonval_dbginfo_srcfile_in = &jsonval_dbginfo_srcfile_preprocess_in;
+	preprocess_args.jsonval_dbginfo_srcfile_out = &jsonval_dbginfo_srcfile_preprocess_out;
+	preprocess_args.id_dbginfo_srcpos_next = &id_dbginfo_srcpos_next;
 
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
 
-	ReadIns::Read();
 	preprocess_args.currentpath = currentpath;
 	preprocess_args.searchpath = searchpath;
 	preprocess(preprocess_args);
 
+	dbginfo_strip_intermediate(jsondoc_dbginfo);
 	if (dbginfo_f) {
 		rapidjson::StringBuffer jsonstrbuf_dbginfo;
 		rapidjson::Writer<rapidjson::StringBuffer> jsonwriter_dbginfo(jsonstrbuf_dbginfo);
@@ -368,19 +416,102 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 }
 
 static void preprocess(PreprocessArguments& preprocess_args) {
-	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(*preprocess_args.in, *preprocess_args.out, preprocess_args.currentpath, preprocess_args.searchpath);
+	if (!preprocess_args.in) throw(ErrDesignApp("!preprocess_args.in"));
+	if (!preprocess_args.out) throw(ErrDesignApp("!preprocess_args.out"));
+	if (!preprocess_args.jsondoc_dbginfo) throw(ErrDesignApp("!preprocess_args.jsondoc_dbginfo"));
+	if (!preprocess_args.jsonval_dbginfo_srcfile_in) throw(ErrDesignApp("!preprocess_args.jsonval_dbginfo_srcfile_in"));
+	if (!preprocess_args.jsonval_dbginfo_srcfile_out) throw(ErrDesignApp("!preprocess_args.jsonval_dbginfo_srcfile_out"));
+	if (!preprocess_args.id_dbginfo_srcpos_next) throw(ErrDesignApp("!preprocess_args.id_dbginfo_srcpos_next"));
+
+	stringstream sstream_in;
+	sstream_in << preprocess_args.in->rdbuf();
+
+	{
+		string str_base64_hash_in(base64_encode_string(hash_string(sstream_in.str())));
+		preprocess_args.jsonval_dbginfo_srcfile_in->AddMember(u8"hash", rapidjson::Value(str_base64_hash_in.c_str(), str_base64_hash_in.size(), preprocess_args.jsondoc_dbginfo->GetAllocator()), preprocess_args.jsondoc_dbginfo->GetAllocator());
+	}
+
+	stringstream sstream_out;
+	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(sstream_in, sstream_out, preprocess_args.currentpath, preprocess_args.searchpath);
 	preprocess_args.ecli = ecli_and_anim.first;
 	preprocess_args.anim = ecli_and_anim.second;
+	// TODO: Write debug information.
+
+	{
+		string str_base64_hash_out(base64_encode_string(hash_string(sstream_out.str())));
+		preprocess_args.jsonval_dbginfo_srcfile_out->AddMember(u8"hash", rapidjson::Value(str_base64_hash_out.c_str(), str_base64_hash_out.size(), preprocess_args.jsondoc_dbginfo->GetAllocator()), preprocess_args.jsondoc_dbginfo->GetAllocator());
+	}
+
+	(*preprocess_args.out) << sstream_out.rdbuf();
 }
 
 static void compile(CompileArguments& compile_args) {
+	if (!compile_args.in) throw(ErrDesignApp("!compile_args.in"));
+	if (!compile_args.out) throw(ErrDesignApp("!compile_args.out"));
+	if (!compile_args.jsondoc_dbginfo) throw(ErrDesignApp("!compile_args.jsondoc_dbginfo"));
+	if (!compile_args.jsonval_dbginfo_srcfile) throw(ErrDesignApp("!compile_args.jsonval_dbginfo_srcfile"));
+	if (!compile_args.jsonval_dbginfo_eclfile) throw(ErrDesignApp("!compile_args.jsonval_dbginfo_eclfile"));
+	if (!compile_args.id_dbginfo_srcpos_next) throw(ErrDesignApp("!compile_args.id_dbginfo_srcpos_next"));
+
+	stringstream sstream_in;
+	sstream_in << compile_args.in->rdbuf();
+	
+	{
+		string str_base64_hash_in(base64_encode_string(hash_string(sstream_in.str())));
+		compile_args.jsonval_dbginfo_srcfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash_in.c_str(), str_base64_hash_in.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
+	}
+
 	Parser::initialize();
-	Tokenizer tokenizer(*compile_args.in, compile_args.filename);
+	Tokenizer tokenizer(sstream_in, compile_args.filename);
 	Parser parser(tokenizer);
 	tRoot* tree = parser.analyse();
 	parser.TypeCheck();
-	RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim));
-	unique_ptr<ofstream> out_f;
-	raw_ecl_generator.generate(*compile_args.out, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
+	RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile));
+	string str_out;
+	raw_ecl_generator.generate(str_out, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
 	Parser::clear();
+
+	{
+		if (!compile_args.jsonval_dbginfo_srcfile->HasMember(u8"srcposes")) compile_args.jsonval_dbginfo_srcfile->AddMember(u8"srcposes", rapidjson::Value(rapidjson::Type::kArrayType), compile_args.jsondoc_dbginfo->GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcposes = (*compile_args.jsonval_dbginfo_srcfile)[u8"srcposes"];
+		map<int, streamoff> map_lineno_to_pos;
+		{
+			map<int, streampos> map_lineno_to_streampos(tokenizer.popLineNoToPos());
+			for (const pair<int, streampos>& val_lineno_to_streampos : map_lineno_to_streampos)
+				map_lineno_to_pos.emplace(val_lineno_to_streampos);
+		}
+		jsonval_dbginfo_srcposes.Reserve(map_lineno_to_pos.size(), compile_args.jsondoc_dbginfo->GetAllocator());
+		unordered_map<streamoff, rapidjson::Value&> map_jsonval_dbginfo_srcpos;
+		for (rapidjson::Value& jsonval_dbginfo_srcpos : jsonval_dbginfo_srcposes.GetArray()) {
+			map_jsonval_dbginfo_srcpos.emplace(jsonval_dbginfo_srcpos[u8"pos"].GetInt64(), jsonval_dbginfo_srcpos);
+		}
+		for (const pair<int, streamoff>& val_lineno_to_pos : map_lineno_to_pos) {
+			if (!map_jsonval_dbginfo_srcpos.count(val_lineno_to_pos.second)) {
+				jsonval_dbginfo_srcposes.PushBack(rapidjson::Value(rapidjson::Type::kObjectType), compile_args.jsondoc_dbginfo->GetAllocator());
+				rapidjson::Value& jsonval_dbginfo_srcpos = *(jsonval_dbginfo_srcposes.End() - 1);
+				map_jsonval_dbginfo_srcpos.emplace(val_lineno_to_pos.second, jsonval_dbginfo_srcpos);
+				jsonval_dbginfo_srcpos.AddMember(u8"pos", rapidjson::Value((int64_t)val_lineno_to_pos.second), compile_args.jsondoc_dbginfo->GetAllocator());
+				jsonval_dbginfo_srcpos.AddMember(u8"id", rapidjson::Value((*compile_args.id_dbginfo_srcpos_next)++), compile_args.jsondoc_dbginfo->GetAllocator());
+			}
+			rapidjson::Value& jsonval_dbginfo_srcpos = map_jsonval_dbginfo_srcpos.at(val_lineno_to_pos.second);
+			jsonval_dbginfo_srcpos.AddMember(u8"lineno", rapidjson::Value((int64_t)val_lineno_to_pos.first), compile_args.jsondoc_dbginfo->GetAllocator());
+		}
+	}
+
+	dbginfo_process_stmt_marks(*compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_srcfile, *compile_args.jsonval_dbginfo_eclfile);
+
+	{
+		string str_base64_hash(base64_encode_string(hash_string(str_out)));
+		compile_args.jsonval_dbginfo_eclfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash.c_str(), str_base64_hash.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
+	}
+
+	compile_args.out->write(str_out.c_str(), str_out.size());
+}
+
+static void dbginfo_process_stmt_marks(rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_srcfile, rapidjson::Value& jsonval_dbginfo_eclfile) {
+	// TODO: Implement dbginfo_process_stmt_marks.
+}
+
+static void dbginfo_strip_intermediate(rapidjson::Document& jsondoc_dbginfo) {
+	// TODO: Implement dbginfo_strip_intermediate.
 }

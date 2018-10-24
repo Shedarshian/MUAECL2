@@ -34,11 +34,11 @@ RawEclGenerator::RawEclGenerator(const fRoot& root)
 
 RawEclGenerator::~RawEclGenerator() {}
 
-void RawEclGenerator::generate(std::ostream& stream, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+void RawEclGenerator::generate(string& str, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
 	size_t size = this->generate(nullptr, 0, nullptr, nullptr);
 	unique_ptr<char[]> ptr(new char[size ? size : 1]());
 	if (this->generate(ptr.get(), size, &jsondoc_dbginfo, &jsonval_dbginfo_eclfile) != size) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::generate"));
-	stream.write(ptr.get(), size);
+	str = string(ptr.get(), size);
 }
 
 size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <stack>
 #include <queue>
+#include <unordered_map>
 #include <algorithm>
 #include "GrammarTree.h"
 #include "NameDecorator.h"
@@ -2227,7 +2228,10 @@ string tSub::getDecoratedName() const {
 	}
 }
 
-fSub tSub::Output(const tRoot& root) const {
+fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const {
+	if (jsonval_dbginfo_sub.HasMember(u8"srcname")) jsonval_dbginfo_sub.RemoveMember(u8"srcname");
+	jsonval_dbginfo_sub.AddMember(u8"srcname", rapidjson::Value(this->name.c_str(), this->name.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+
 	SubOutputContext sub_ctx(&root);
 
 	for_each(this->vardecl.crbegin(), this->vardecl.crend(),
@@ -2253,6 +2257,7 @@ fSub tSub::Output(const tRoot& root) const {
 }
 
 string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_params) const {
+	// TODO: no_overload subs?
 	if (ReadIns::defaultList.count(id)) {
 		return id;
 	} else {
@@ -2279,10 +2284,26 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 	}
 }
 
-fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim) const {
+fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+	if (!jsonval_dbginfo_eclfile.HasMember(u8"eclsubs")) jsonval_dbginfo_eclfile.AddMember(u8"eclsubs", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
+	rapidjson::Value& jsonval_dbginfo_subs = jsonval_dbginfo_eclfile[u8"eclsubs"];
+	jsonval_dbginfo_subs.Reserve(this->subs.size(), jsondoc_dbginfo.GetAllocator());
+	unordered_map<string, rapidjson::Value&> map_jsonval_dbginfo_sub;
+	for (rapidjson::Value& jsonval_dbginfo_sub : jsonval_dbginfo_subs.GetArray())
+		map_jsonval_dbginfo_sub.emplace(string(jsonval_dbginfo_sub[u8"name"].GetString(), jsonval_dbginfo_sub[u8"name"].GetStringLength()), jsonval_dbginfo_sub);
+	for (const tSub* val_tsub : this->subs) {
+		std::string name_eclsub(val_tsub->getDecoratedName());
+		if (!map_jsonval_dbginfo_sub.count(name_eclsub)) {
+			jsonval_dbginfo_subs.PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+			rapidjson::Value& jsonval_dbginfo_sub = *(jsonval_dbginfo_subs.End() - 1);
+			map_jsonval_dbginfo_sub.emplace(name_eclsub, jsonval_dbginfo_sub);
+			jsonval_dbginfo_sub.AddMember(u8"name", rapidjson::Value(name_eclsub.c_str(), name_eclsub.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+		}
+	}
+
 	vector<fSub> fsubs;
 	for (const tSub* val_tsub : this->subs)
-		fsubs.push_back(val_tsub->Output(*this));
+		fsubs.push_back(val_tsub->Output(*this, jsondoc_dbginfo, map_jsonval_dbginfo_sub.at(val_tsub->getDecoratedName())));
 	return fRoot(fsubs, vector<string>(), vector<string>());
 }
 

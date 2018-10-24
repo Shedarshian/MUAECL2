@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <ostream>
 #include <map>
 #include <unordered_map>
@@ -17,9 +18,9 @@ public:
 	RawEclGenerator(const fRoot& root);
 	~RawEclGenerator();
 	/// <summary>Generate the raw ECL file and output it to an output stream.</summary>
-	/// <param name="stream">The output stream.</param>
+	/// <param name="str">A string to which the output is written.</param>
 	/// <param name="jsondoc_dbginfo">The debug information JSON document.</param>
-	void generate(ostream& stream, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const;
+	void generate(string& str, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const;
 private:
 	const fRoot root;
 	size_t generate(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;

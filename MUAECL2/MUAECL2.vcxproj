@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Decompiler.h" />
+    <ClInclude Include="Misc3.h" />
     <ClInclude Include="Preprocessor.h" />
     <ClInclude Include="RawEclDecoder.h" />
     <ClInclude Include="GrammarTree.h" />
@@ -171,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Decompiler.cpp" />
+    <ClCompile Include="Misc3.cpp" />
     <ClCompile Include="Preprocessor.cpp" />
     <ClCompile Include="RawEclDecoder.cpp" />
     <ClCompile Include="GrammarTree.cpp" />
