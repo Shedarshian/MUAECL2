@@ -752,7 +752,9 @@ static inline shared_ptr<StackRvalueResult> stack_rvalue_int_exprf_output(const 
 
 void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	if (this->type() != Op::NonTerm::stmt) throw(ErrDesignApp("tNoVars::OutputStmt : this->type() != Op::NonTerm::stmt"));
-	sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
+	if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
+	// Note: For statements that contain sub-statements, an additional statement mark should be inserted after each sub-statement that has other instruction(s) after it in this statement.
+	// This way, the instruction(s) after the sub-statement will also be recognized as a part of this statement.
 	StmtOutputContext stmt_ctx;
 	switch (this->id) {
 	case 2:// stmt->expr ;
@@ -777,6 +779,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		stack_rvalue_int_expr_output(this->branchs[2], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_f), new Parameter_int(0) }, -1);
 		stmt_output(this->branchs[1], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, 0);
 		sub_ctx.insert_dummyins_target(id_target_f);
 		stmt_output(this->branchs[0], sub_ctx);
@@ -802,6 +805,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[0], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
 		sub_ctx.insert_dummyins_target(id_target_expr);
@@ -823,6 +827,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[0], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
 		sub_ctx.insert_dummyins_target(id_target_expr);
@@ -936,6 +941,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[1], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
 		sub_ctx.insert_dummyins_target(id_target_expr);

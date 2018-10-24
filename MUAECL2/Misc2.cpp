@@ -257,7 +257,9 @@ size_t DummyIns_StmtMark::serialize(char* ptr, size_t size_buf, const SubSeriali
 }
 
 void DummyIns_StmtMark::set_offs(SubSerializationContext& sub_ctx, size_t offs) const {
-	sub_ctx.map_offs_stmt_mark.emplace(this->lineno, offs);
+	// If multiple statement marks exist for a single ECL instruction offset, the one with the largest line number is used.
+	if (!sub_ctx.map_lineno_stmt_mark.count(offs) || sub_ctx.map_lineno_stmt_mark.at(offs) < this->lineno)
+		sub_ctx.map_lineno_stmt_mark[offs] = this->lineno;
 }
 
 Ins::Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask, uint32_t time)

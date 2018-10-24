@@ -17,6 +17,9 @@
 #include <initializer_list>
 #include <unordered_map>
 #include <filesystem>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 using namespace std;
 
@@ -67,6 +70,7 @@ struct cmdarg_input_t {
 struct PreprocessArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	rapidjson::Document* jsondoc_dbginfo = nullptr;
 	vector<filesystem::path> searchpath;
 	filesystem::path currentpath;
 	vector<string> ecli;
@@ -77,10 +81,15 @@ struct PreprocessArguments final {
 struct CompileArguments final {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	rapidjson::Document* jsondoc_dbginfo = nullptr;
+	rapidjson::Value* jsonval_dbginfo_eclfile = nullptr;
 	string filename;
 	vector<string> ecli;
 	vector<string> anim;
 };
+
+/// <summary>The type field in the debug information JSON.</summary>
+static const std::string str_dbginfo_type(u8"MUAECL2"s);
 
 /// <summary>Command line argument definition map.
 /// From the internally used identifier of an argument to the <c>cmdarg_def_t</c> object that contains its definition.
@@ -179,8 +188,7 @@ int main(int argc, char* argv[]) {
 		cerr << e.what() << endl;
 	} catch (ErrFileNotFound& e) {
 		cerr << e.what() << endl;
-	}
-	catch (exception &e) {
+	} catch (exception &e) {
 		cerr << e.what() << endl;
 	}
 #ifdef _DEBUG
@@ -231,6 +239,7 @@ static void display_version() throw() {
 static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
 	istream* in = nullptr;
 	ostream* out = nullptr;
+	rapidjson::Document jsondoc_dbginfo;
 	string filename;	//used for macro substitute
 	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
@@ -254,6 +263,18 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		out = &cout;
 	}
 
+	unique_ptr<ofstream> dbginfo_f;
+	if (map_cmdarg_input["output-file"s].is_specified) {
+		filesystem::path fspath_dbginfo(map_cmdarg_input["output-file"s].value);
+		fspath_dbginfo.replace_extension(filesystem::path("mecl-dbginfo"));
+		dbginfo_f = unique_ptr<ofstream>(new ofstream(fspath_dbginfo, ios_base::binary));
+	}
+	jsondoc_dbginfo.SetObject();
+	jsondoc_dbginfo.AddMember(u8"type", rapidjson::Value(str_dbginfo_type.c_str(), str_dbginfo_type.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+	jsondoc_dbginfo.AddMember(u8"eclfiles", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
+	jsondoc_dbginfo[u8"eclfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+	rapidjson::Value& jsonval_dbginfo_eclfile = *jsondoc_dbginfo[u8"eclfiles"].Begin();
+
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
 
@@ -261,6 +282,8 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		CompileArguments compile_args;
 		compile_args.in = in;
 		compile_args.out = out;
+		compile_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+		compile_args.jsonval_dbginfo_eclfile = &jsonval_dbginfo_eclfile;
 		compile_args.filename = filename;
 		compile(compile_args);
 	} else {
@@ -270,6 +293,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		PreprocessArguments preprocess_args;
 		preprocess_args.in = in;
 		preprocess_args.out = &preprocessed;
+		preprocess_args.jsondoc_dbginfo = &jsondoc_dbginfo;
 		preprocess_args.currentpath = currentpath;
 		preprocess_args.searchpath = searchpath;
 		preprocess(preprocess_args);
@@ -277,15 +301,25 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		CompileArguments compile_args;
 		compile_args.in = &preprocessed;
 		compile_args.out = out;
+		compile_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+		compile_args.jsonval_dbginfo_eclfile = &jsonval_dbginfo_eclfile;
 		compile_args.filename = filename;
 		compile_args.ecli = preprocess_args.ecli;
 		compile_args.anim = preprocess_args.anim;
 		compile(compile_args);
 	}
+
+	if (dbginfo_f) {
+		rapidjson::StringBuffer jsonstrbuf_dbginfo;
+		rapidjson::Writer<rapidjson::StringBuffer> jsonwriter_dbginfo(jsonstrbuf_dbginfo);
+		jsondoc_dbginfo.Accept(jsonwriter_dbginfo);
+		dbginfo_f->write(jsonstrbuf_dbginfo.GetString(), jsonstrbuf_dbginfo.GetLength());
+	}
 }
 
 static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_input) {
 	PreprocessArguments preprocess_args;
+	rapidjson::Document jsondoc_dbginfo;
 	filesystem::path currentpath;
 	vector<filesystem::path> searchpath;	//used for preprocess
 
@@ -306,6 +340,17 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 		preprocess_args.out = &cout;
 	}
 
+	unique_ptr<ofstream> dbginfo_f;
+	if (map_cmdarg_input["output-file"s].is_specified) {
+		filesystem::path fspath_dbginfo(map_cmdarg_input["output-file"s].value);
+		fspath_dbginfo.replace_extension(filesystem::path("mecl-dbginfo"));
+		dbginfo_f = unique_ptr<ofstream>(new ofstream(fspath_dbginfo, ios_base::binary));
+	}
+	jsondoc_dbginfo.SetObject();
+	jsondoc_dbginfo.AddMember(u8"type", rapidjson::Value(str_dbginfo_type.c_str(), str_dbginfo_type.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+
+	preprocess_args.jsondoc_dbginfo = &jsondoc_dbginfo;
+
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
 
@@ -313,6 +358,13 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 	preprocess_args.currentpath = currentpath;
 	preprocess_args.searchpath = searchpath;
 	preprocess(preprocess_args);
+
+	if (dbginfo_f) {
+		rapidjson::StringBuffer jsonstrbuf_dbginfo;
+		rapidjson::Writer<rapidjson::StringBuffer> jsonwriter_dbginfo(jsonstrbuf_dbginfo);
+		jsondoc_dbginfo.Accept(jsonwriter_dbginfo);
+		dbginfo_f->write(jsonstrbuf_dbginfo.GetString(), jsonstrbuf_dbginfo.GetLength());
+	}
 }
 
 static void preprocess(PreprocessArguments& preprocess_args) {
@@ -329,6 +381,6 @@ static void compile(CompileArguments& compile_args) {
 	parser.TypeCheck();
 	RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim));
 	unique_ptr<ofstream> out_f;
-	raw_ecl_generator.generate(*compile_args.out);
+	raw_ecl_generator.generate(*compile_args.out, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
 	Parser::clear();
 }
