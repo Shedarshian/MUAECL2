@@ -431,11 +431,21 @@ static void preprocess(PreprocessArguments& preprocess_args) {
 		preprocess_args.jsonval_dbginfo_srcfile_in->AddMember(u8"hash", rapidjson::Value(str_base64_hash_in.c_str(), str_base64_hash_in.size(), preprocess_args.jsondoc_dbginfo->GetAllocator()), preprocess_args.jsondoc_dbginfo->GetAllocator());
 	}
 
+	{
+		if (!preprocess_args.jsonval_dbginfo_srcfile_in->HasMember(u8"srcposes")) preprocess_args.jsonval_dbginfo_srcfile_in->AddMember(u8"srcposes", rapidjson::Value(rapidjson::Type::kArrayType), preprocess_args.jsondoc_dbginfo->GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcposes = (*preprocess_args.jsonval_dbginfo_srcfile_in)[u8"srcposes"];
+	}
+
 	stringstream sstream_out;
 	pair<vector<string>, vector<string>> ecli_and_anim = Preprocessor::process(sstream_in, sstream_out, preprocess_args.currentpath, preprocess_args.searchpath);
 	preprocess_args.ecli = ecli_and_anim.first;
 	preprocess_args.anim = ecli_and_anim.second;
 	// TODO: Write debug information.
+
+	{
+		if (!preprocess_args.jsonval_dbginfo_srcfile_out->HasMember(u8"srcposes")) preprocess_args.jsonval_dbginfo_srcfile_out->AddMember(u8"srcposes", rapidjson::Value(rapidjson::Type::kArrayType), preprocess_args.jsondoc_dbginfo->GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_srcposes = (*preprocess_args.jsonval_dbginfo_srcfile_out)[u8"srcposes"];
+	}
 
 	{
 		string str_base64_hash_out(base64_encode_string(hash_string(sstream_out.str())));
@@ -455,7 +465,7 @@ static void compile(CompileArguments& compile_args) {
 
 	stringstream sstream_in;
 	sstream_in << compile_args.in->rdbuf();
-	
+
 	{
 		string str_base64_hash_in(base64_encode_string(hash_string(sstream_in.str())));
 		compile_args.jsonval_dbginfo_srcfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash_in.c_str(), str_base64_hash_in.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
@@ -509,9 +519,32 @@ static void compile(CompileArguments& compile_args) {
 }
 
 static void dbginfo_process_stmt_marks(rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_srcfile, rapidjson::Value& jsonval_dbginfo_eclfile) {
-	// TODO: Implement dbginfo_process_stmt_marks.
+	map<int, uint64_t> map_lineno_to_id_srcpos;
+	for (rapidjson::Value& jsonval_dbginfo_srcpos : jsonval_dbginfo_srcfile[u8"srcposes"].GetArray()) {
+		if (jsonval_dbginfo_srcpos.HasMember(u8"lineno"))
+			map_lineno_to_id_srcpos.emplace((int)(jsonval_dbginfo_srcpos[u8"lineno"].GetInt64() & ~(unsigned int)0), jsonval_dbginfo_srcpos[u8"id"].GetUint64());
+	}
+	for (rapidjson::Value& jsonval_dbginfo_eclsub : jsonval_dbginfo_eclfile[u8"eclsubs"].GetArray()) {
+		for (rapidjson::Value& jsonval_dbginfo_stmt_mark : jsonval_dbginfo_eclsub[u8"stmt_marks"].GetArray()) {
+			if (jsonval_dbginfo_stmt_mark.HasMember(u8"lineno")) {
+				int lineno = jsonval_dbginfo_stmt_mark[u8"lineno"].GetInt() & ~(unsigned int)0;
+				jsonval_dbginfo_stmt_mark.AddMember(u8"id_srcpos", rapidjson::Value(map_lineno_to_id_srcpos.at(lineno)), jsondoc_dbginfo.GetAllocator());
+			}
+		}
+	}
 }
 
 static void dbginfo_strip_intermediate(rapidjson::Document& jsondoc_dbginfo) {
-	// TODO: Implement dbginfo_strip_intermediate.
+	if (jsondoc_dbginfo.HasMember(u8"srcfiles")) for (rapidjson::Value& jsonval_dbginfo_srcfile : jsondoc_dbginfo[u8"srcfiles"].GetArray()) {
+		if (jsonval_dbginfo_srcfile.HasMember(u8"srcposes")) for (rapidjson::Value& jsonval_dbginfo_srcpos : jsonval_dbginfo_srcfile[u8"srcposes"].GetArray()) {
+			if (jsonval_dbginfo_srcpos.HasMember(u8"lineno")) jsonval_dbginfo_srcpos.RemoveMember(u8"lineno");
+		}
+	}
+	if (jsondoc_dbginfo.HasMember(u8"eclfiles")) for (rapidjson::Value& jsonval_dbginfo_eclfile : jsondoc_dbginfo[u8"eclfiles"].GetArray()) {
+		if (jsonval_dbginfo_eclfile.HasMember(u8"eclsubs")) for (rapidjson::Value& jsonval_dbginfo_eclsub : jsonval_dbginfo_eclfile[u8"eclsubs"].GetArray()) {
+			if (jsonval_dbginfo_eclsub.HasMember(u8"stmt_marks")) for (rapidjson::Value& jsonval_dbginfo_stmt_mark : jsonval_dbginfo_eclsub[u8"stmt_marks"].GetArray()) {
+				if (jsonval_dbginfo_stmt_mark.HasMember(u8"lineno")) jsonval_dbginfo_stmt_mark.RemoveMember(u8"lineno");
+			}
+		}
+	}
 }

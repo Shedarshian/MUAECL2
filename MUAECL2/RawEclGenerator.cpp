@@ -107,20 +107,20 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document
 	}
 	align4_data(ptr, size_buf, size);
 
-	rapidjson::Value* jsonval_dbginfo_subs = nullptr;
-	unordered_map<string, rapidjson::Value&> map_jsonval_dbginfo_sub;
+	rapidjson::Value* jsonval_dbginfo_eclsubs = nullptr;
+	unordered_map<string, rapidjson::Value&> map_jsonval_dbginfo_eclsub;
 	if (ptr && size_buf >= size && jsondoc_dbginfo && jsonval_dbginfo_eclfile) {
 		if (!jsonval_dbginfo_eclfile->HasMember(u8"eclsubs")) jsonval_dbginfo_eclfile->AddMember(u8"eclsubs", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo->GetAllocator());
-		jsonval_dbginfo_subs = &(*jsonval_dbginfo_eclfile)[u8"eclsubs"];
-		jsonval_dbginfo_subs->Reserve(vec_sub.size(), jsondoc_dbginfo->GetAllocator());
-		for (rapidjson::Value& jsonval_dbginfo_sub : jsonval_dbginfo_subs->GetArray())
-			map_jsonval_dbginfo_sub.emplace(string(jsonval_dbginfo_sub[u8"name"].GetString(), jsonval_dbginfo_sub[u8"name"].GetStringLength()), jsonval_dbginfo_sub);
+		jsonval_dbginfo_eclsubs = &(*jsonval_dbginfo_eclfile)[u8"eclsubs"];
+		jsonval_dbginfo_eclsubs->Reserve(vec_sub.size(), jsondoc_dbginfo->GetAllocator());
+		for (rapidjson::Value& jsonval_dbginfo_eclsub : jsonval_dbginfo_eclsubs->GetArray())
+			map_jsonval_dbginfo_eclsub.emplace(string(jsonval_dbginfo_eclsub[u8"name"].GetString(), jsonval_dbginfo_eclsub[u8"name"].GetStringLength()), jsonval_dbginfo_eclsub);
 		for (const fSub& val_sub : vec_sub)
-			if (!map_jsonval_dbginfo_sub.count(val_sub.name)) {
-				jsonval_dbginfo_subs->PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo->GetAllocator());
-				rapidjson::Value& jsonval_dbginfo_sub = *(jsonval_dbginfo_subs->End() - 1);
-				map_jsonval_dbginfo_sub.emplace(val_sub.name, jsonval_dbginfo_sub);
-				jsonval_dbginfo_sub.AddMember(u8"name", rapidjson::Value(val_sub.name.c_str(), val_sub.name.size(), jsondoc_dbginfo->GetAllocator()), jsondoc_dbginfo->GetAllocator());
+			if (!map_jsonval_dbginfo_eclsub.count(val_sub.name)) {
+				jsonval_dbginfo_eclsubs->PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo->GetAllocator());
+				rapidjson::Value& jsonval_dbginfo_eclsub = *(jsonval_dbginfo_eclsubs->End() - 1);
+				map_jsonval_dbginfo_eclsub.emplace(val_sub.name, jsonval_dbginfo_eclsub);
+				jsonval_dbginfo_eclsub.AddMember(u8"name", rapidjson::Value(val_sub.name.c_str(), val_sub.name.size(), jsondoc_dbginfo->GetAllocator()), jsondoc_dbginfo->GetAllocator());
 			}
 	}
 
@@ -130,7 +130,7 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document
 		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub, nullptr, nullptr);
 		size += size_raw_sub;
 		if (ptr && size_buf >= size) {
-			if (this->make_raw_sub((ptr += size_raw_sub) - size_raw_sub, size_raw_sub, val_sub, jsondoc_dbginfo, &map_jsonval_dbginfo_sub.at(val_sub.name)) != size_raw_sub) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_sub"));
+			if (this->make_raw_sub((ptr += size_raw_sub) - size_raw_sub, size_raw_sub, val_sub, jsondoc_dbginfo, &map_jsonval_dbginfo_eclsub.at(val_sub.name)) != size_raw_sub) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_sub"));
 		}
 	}
 	return size;
@@ -184,7 +184,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf, rapidjson:
 	return size;
 }
 
-size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_sub) const {
+size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const {
 	size_t size = 0;
 
 	struct {
@@ -207,7 +207,7 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		memcpy(ptr_raw_ecl_sub_hdr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
 	}
 
-	SubSerializationContext ctx(jsondoc_dbginfo, jsonval_dbginfo_sub, sub.count_var, sub.data_entries);
+	SubSerializationContext ctx(jsondoc_dbginfo, jsonval_dbginfo_eclsub, sub.count_var, sub.data_entries);
 
 	size += ctx.vec_offs_data_entry[ctx.vec_data_entry.size()] - ctx.vec_offs_data_entry[0];
 	if (ptr && size_buf >= size) {
@@ -220,11 +220,11 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 	}
 
 	if (ptr && size_buf >= size) {
-		if (jsonval_dbginfo_sub->HasMember(u8"stmt_marks"))
-			(*jsonval_dbginfo_sub)[u8"stmt_marks"].Clear();
+		if (jsonval_dbginfo_eclsub->HasMember(u8"stmt_marks"))
+			(*jsonval_dbginfo_eclsub)[u8"stmt_marks"].Clear();
 		else
-			jsonval_dbginfo_sub->AddMember(u8"stmt_marks", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo->GetAllocator());
-		rapidjson::Value& jsonval_dbginfo_stmt_marks = (*jsonval_dbginfo_sub)[u8"stmt_marks"];
+			jsonval_dbginfo_eclsub->AddMember(u8"stmt_marks", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo->GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_stmt_marks = (*jsonval_dbginfo_eclsub)[u8"stmt_marks"];
 		for (const pair<size_t, int>& val_offs_stmt_mark : ctx.map_lineno_stmt_mark) {
 			rapidjson::Value jsonval_dbginfo_stmt_mark(rapidjson::Type::kObjectType);
 			jsonval_dbginfo_stmt_mark.AddMember(u8"offs_eclins", rapidjson::Value((uint64_t)val_offs_stmt_mark.first), jsondoc_dbginfo->GetAllocator());
@@ -236,8 +236,8 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 	return size;
 }
 
-SubSerializationContext::SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_sub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
-	: jsondoc_dbginfo(jsondoc_dbginfo), jsonval_dbginfo_sub(jsonval_dbginfo_sub), count_var(count_var) {
+SubSerializationContext::SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
+	: jsondoc_dbginfo(jsondoc_dbginfo), jsonval_dbginfo_eclsub(jsonval_dbginfo_eclsub), count_var(count_var) {
 	if (count_var > INT32_MAX / 4) throw(exception("Too many local variables."));
 	mt19937 randengine;
 	{

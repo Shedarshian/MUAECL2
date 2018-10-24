@@ -25,14 +25,14 @@ private:
 	const fRoot root;
 	size_t generate(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;
 	size_t make_raw_includes(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;
-	size_t make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_sub) const;
+	size_t make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const;
 };
 
 struct SubSerializationContext final {
-	SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_sub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
+	SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
 	~SubSerializationContext();
 	rapidjson::Document* jsondoc_dbginfo = nullptr;
-	rapidjson::Value* jsonval_dbginfo_sub = nullptr;
+	rapidjson::Value* jsonval_dbginfo_eclsub = nullptr;
 	uint32_t count_var;
 	vector<shared_ptr<fSubDataEntry>> vec_data_entry;
 	vector<size_t> vec_offs_data_entry;
