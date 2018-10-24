@@ -2257,7 +2257,6 @@ fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapid
 }
 
 string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_params) const {
-	// TODO: no_overload subs?
 	if (ReadIns::defaultList.count(id)) {
 		return id;
 	} else {
