@@ -8,7 +8,7 @@
 #include "Parser.h"
 #include "RawEclGenerator.h"
 #include "RawEclDecoder.h"
-#include "Misc3.h"
+#include "Misc4.h"
 #include <memory>
 #include <string>
 #include <fstream>

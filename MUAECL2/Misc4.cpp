@@ -7,7 +7,7 @@
 #include <Windows.h>
 #include <wincrypt.h>
 #include <bcrypt.h>
-#include "Misc3.h"
+#include "Misc4.h"
 
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "bcrypt.lib")
