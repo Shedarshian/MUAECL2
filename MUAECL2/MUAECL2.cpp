@@ -287,7 +287,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	jsondoc_dbginfo.SetObject();
 	jsondoc_dbginfo.AddMember(u8"type", rapidjson::Value(str_dbginfo_type.c_str(), str_dbginfo_type.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
 	jsondoc_dbginfo.AddMember(u8"srcfiles", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
-	jsondoc_dbginfo.AddMember(u8"eclfiles", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
+	jsondoc_dbginfo.AddMember(u8"eclfile", rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
 
 	for (const string& val_search_path : map_cmdarg_input["search-path"s].vec_value)
 		searchpath.emplace_back(val_search_path);
@@ -295,8 +295,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	if (map_cmdarg_input["no-preprocess"s].is_specified) {
 		jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
 		rapidjson::Value& jsonval_dbginfo_srcfile_compile = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
-		jsondoc_dbginfo[u8"eclfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
-		rapidjson::Value& jsonval_dbginfo_eclfile = *(jsondoc_dbginfo[u8"eclfiles"].End() - 1);
+		rapidjson::Value& jsonval_dbginfo_eclfile = jsondoc_dbginfo[u8"eclfile"];
 
 		CompileArguments compile_args;
 		compile_args.in = in;
@@ -328,8 +327,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 
 		jsondoc_dbginfo[u8"srcfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
 		rapidjson::Value& jsonval_dbginfo_srcfile_compile = *(jsondoc_dbginfo[u8"srcfiles"].End() - 1);
-		jsondoc_dbginfo[u8"eclfiles"].PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
-		rapidjson::Value& jsonval_dbginfo_eclfile = *(jsondoc_dbginfo[u8"eclfiles"].End() - 1);
+		rapidjson::Value& jsonval_dbginfo_eclfile = jsondoc_dbginfo[u8"eclfile"];
 
 		CompileArguments compile_args;
 		compile_args.in = &preprocessed;
