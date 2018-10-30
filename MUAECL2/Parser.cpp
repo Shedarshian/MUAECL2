@@ -263,8 +263,9 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 		delete type;
 		return new tNoVars(3, -1, vdecl); }
 	case 18: { //stmt->if ( expr ) stmt else stmt
-		auto[expr, stmt1, stmt2] = pop<0, 0, 1, 0, 1, 0, 1>(s);
-		return new tNoVars(4, -1, stmt2, stmt1, expr); }
+		auto[l, expr, stmt1, stmt2] = pop<1, 0, 1, 0, 1, 0, 1>(s);
+		int lineNo = l->getLineNo(); delete l;
+		return new tNoVars(4, lineNo, stmt2, stmt1, expr); }
 	case 6: { //stmt->id :
 		auto[id] = pop<1, 0>(s);
 		auto t = new tLabel(id->getToken()->getId(), id->getToken()->getlineNo());
@@ -275,31 +276,35 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 	case 8: //stmt->while ( expr ) stmt
 		[[fallthrough]];
 	case 9: { //stmt->for ( exprf ) stmt
-		auto[expr, stmt] = pop<0, 0, 1, 0, 1>(s);
-		return new tNoVars(id - 2, -1, stmt, expr); }
+		auto[l, expr, stmt] = pop<1, 0, 1, 0, 1>(s);
+		int lineNo = l->getLineNo(); delete l;
+		return new tNoVars(id - 2, lineNo, stmt, expr); }
 	case 10: //stmt->goto id ;
 		//[0]还存指向的label对应的stmt
 		[[fallthrough]];
 	case 11: { //stmt->{ stmts }
-		auto[t] = pop<0, 1, 0>(s);
-		return new tNoVars(id - 2, -1, t); }
+		auto[l, t] = pop<1, 1, 0>(s);
+		int lineNo = l->getLineNo(); delete l;
+		return new tNoVars(id - 2, lineNo, t); }
 	case 19: //stmt->break ;
 		[[fallthrough]];
 	case 20: { //stmt->continue ;
 		//[0]存指向的for块
 		auto[t] = pop<1, 0>(s);
-		auto lineNo = t->getLineNo();
-		delete t;
+		auto lineNo = t->getLineNo(); delete t;
 		return new tNoVars(id - 9, lineNo); }
 	case 21: { //stmt->thread id ( insv ) ;
-		auto[id, insv] = pop<0, 1, 0, 1, 0, 0>(s);
-		return new tNoVars(29, -1, insv, id); }
+		auto[l, id, insv] = pop<1, 1, 0, 1, 0, 0>(s);
+		int lineNo = l->getLineNo(); delete l;
+		return new tNoVars(29, lineNo, insv, id); }
 	case 22: { //stmt->do stmt while ( expr ) ;
-		auto[stmt, expr] = pop<0, 1, 0, 0, 1, 0, 0>(s);
-		return new tNoVars(30, -1, expr, stmt); }
+		auto[l, stmt, expr] = pop<1, 1, 0, 0, 1, 0, 0>(s);
+		int lineNo = l->getLineNo(); delete l;
+		return new tNoVars(30, lineNo, expr, stmt); }
 	case 23: { //stmt->__rawins { data }
-		auto[data] = pop<0, 0, 1, 0>(s);
-		return new tNoVars(31, -1, data); }
+		auto[l, data] = pop<1, 0, 1, 0>(s);
+		int lineNo = l->getLineNo(); delete l;
+		return new tNoVars(31, lineNo, data); }
 	case 32: { //vdecl->id
 		auto[id] = pop<1>(s);
 		auto str = id->getToken()->getId(); auto lineNo = id->getToken()->getlineNo();
