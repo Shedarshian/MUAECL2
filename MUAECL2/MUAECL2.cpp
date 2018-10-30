@@ -322,13 +322,19 @@ static void preprocess(PreprocessArguments& preprocess_args) {
 }
 
 static void compile(CompileArguments& compile_args) {
-	Parser::initialize();
-	Tokenizer tokenizer(*compile_args.in, compile_args.filename);
-	Parser parser(tokenizer);
-	tRoot* tree = parser.analyse();
-	parser.TypeCheck();
-	RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim));
-	unique_ptr<ofstream> out_f;
-	raw_ecl_generator.generate(*compile_args.out);
-	Parser::clear();
+	try {
+		Parser::initialize();
+		Tokenizer tokenizer(*compile_args.in, compile_args.filename);
+		Parser parser(tokenizer);
+		tRoot* tree = parser.analyse();
+		parser.TypeCheck();
+		RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim));
+		unique_ptr<ofstream> out_f;
+		raw_ecl_generator.generate(*compile_args.out);
+		Parser::clear();
+	}
+	catch (...) {
+		Parser::clear();
+		throw;
+	}
 }

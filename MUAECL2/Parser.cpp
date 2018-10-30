@@ -122,7 +122,7 @@ void Parser::initialize() {
 	}
 }
 
-void Parser::clear() {
+void Parser::clear() noexcept {
 	for (auto i : Action)
 		if (ptr.find(i.first) == ptr.end()) {
 			delete i.second;
@@ -149,8 +149,7 @@ tRoot* Parser::analyse() {
 			else if (n < 1000) {
 				//移动状态n进栈
 				if constexpr (debug) clog << "Token " << t->debug_out() << " Push " << n << " to stack" << endl;
-				s.push(make_pair(n, new tTerminator(t)));
-				tokenizer.popToken();
+				s.push(make_pair(n, new tTerminator(tokenizer.popToken())));
 			}
 			else {
 				//按产生式n-1000规约
