@@ -20,6 +20,8 @@
 #include <map>
 #include <unordered_map>
 #include <filesystem>
+#include <io.h>
+#include <fcntl.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -262,10 +264,11 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 	unique_ptr<ifstream> in_f;
 	if (map_cmdarg_input["input-file"s].is_specified) {
 		filename = map_cmdarg_input["input-file"s].value;
-		in_f = unique_ptr<ifstream>(new ifstream(filename));
+		in_f = unique_ptr<ifstream>(new ifstream(filename, ios_base::binary));
 		in = in_f.get();
 		currentpath = filesystem::path(filename).remove_filename();
 	} else {
+		_setmode(_fileno(stdin), _O_BINARY);
 		in = &cin;
 		filename = "std::cin"s;
 	}
@@ -275,6 +278,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		out_f = unique_ptr<ofstream>(new ofstream(map_cmdarg_input["output-file"s].value, ios_base::binary));
 		out = out_f.get();
 	} else {
+		_setmode(_fileno(stdout), _O_BINARY);
 		out = &cout;
 	}
 
@@ -362,18 +366,20 @@ static void cmd_preprocess(unordered_map<string, cmdarg_input_t>& map_cmdarg_inp
 
 	unique_ptr<ifstream> in_f;
 	if (map_cmdarg_input["input-file"s].is_specified) {
-		in_f = unique_ptr<ifstream>(new ifstream(map_cmdarg_input["input-file"s].value));
+		in_f = unique_ptr<ifstream>(new ifstream(map_cmdarg_input["input-file"s].value, ios_base::binary));
 		preprocess_args.in = in_f.get();
 		currentpath = filesystem::path(map_cmdarg_input["input-file"s].value).remove_filename();
 	} else {
+		_setmode(_fileno(stdin), _O_BINARY);
 		preprocess_args.in = &cin;
 	}
 
 	unique_ptr<ofstream> out_f;
 	if (map_cmdarg_input["output-file"s].is_specified) {
-		out_f = unique_ptr<ofstream>(new ofstream(map_cmdarg_input["output-file"s].value));
+		out_f = unique_ptr<ofstream>(new ofstream(map_cmdarg_input["output-file"s].value, ios_base::binary));
 		preprocess_args.out = out_f.get();
 	} else {
+		_setmode(_fileno(stdout), _O_BINARY);
 		preprocess_args.out = &cout;
 	}
 
