@@ -15,8 +15,8 @@ const map<Op::TokenType, string> Op::Ch::OperatorToString = { { TT::Plus, "+" },
 const map<string, TokenType> Op::Ch::StringToOperator = Op::swap_map(Op::Ch::OperatorToString);
 const map<string, mType> Op::Ch::StringToType = { { "type_error", BT::type_error }, { "void", BT::Void }, { "int", BT::Int }, { "float", BT::Float }, { "point", BT::Point }, { "string", BT::String }, { "initializer_list", BT::inilist } };
 const map<mType, string> Op::Ch::TypeToString = Op::swap_map(Op::Ch::StringToType);
-const map<ReadIns::NumType, mType> Op::Ch::NumTypeToType = { { ReadIns::NumType::Int, mType::Int }, { ReadIns::NumType::Float, mType::Float }, { ReadIns::NumType::String, mType::String } };
-const map<mType, ReadIns::NumType> Op::Ch::TypeToNumType = Op::swap_map(Op::Ch::NumTypeToType);
+const map<ReadIns::NumType, mType> Op::Ch::NumTypeToType = { { ReadIns::NumType::Int, mType::Int }, { ReadIns::NumType::Float, mType::Float }, { ReadIns::NumType::EncryptedString, mType::String }, { ReadIns::NumType::String, mType::String } };
+const map<ReadIns::NumType, mType> Op::Ch::TypeToNumType = { { mType::Int, ReadIns::NumType::Int }, { mType::Float, ReadIns::NumType::Float }, { mType::String, ReadIns::NumType::String } };
 
 string Op::Ch::ToString(TokenType op) { return OperatorToString.find(op)->second; }
 TokenType Op::Ch::ToOperator(string s) { return StringToOperator.find(s)->second; }
@@ -134,7 +134,7 @@ const multimap<TokenType, tuple<mVType, mVType, mVType, int>> makeTypeChange() {
 		//string = string, id+3*OFFSET
 		if (tt != Op::MinusEqual)
 			t.emplace(tt, make_tuple(VTYPE(String, l), VTYPE(String, r), VTYPE(String, l), (int)tt + OFFSET * 3));
-		//point = inilist, id+4*OFFSET, ÊÇ·ñĞèÒªÌØÊâ¼ì²é£¿
+		//point = inilist, id+4*OFFSET, æ˜¯å¦éœ€è¦ç‰¹æ®Šæ£€æŸ¥ï¼Ÿ
 		if (tt == Op::Equal)
 			t.emplace(tt, make_tuple(VTYPE(Point, l), VTYPE(inilist, r), VTYPE(inilist, l), (int)tt + OFFSET * 4));
 	}
@@ -185,17 +185,17 @@ const multimap<string, tuple<mVType, vector<mVType>, int>> Op::mVType::internalF
 
 Op::Rank Op::mVType::canChangeTo(const mVType& typ, const mVType& typto){
 	Rank rank;
-	//×óÖµµ½ÓÒÖµ×ª»»
+	//å·¦å€¼åˆ°å³å€¼è½¬æ¢
 	if (typ.valuetype == Op::rvalue && typto.valuetype == Op::lvalue)
 		return rank.set(Rank::DISABLE);
 	if (typ.valuetype == Op::lvalue && typto.valuetype == Op::rvalue)
 		rank.set(Rank::LTOR);
-	//ÕûÊıµ½¸¡µã×ª»»
+	//æ•´æ•°åˆ°æµ®ç‚¹è½¬æ¢
 	if (typ.type == Op::mType::Int && typto.type == Op::mType::Float && !(typ.valuetype == Op::lvalue && typto.valuetype == Op::lvalue)) {
 		rank.set(Rank::ITOF);
 		return rank;
 	}
-	//void lµ½ÈÎÒâ×ª»»
+	//void låˆ°ä»»æ„è½¬æ¢
 	else if (typ == VTYPE(Void, l)) {
 		if (typto.type == Op::mType::Int)
 			rank.set(Rank::VTOI);
@@ -285,38 +285,38 @@ void ReadIns::Read() {
 	string mode;
 	while (!in.eof()) {
 		in.getline(buffer, 255);
-		//×¢ÊÍ
+		//æ³¨é‡Š
 		if (buffer[0] == '%') {
 			continue;
 		}
-		//ÇĞ»»mode
+		//åˆ‡æ¢mode
 		else if (buffer[0] == '#') {
 			mode = buffer;
 			mode = mode.substr(1, mode.rfind('#') - 1);
 		}
-		//¶ÁÈ¡ins
+		//è¯»å–ins
 		else if (mode == "ins") {
 			stringstream s = stringstream(buffer);
 			int n, stack_consume, stack_produce; string name;
 			s >> n >> name >> stack_consume >> stack_produce;
 			string c;
-			vector<NumType> lnt; //ÊäÈë²ÎÊıÀàĞÍ±í
+			vector<NumType> lnt; //è¾“å…¥å‚æ•°ç±»å‹è¡¨
 			while (!s.eof()) {
 				s >> c;
-				lnt.push_back(c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
-					c == "float" ? NumType::Float : (c == "call" ? NumType::Call : NumType::Anything))));
+				lnt.push_back(c == "en_str" ? NumType::EncryptedString : (c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
+					c == "float" ? NumType::Float : (c == "call" ? NumType::Call : NumType::Anything)))));
 			}
 			ReadIns::ins.emplace(name, make_pair(n, lnt));
 			ReadIns::insDeltaStackptr.emplace(make_pair(n, lnt), make_pair(stack_consume, stack_produce));
 		}
-		//¶ÁÈ¡È«¾Ö±äÁ¿
+		//è¯»å–å…¨å±€å˜é‡
 		else if (mode == "variable") {
 			stringstream s = stringstream(buffer);
 			int n; string name; string c;
 			s >> n >> name >> c;
 			ReadIns::globalVariable.emplace(name, make_pair(n, c == "int" ? NumType::Int : NumType::Float));
 		}
-		//¶ÁÈ¡±ä»»mode
+		//è¯»å–å˜æ¢mode
 		else if (mode == "mode") {
 			stringstream s = stringstream(buffer);
 			int n; string name;
@@ -342,7 +342,7 @@ void ReadIns::Read() {
 	if (!indef.is_open()) {
 		throw(ErrFileNotFound("default.ini"));
 	}
-	//¶ÁÈ¡default.eclÖĞµÄº¯ÊıÃû
+	//è¯»å–default.eclä¸­çš„å‡½æ•°å
 	while (!indef.eof()) {
 		indef.getline(buffer, 255);
 		defaultList.emplace(buffer);
@@ -352,7 +352,7 @@ void ReadIns::Read() {
 	if (!includefile.is_open()) {
 		throw(ErrFileNotFound("include.ini"));
 	}
-	//¶ÁÈ¡include.iniÖĞµÄÔ¤¶¨Òåºê
+	//è¯»å–include.iniä¸­çš„é¢„å®šä¹‰å®
 	while (!includefile.eof()) {
 		includefile.getline(buffer, 512);
 		string v = buffer;
