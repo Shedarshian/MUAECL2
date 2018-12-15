@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <ctime>
+#include <cctype>
 #include "Tokenizer.h"
 
 using namespace std;
@@ -11,6 +12,7 @@ Tokenizer::Tokenizer(istream& ReadStream, const string& filename) :ReadStream(Re
 
 Tokenizer::~Tokenizer() {
 	delete bufferToken;
+	bufferToken = nullptr;
 }
 
 [[deprecated]] Tokenizer& operator>> (Tokenizer& t, Token*& token) {
@@ -32,7 +34,7 @@ Token* Tokenizer::getToken(){
 	//while(1)·½±ã¿Õ°×Óë×¢ÊÍ
 	while (1) {
 		//Èô¶Áµ½¿Õ°×£¬Ôò¼ÌÐø
-		if (nextChar == ' ' || nextChar == '\t' || addLine(nextChar)) {
+		if (nextChar >= -1 && nextChar <= 255 && isspace(nextChar) || addLine(nextChar)) {	
 			nextChar = ReadStream.get();
 			continue;
 		}
