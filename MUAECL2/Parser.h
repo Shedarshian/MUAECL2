@@ -15,7 +15,7 @@ public:
 	Parser(Tokenizer &tokenizer);
 	~Parser();
 	static void initialize();
-	static void clear();
+	static void clear() noexcept;
 	tRoot* analyse();
 	void TypeCheck();
 	fRoot Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile);

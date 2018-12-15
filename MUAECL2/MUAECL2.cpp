@@ -467,59 +467,64 @@ static void compile(CompileArguments& compile_args) {
 	if (!compile_args.jsonval_dbginfo_eclfile) throw(ErrDesignApp("!compile_args.jsonval_dbginfo_eclfile"));
 	if (!compile_args.id_dbginfo_srcpos_next) throw(ErrDesignApp("!compile_args.id_dbginfo_srcpos_next"));
 
-	stringstream sstream_in;
-	sstream_in << compile_args.in->rdbuf();
+	try {
+		stringstream sstream_in;
+		sstream_in << compile_args.in->rdbuf();
 
-	{
-		string str_base64_hash_in(base64_encode_string(hash_string(sstream_in.str())));
-		compile_args.jsonval_dbginfo_srcfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash_in.c_str(), str_base64_hash_in.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
-	}
-
-	Parser::initialize();
-	Tokenizer tokenizer(sstream_in, compile_args.filename);
-	Parser parser(tokenizer);
-	tRoot* tree = parser.analyse();
-	parser.TypeCheck();
-	RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile));
-	string str_out;
-	raw_ecl_generator.generate(str_out, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
-	Parser::clear();
-
-	{
-		if (!compile_args.jsonval_dbginfo_srcfile->HasMember(u8"srcposes")) compile_args.jsonval_dbginfo_srcfile->AddMember(u8"srcposes", rapidjson::Value(rapidjson::Type::kArrayType), compile_args.jsondoc_dbginfo->GetAllocator());
-		rapidjson::Value& jsonval_dbginfo_srcposes = (*compile_args.jsonval_dbginfo_srcfile)[u8"srcposes"];
-		map<int, streamoff> map_lineno_to_pos;
 		{
-			map<int, streampos> map_lineno_to_streampos(tokenizer.popLineNoToPos());
-			for (const pair<int, streampos>& val_lineno_to_streampos : map_lineno_to_streampos)
-				map_lineno_to_pos.emplace(val_lineno_to_streampos);
+			string str_base64_hash_in(base64_encode_string(hash_string(sstream_in.str())));
+			compile_args.jsonval_dbginfo_srcfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash_in.c_str(), str_base64_hash_in.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
 		}
-		jsonval_dbginfo_srcposes.Reserve(map_lineno_to_pos.size(), compile_args.jsondoc_dbginfo->GetAllocator());
-		unordered_map<streamoff, rapidjson::Value&> map_jsonval_dbginfo_srcpos;
-		for (rapidjson::Value& jsonval_dbginfo_srcpos : jsonval_dbginfo_srcposes.GetArray()) {
-			map_jsonval_dbginfo_srcpos.emplace(jsonval_dbginfo_srcpos[u8"pos"].GetInt64(), jsonval_dbginfo_srcpos);
-		}
-		for (const pair<int, streamoff>& val_lineno_to_pos : map_lineno_to_pos) {
-			if (!map_jsonval_dbginfo_srcpos.count(val_lineno_to_pos.second)) {
-				jsonval_dbginfo_srcposes.PushBack(rapidjson::Value(rapidjson::Type::kObjectType), compile_args.jsondoc_dbginfo->GetAllocator());
-				rapidjson::Value& jsonval_dbginfo_srcpos = *(jsonval_dbginfo_srcposes.End() - 1);
-				map_jsonval_dbginfo_srcpos.emplace(val_lineno_to_pos.second, jsonval_dbginfo_srcpos);
-				jsonval_dbginfo_srcpos.AddMember(u8"pos", rapidjson::Value((int64_t)val_lineno_to_pos.second), compile_args.jsondoc_dbginfo->GetAllocator());
-				jsonval_dbginfo_srcpos.AddMember(u8"id", rapidjson::Value((*compile_args.id_dbginfo_srcpos_next)++), compile_args.jsondoc_dbginfo->GetAllocator());
+
+		Parser::initialize();
+		Tokenizer tokenizer(sstream_in, compile_args.filename);
+		Parser parser(tokenizer);
+		tRoot* tree = parser.analyse();
+		parser.TypeCheck();
+		RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile));
+		string str_out;
+		raw_ecl_generator.generate(str_out, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
+		Parser::clear();
+
+		{
+			if (!compile_args.jsonval_dbginfo_srcfile->HasMember(u8"srcposes")) compile_args.jsonval_dbginfo_srcfile->AddMember(u8"srcposes", rapidjson::Value(rapidjson::Type::kArrayType), compile_args.jsondoc_dbginfo->GetAllocator());
+			rapidjson::Value& jsonval_dbginfo_srcposes = (*compile_args.jsonval_dbginfo_srcfile)[u8"srcposes"];
+			map<int, streamoff> map_lineno_to_pos;
+			{
+				map<int, streampos> map_lineno_to_streampos(tokenizer.popLineNoToPos());
+				for (const pair<int, streampos>& val_lineno_to_streampos : map_lineno_to_streampos)
+					map_lineno_to_pos.emplace(val_lineno_to_streampos);
 			}
-			rapidjson::Value& jsonval_dbginfo_srcpos = map_jsonval_dbginfo_srcpos.at(val_lineno_to_pos.second);
-			jsonval_dbginfo_srcpos.AddMember(u8"lineno", rapidjson::Value((int64_t)val_lineno_to_pos.first), compile_args.jsondoc_dbginfo->GetAllocator());
+			jsonval_dbginfo_srcposes.Reserve(map_lineno_to_pos.size(), compile_args.jsondoc_dbginfo->GetAllocator());
+			unordered_map<streamoff, rapidjson::Value&> map_jsonval_dbginfo_srcpos;
+			for (rapidjson::Value& jsonval_dbginfo_srcpos : jsonval_dbginfo_srcposes.GetArray()) {
+				map_jsonval_dbginfo_srcpos.emplace(jsonval_dbginfo_srcpos[u8"pos"].GetInt64(), jsonval_dbginfo_srcpos);
+			}
+			for (const pair<int, streamoff>& val_lineno_to_pos : map_lineno_to_pos) {
+				if (!map_jsonval_dbginfo_srcpos.count(val_lineno_to_pos.second)) {
+					jsonval_dbginfo_srcposes.PushBack(rapidjson::Value(rapidjson::Type::kObjectType), compile_args.jsondoc_dbginfo->GetAllocator());
+					rapidjson::Value& jsonval_dbginfo_srcpos = *(jsonval_dbginfo_srcposes.End() - 1);
+					map_jsonval_dbginfo_srcpos.emplace(val_lineno_to_pos.second, jsonval_dbginfo_srcpos);
+					jsonval_dbginfo_srcpos.AddMember(u8"pos", rapidjson::Value((int64_t)val_lineno_to_pos.second), compile_args.jsondoc_dbginfo->GetAllocator());
+					jsonval_dbginfo_srcpos.AddMember(u8"id", rapidjson::Value((*compile_args.id_dbginfo_srcpos_next)++), compile_args.jsondoc_dbginfo->GetAllocator());
+				}
+				rapidjson::Value& jsonval_dbginfo_srcpos = map_jsonval_dbginfo_srcpos.at(val_lineno_to_pos.second);
+				jsonval_dbginfo_srcpos.AddMember(u8"lineno", rapidjson::Value((int64_t)val_lineno_to_pos.first), compile_args.jsondoc_dbginfo->GetAllocator());
+			}
 		}
+
+		dbginfo_process_stmt_marks(*compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_srcfile, *compile_args.jsonval_dbginfo_eclfile);
+
+		{
+			string str_base64_hash(base64_encode_string(hash_string(str_out)));
+			compile_args.jsonval_dbginfo_eclfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash.c_str(), str_base64_hash.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
+		}
+
+		compile_args.out->write(str_out.c_str(), str_out.size());
+	} catch (...) {
+		Parser::clear();
+		throw;
 	}
-
-	dbginfo_process_stmt_marks(*compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_srcfile, *compile_args.jsonval_dbginfo_eclfile);
-
-	{
-		string str_base64_hash(base64_encode_string(hash_string(str_out)));
-		compile_args.jsonval_dbginfo_eclfile->AddMember(u8"hash", rapidjson::Value(str_base64_hash.c_str(), str_base64_hash.size(), compile_args.jsondoc_dbginfo->GetAllocator()), compile_args.jsondoc_dbginfo->GetAllocator());
-	}
-
-	compile_args.out->write(str_out.c_str(), str_out.size());
 }
 
 static void dbginfo_process_stmt_marks(rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_srcfile, rapidjson::Value& jsonval_dbginfo_eclfile) {
