@@ -123,7 +123,7 @@ void Parser::initialize() {
 }
 
 void Parser::clear() noexcept {
-	for (auto i : Action)
+	for (auto& i : Action)
 		if (ptr.find(i.first) == ptr.end()) {
 			delete i.second;
 			i.second = nullptr;
