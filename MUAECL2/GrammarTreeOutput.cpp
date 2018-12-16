@@ -333,16 +333,16 @@ public:
 		case Op::mType::Void:
 			return vector<shared_ptr<Parameter>>();
 		case Op::mType::Int: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		case Op::mType::Float: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		case Op::mType::Point: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		case Op::mType::String: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToParameters : unknown type"));
@@ -924,7 +924,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 					}
 				}
 			);
-			vector<Parameter*> paras({ new Parameter_string(subname_decorated) });
+			vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
 			for (const Parameter_call& val_param : vec_param) {
 				paras.push_back(val_param.Duplicate());
 			}
@@ -1440,7 +1440,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 						}
 					}
 				);
-				vector<Parameter*> paras({ new Parameter_string(subname_decorated) });
+				vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
 				for (const Parameter_call& val_param : vec_param) {
 					paras.push_back(val_param.Duplicate());
 				}
@@ -1849,9 +1849,11 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
 						is_res_match = is_res_match && *(it_numtype++) == ReadIns::NumType::Float;
 						break;
-					case Op::mType::String:
-						is_res_match = *(it_numtype++) == ReadIns::NumType::String;
+					case Op::mType::String: {
+						ReadIns::NumType numtype = *(it_numtype++);
+						is_res_match = numtype == ReadIns::NumType::String || numtype == ReadIns::NumType::EncryptedString;
 						break;
+					}
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown actual parameter type"));
 					}
@@ -1907,6 +1909,23 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					case ReadIns::NumType::String: {
 						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
 						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
+						{
+							Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+							if (!param_str) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : cannot cast queue_param_result.front().get() to type \"Parameter_string*\""));
+							param_str->raw_variant = Parameter_string::RawVariant::RawVariant_Str;
+						}
+						vec_param.push_back(queue_param_result.front());
+						queue_param_result.pop();
+						break;
+					}
+					case ReadIns::NumType::EncryptedString: {
+						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
+						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
+						{
+							Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+							if (!param_str) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : cannot cast queue_param_result.front().get() to type \"Parameter_string*\""));
+							param_str->raw_variant = Parameter_string::RawVariant::RawVariant_En_Str;
+						}
 						vec_param.push_back(queue_param_result.front());
 						queue_param_result.pop();
 						break;

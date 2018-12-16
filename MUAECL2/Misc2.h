@@ -96,7 +96,12 @@ struct Parameter_jmp : public Parameter {
 };
 //字符串
 struct Parameter_string : public Parameter {
-	explicit Parameter_string(const string& str) :str(str) {};
+	enum RawVariant {
+		RawVariant_Undefined = 0,
+		RawVariant_Str,
+		RawVariant_En_Str
+	};
+	explicit Parameter_string(const string& str, RawVariant raw_variant = RawVariant_Undefined) :str(str), raw_variant(raw_variant) {};
 	virtual Parameter* Duplicate() const override {
 		return new Parameter_string(*this);
 	}
@@ -105,6 +110,7 @@ struct Parameter_string : public Parameter {
 	virtual int32_t getRefId(const SubSerializationContext& sub_ctx) const override;
 	virtual size_t serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const override;
 	string str;
+	RawVariant raw_variant;
 };
 //调用的参数
 struct Parameter_call : public Parameter {

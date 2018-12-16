@@ -207,7 +207,25 @@ size_t Parameter_string::serialize(char* ptr, size_t size_buf, const SubSerializ
 	size += size_strdata * sizeof(char);
 	if (ptr && size_buf >= size) {
 		unique_ptr<char[]> strdata(new char[size_strdata]());
+		memset(strdata.get(), 0, size_strdata * sizeof(char));
 		memcpy(strdata.get(), this->str.data(), this->str.size() * sizeof(char));
+		switch (this->raw_variant) {
+		case RawVariant::RawVariant_Undefined:
+			throw(ErrDesignApp("Parameter_string::serialize : raw variant undefined"));
+		case RawVariant::RawVariant_Str:
+			break;
+		case RawVariant::RawVariant_En_Str: {
+			char a = 0x77;
+			char b = 0x7;
+			static const char c = 0x10;
+			for (size_t i = 0; i < size_strdata; ++i) {
+				strdata[i] ^= a;
+				a += b;
+				b += c;
+			}
+			break;
+		}
+		}
 		append_data(ptr, strdata.get(), size_strdata * sizeof(char));
 	}
 	return size;
