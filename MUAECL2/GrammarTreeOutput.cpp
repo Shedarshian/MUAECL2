@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <stack>
 #include <queue>
+#include <unordered_map>
 #include <algorithm>
 #include "GrammarTree.h"
 #include "NameDecorator.h"
@@ -110,6 +111,9 @@ struct SubOutputContext final {
 	}
 	inline list<shared_ptr<fSubDataEntry>>::iterator insert_dummyins_target(uint32_t id_target) {
 		return this->list_data_entry.insert(this->it_list_data_entry_curpos, shared_ptr<fSubDataEntry>(new DummyIns_Target(id_target)));
+	}
+	inline list<shared_ptr<fSubDataEntry>>::iterator insert_dummyins_stmt_mark(int lineno) {
+		return this->list_data_entry.insert(this->it_list_data_entry_curpos, shared_ptr<fSubDataEntry>(new DummyIns_StmtMark(lineno)));
 	}
 };
 
@@ -329,16 +333,16 @@ public:
 		case Op::mType::Void:
 			return vector<shared_ptr<Parameter>>();
 		case Op::mType::Int: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		case Op::mType::Float: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		case Op::mType::Point: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		case Op::mType::String: {
-			return vector<shared_ptr<Parameter>>(params);
+			return vector<shared_ptr<Parameter>>(this->params);
 		}
 		default:
 			throw(ErrDesignApp("ParametersRvalueResult::ToParameters : unknown type"));
@@ -749,6 +753,9 @@ static inline shared_ptr<StackRvalueResult> stack_rvalue_int_exprf_output(const 
 
 void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 	if (this->type() != Op::NonTerm::stmt) throw(ErrDesignApp("tNoVars::OutputStmt : this->type() != Op::NonTerm::stmt"));
+	if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
+	// Note: For statements that contain sub-statements, an additional statement mark should be inserted after each sub-statement that has other instruction(s) after it in this statement.
+	// This way, the instruction(s) after the sub-statement will also be recognized as a part of this statement.
 	StmtOutputContext stmt_ctx;
 	switch (this->id) {
 	case 2:// stmt->expr ;
@@ -773,6 +780,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		stack_rvalue_int_expr_output(this->branchs[2], sub_ctx, stmt_ctx, false, true);
 		sub_ctx.insert_ins(stmt_ctx, 13, { new Parameter_jmp(id_target_f), new Parameter_int(0) }, -1);
 		stmt_output(this->branchs[1], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.insert_ins(stmt_ctx, 12, { new Parameter_jmp(id_target_after), new Parameter_int(0) }, 0);
 		sub_ctx.insert_dummyins_target(id_target_f);
 		stmt_output(this->branchs[0], sub_ctx);
@@ -798,6 +806,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[0], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
 		sub_ctx.insert_dummyins_target(id_target_expr);
@@ -819,6 +828,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[0], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
 		sub_ctx.insert_dummyins_target(id_target_expr);
@@ -914,7 +924,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 					}
 				}
 			);
-			vector<Parameter*> paras({ new Parameter_string(subname_decorated) });
+			vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
 			for (const Parameter_call& val_param : vec_param) {
 				paras.push_back(val_param.Duplicate());
 			}
@@ -932,6 +942,7 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 		sub_ctx.stack_id_target_break.push(id_target_after);
 		sub_ctx.stack_id_target_continue.push(id_target_expr);
 		stmt_output(this->branchs[1], sub_ctx);
+		if (this->getLineNo() >= 0) sub_ctx.insert_dummyins_stmt_mark(this->getLineNo());
 		sub_ctx.stack_id_target_continue.pop();
 		sub_ctx.stack_id_target_break.pop();
 		sub_ctx.insert_dummyins_target(id_target_expr);
@@ -1429,7 +1440,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 						}
 					}
 				);
-				vector<Parameter*> paras({ new Parameter_string(subname_decorated) });
+				vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
 				for (const Parameter_call& val_param : vec_param) {
 					paras.push_back(val_param.Duplicate());
 				}
@@ -1838,9 +1849,11 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 						is_res_match = *(it_numtype++) == ReadIns::NumType::Float;
 						is_res_match = is_res_match && *(it_numtype++) == ReadIns::NumType::Float;
 						break;
-					case Op::mType::String:
-						is_res_match = *(it_numtype++) == ReadIns::NumType::String;
+					case Op::mType::String: {
+						ReadIns::NumType numtype = *(it_numtype++);
+						is_res_match = numtype == ReadIns::NumType::String || numtype == ReadIns::NumType::EncryptedString;
 						break;
+					}
 					default:
 						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : unknown actual parameter type"));
 					}
@@ -1896,6 +1909,23 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					case ReadIns::NumType::String: {
 						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
 						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
+						{
+							Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+							if (!param_str) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : cannot cast queue_param_result.front().get() to type \"Parameter_string*\""));
+							param_str->raw_variant = Parameter_string::RawVariant::RawVariant_Str;
+						}
+						vec_param.push_back(queue_param_result.front());
+						queue_param_result.pop();
+						break;
+					}
+					case ReadIns::NumType::EncryptedString: {
+						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
+						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
+						{
+							Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+							if (!param_str) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : cannot cast queue_param_result.front().get() to type \"Parameter_string*\""));
+							param_str->raw_variant = Parameter_string::RawVariant::RawVariant_En_Str;
+						}
 						vec_param.push_back(queue_param_result.front());
 						queue_param_result.pop();
 						break;
@@ -2217,7 +2247,10 @@ string tSub::getDecoratedName() const {
 	}
 }
 
-fSub tSub::Output(const tRoot& root) const {
+fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const {
+	if (jsonval_dbginfo_sub.HasMember(u8"srcname")) jsonval_dbginfo_sub.RemoveMember(u8"srcname");
+	jsonval_dbginfo_sub.AddMember(u8"srcname", rapidjson::Value(this->name.c_str(), this->name.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+
 	SubOutputContext sub_ctx(&root);
 
 	for_each(this->vardecl.crbegin(), this->vardecl.crend(),
@@ -2229,6 +2262,12 @@ fSub tSub::Output(const tRoot& root) const {
 	);
 
 	sub_ctx.stack_difficulty_mask.push(0xFF);
+	if (this->no_overload) {
+		StmtOutputContext stmt_ctx;
+		uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(Op::mType::Int)) - get_count_id_var(Op::mType::Int);
+		sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_env(10000, false) }, 1);
+		sub_ctx.insert_ins(stmt_ctx, 43, { new Parameter_variable(id_var_dummy, false) }, -1);
+	}
 	cast_to_stmts(this->stmts)->Output(sub_ctx);
 	sub_ctx.stack_difficulty_mask.pop();
 	vector<shared_ptr<fSubDataEntry>> vec_data_entry(sub_ctx.list_data_entry.cbegin(), sub_ctx.list_data_entry.cend());
@@ -2263,10 +2302,26 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 	}
 }
 
-fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim) const {
+fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+	if (!jsonval_dbginfo_eclfile.HasMember(u8"eclsubs")) jsonval_dbginfo_eclfile.AddMember(u8"eclsubs", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
+	rapidjson::Value& jsonval_dbginfo_subs = jsonval_dbginfo_eclfile[u8"eclsubs"];
+	jsonval_dbginfo_subs.Reserve(this->subs.size(), jsondoc_dbginfo.GetAllocator());
+	unordered_map<string, rapidjson::Value&> map_jsonval_dbginfo_sub;
+	for (rapidjson::Value& jsonval_dbginfo_sub : jsonval_dbginfo_subs.GetArray())
+		map_jsonval_dbginfo_sub.emplace(string(jsonval_dbginfo_sub[u8"name"].GetString(), jsonval_dbginfo_sub[u8"name"].GetStringLength()), jsonval_dbginfo_sub);
+	for (const tSub* val_tsub : this->subs) {
+		std::string name_eclsub(val_tsub->getDecoratedName());
+		if (!map_jsonval_dbginfo_sub.count(name_eclsub)) {
+			jsonval_dbginfo_subs.PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo.GetAllocator());
+			rapidjson::Value& jsonval_dbginfo_sub = *(jsonval_dbginfo_subs.End() - 1);
+			map_jsonval_dbginfo_sub.emplace(name_eclsub, jsonval_dbginfo_sub);
+			jsonval_dbginfo_sub.AddMember(u8"name", rapidjson::Value(name_eclsub.c_str(), name_eclsub.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
+		}
+	}
+
 	vector<fSub> fsubs;
 	for (const tSub* val_tsub : this->subs)
-		fsubs.push_back(val_tsub->Output(*this));
+		fsubs.push_back(val_tsub->Output(*this, jsondoc_dbginfo, map_jsonval_dbginfo_sub.at(val_tsub->getDecoratedName())));
 	return fRoot(fsubs, vector<string>(), vector<string>());
 }
 

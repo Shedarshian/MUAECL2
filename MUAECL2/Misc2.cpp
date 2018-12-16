@@ -207,7 +207,25 @@ size_t Parameter_string::serialize(char* ptr, size_t size_buf, const SubSerializ
 	size += size_strdata * sizeof(char);
 	if (ptr && size_buf >= size) {
 		unique_ptr<char[]> strdata(new char[size_strdata]());
+		memset(strdata.get(), 0, size_strdata * sizeof(char));
 		memcpy(strdata.get(), this->str.data(), this->str.size() * sizeof(char));
+		switch (this->raw_variant) {
+		case RawVariant::RawVariant_Undefined:
+			throw(ErrDesignApp("Parameter_string::serialize : raw variant undefined"));
+		case RawVariant::RawVariant_Str:
+			break;
+		case RawVariant::RawVariant_En_Str: {
+			char a = 0x77;
+			char b = 0x7;
+			static const char c = 0x10;
+			for (size_t i = 0; i < size_strdata; ++i) {
+				strdata[i] ^= a;
+				a += b;
+				b += c;
+			}
+			break;
+		}
+		}
 		append_data(ptr, strdata.get(), size_strdata * sizeof(char));
 	}
 	return size;
@@ -247,6 +265,19 @@ size_t DummyIns_Target::serialize(char* ptr, size_t size_buf, const SubSerializa
 void DummyIns_Target::set_offs(SubSerializationContext& sub_ctx, size_t offs) const {
 	if (sub_ctx.map_offs_target.count(this->id_target)) throw(ErrDesignApp("DummyIns_Target::set_offs : duplicate targets with the same ID"));
 	sub_ctx.map_offs_target[this->id_target] = offs;
+}
+
+DummyIns_StmtMark::DummyIns_StmtMark(int lineno)
+	: lineno(lineno) {}
+
+size_t DummyIns_StmtMark::serialize(char* ptr, size_t size_buf, const SubSerializationContext& sub_ctx) const {
+	return 0;
+}
+
+void DummyIns_StmtMark::set_offs(SubSerializationContext& sub_ctx, size_t offs) const {
+	// If multiple statement marks exist for a single ECL instruction offset, the one with the largest line number is used.
+	if (!sub_ctx.map_lineno_stmt_mark.count(offs) || sub_ctx.map_lineno_stmt_mark.at(offs) < this->lineno)
+		sub_ctx.map_lineno_stmt_mark[offs] = this->lineno;
 }
 
 Ins::Ins(uint16_t id, const vector<Parameter*>& paras, uint8_t difficulty_mask, uint32_t time)

@@ -33,8 +33,8 @@ Token* Tokenizer::peekToken() {
 Token* Tokenizer::getToken(){
 	//while(1)·½±ã¿Õ°×Óë×¢ÊÍ
 	while (1) {
-		//Èô¶Áµ½¿Õ°×£¬Ôò¼ÌÐø
-		if (nextChar >= -1 && nextChar <= 255 && isspace(nextChar) || addLine(nextChar)) {	
+		//Èô¶Áµ½¿Õ°×£¬Ôò¼ÌÐø	
+		if (addLine(nextChar) || nextChar >= 0 && isspace(nextChar)) {	
 			nextChar = ReadStream.get();
 			continue;
 		}

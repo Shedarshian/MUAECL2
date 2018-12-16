@@ -34,14 +34,14 @@ RawEclGenerator::RawEclGenerator(const fRoot& root)
 
 RawEclGenerator::~RawEclGenerator() {}
 
-void RawEclGenerator::generate(std::ostream& stream) const {
-	size_t size = this->generate(nullptr, 0);
+void RawEclGenerator::generate(string& str, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+	size_t size = this->generate(nullptr, 0, nullptr, nullptr);
 	unique_ptr<char[]> ptr(new char[size ? size : 1]());
-	if (this->generate(ptr.get(), size) != size) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::generate"));
-	stream.write(ptr.get(), size);
+	if (this->generate(ptr.get(), size, &jsondoc_dbginfo, &jsonval_dbginfo_eclfile) != size) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::generate"));
+	str = string(ptr.get(), size);
 }
 
-size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
+size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {
 	size_t size = 0;
 
 	struct {
@@ -69,10 +69,10 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 		if (size > UINT32_MAX) throw(exception("Output file too large."));
 		raw_ecl_file_hdr.include_offset = size & ~(uint32_t)0;
 	}
-	size_t size_raw_includes = this->make_raw_includes(nullptr, 0);
+	size_t size_raw_includes = this->make_raw_includes(nullptr, 0, nullptr, nullptr);
 	size += size_raw_includes;
 	if (ptr && size_buf >= size) {
-		if (this->make_raw_includes((ptr += size_raw_includes) - size_raw_includes, size_raw_includes) != size_raw_includes) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_includes"));
+		if (this->make_raw_includes((ptr += size_raw_includes) - size_raw_includes, size_raw_includes, jsondoc_dbginfo, jsonval_dbginfo_eclfile) != size_raw_includes) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_includes"));
 	}
 	align4_data(ptr, size_buf, size);
 	if (ptr && size_buf >= size) {
@@ -107,19 +107,36 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf) const {
 	}
 	align4_data(ptr, size_buf, size);
 
+	rapidjson::Value* jsonval_dbginfo_eclsubs = nullptr;
+	unordered_map<string, rapidjson::Value&> map_jsonval_dbginfo_eclsub;
+	if (ptr && size_buf >= size && jsondoc_dbginfo && jsonval_dbginfo_eclfile) {
+		if (!jsonval_dbginfo_eclfile->HasMember(u8"eclsubs")) jsonval_dbginfo_eclfile->AddMember(u8"eclsubs", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo->GetAllocator());
+		jsonval_dbginfo_eclsubs = &(*jsonval_dbginfo_eclfile)[u8"eclsubs"];
+		jsonval_dbginfo_eclsubs->Reserve(vec_sub.size(), jsondoc_dbginfo->GetAllocator());
+		for (rapidjson::Value& jsonval_dbginfo_eclsub : jsonval_dbginfo_eclsubs->GetArray())
+			map_jsonval_dbginfo_eclsub.emplace(string(jsonval_dbginfo_eclsub[u8"name"].GetString(), jsonval_dbginfo_eclsub[u8"name"].GetStringLength()), jsonval_dbginfo_eclsub);
+		for (const fSub& val_sub : vec_sub)
+			if (!map_jsonval_dbginfo_eclsub.count(val_sub.name)) {
+				jsonval_dbginfo_eclsubs->PushBack(rapidjson::Value(rapidjson::Type::kObjectType), jsondoc_dbginfo->GetAllocator());
+				rapidjson::Value& jsonval_dbginfo_eclsub = *(jsonval_dbginfo_eclsubs->End() - 1);
+				map_jsonval_dbginfo_eclsub.emplace(val_sub.name, jsonval_dbginfo_eclsub);
+				jsonval_dbginfo_eclsub.AddMember(u8"name", rapidjson::Value(val_sub.name.c_str(), val_sub.name.size(), jsondoc_dbginfo->GetAllocator()), jsondoc_dbginfo->GetAllocator());
+			}
+	}
+
 	for (const fSub& val_sub : vec_sub) {
 		if (size > UINT32_MAX) throw(exception("Too large generated raw ECL file."));
 		if (ptr_raw_ecl_sub_offsets) *(ptr_raw_ecl_sub_offsets++) = size & ~(uint32_t)0;
-		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub);
+		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub, nullptr, nullptr);
 		size += size_raw_sub;
 		if (ptr && size_buf >= size) {
-			if (this->make_raw_sub((ptr += size_raw_sub) - size_raw_sub, size_raw_sub, val_sub) != size_raw_sub) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_sub"));
+			if (this->make_raw_sub((ptr += size_raw_sub) - size_raw_sub, size_raw_sub, val_sub, jsondoc_dbginfo, &map_jsonval_dbginfo_eclsub.at(val_sub.name)) != size_raw_sub) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_sub"));
 		}
 	}
 	return size;
 }
 
-size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
+size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {
 	size_t size = 0;
 
 	struct {
@@ -167,7 +184,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf) const {
 	return size;
 }
 
-size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub) const {
+size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const {
 	size_t size = 0;
 
 	struct {
@@ -190,7 +207,7 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		memcpy(ptr_raw_ecl_sub_hdr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
 	}
 
-	SubSerializationContext ctx(sub.count_var, sub.data_entries);
+	SubSerializationContext ctx(jsondoc_dbginfo, jsonval_dbginfo_eclsub, sub.count_var, sub.data_entries);
 
 	size += ctx.vec_offs_data_entry[ctx.vec_data_entry.size()] - ctx.vec_offs_data_entry[0];
 	if (ptr && size_buf >= size) {
@@ -202,11 +219,25 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		}
 	}
 
+	if (ptr && size_buf >= size) {
+		if (jsonval_dbginfo_eclsub->HasMember(u8"stmt_marks"))
+			(*jsonval_dbginfo_eclsub)[u8"stmt_marks"].Clear();
+		else
+			jsonval_dbginfo_eclsub->AddMember(u8"stmt_marks", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo->GetAllocator());
+		rapidjson::Value& jsonval_dbginfo_stmt_marks = (*jsonval_dbginfo_eclsub)[u8"stmt_marks"];
+		for (const pair<size_t, int>& val_offs_stmt_mark : ctx.map_lineno_stmt_mark) {
+			rapidjson::Value jsonval_dbginfo_stmt_mark(rapidjson::Type::kObjectType);
+			jsonval_dbginfo_stmt_mark.AddMember(u8"offs_eclins", rapidjson::Value((uint64_t)val_offs_stmt_mark.first), jsondoc_dbginfo->GetAllocator());
+			jsonval_dbginfo_stmt_mark.AddMember(u8"lineno", rapidjson::Value((int64_t)val_offs_stmt_mark.second), jsondoc_dbginfo->GetAllocator());
+			jsonval_dbginfo_stmt_marks.PushBack(jsonval_dbginfo_stmt_mark, jsondoc_dbginfo->GetAllocator());
+		}
+	}
+
 	return size;
 }
 
-SubSerializationContext::SubSerializationContext(uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
-	:count_var(count_var) {
+SubSerializationContext::SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
+	: jsondoc_dbginfo(jsondoc_dbginfo), jsonval_dbginfo_eclsub(jsonval_dbginfo_eclsub), count_var(count_var) {
 	if (count_var > INT32_MAX / 4) throw(exception("Too many local variables."));
 	mt19937 randengine;
 	{
@@ -220,7 +251,6 @@ SubSerializationContext::SubSerializationContext(uint32_t count_var, const vecto
 	}
 	this->vec_data_entry.emplace_back(new Ins(40, vector<Parameter*>({ new Parameter_int(count_var * 4) })));
 	this->vec_data_entry.insert(this->vec_data_entry.cend(), data_entries.cbegin(), data_entries.cend());
-	this->vec_data_entry.emplace_back(new Ins(41, vector<Parameter*>()));
 	this->vec_data_entry.emplace_back(new Ins(10, vector<Parameter*>()));
 	{
 		vector<Parameter*> vec_param_dummy;

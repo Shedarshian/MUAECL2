@@ -16,7 +16,7 @@ const map<string, TokenType> Op::Ch::StringToOperator = Op::swap_map(Op::Ch::Ope
 const map<string, mType> Op::Ch::StringToType = { { "type_error", BT::type_error }, { "void", BT::Void }, { "int", BT::Int }, { "float", BT::Float }, { "point", BT::Point }, { "string", BT::String }, { "initializer_list", BT::inilist } };
 const map<mType, string> Op::Ch::TypeToString = Op::swap_map(Op::Ch::StringToType);
 const map<ReadIns::NumType, mType> Op::Ch::NumTypeToType = { { ReadIns::NumType::Int, mType::Int }, { ReadIns::NumType::Float, mType::Float }, { ReadIns::NumType::EncryptedString, mType::String }, { ReadIns::NumType::String, mType::String } };
-const map<ReadIns::NumType, mType> Op::Ch::TypeToNumType = { { mType::Int, ReadIns::NumType::Int }, { mType::Float, ReadIns::NumType::Float }, { mType::String, ReadIns::NumType::String } };
+const map<mType, ReadIns::NumType> Op::Ch::TypeToNumType = { { mType::Int, ReadIns::NumType::Int }, { mType::Float, ReadIns::NumType::Float }, { mType::String, ReadIns::NumType::String } };
 
 string Op::Ch::ToString(TokenType op) { return OperatorToString.find(op)->second; }
 TokenType Op::Ch::ToOperator(string s) { return StringToOperator.find(s)->second; }

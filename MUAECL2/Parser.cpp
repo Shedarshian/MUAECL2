@@ -123,7 +123,7 @@ void Parser::initialize() {
 }
 
 void Parser::clear() noexcept {
-	for (auto i : Action)
+	for (auto& i : Action)
 		if (ptr.find(i.first) == ptr.end()) {
 			delete i.second;
 			i.second = nullptr;
@@ -187,8 +187,8 @@ void Parser::TypeCheck() {
 	}
 }
 
-fRoot Parser::Output(const vector<string>& ecli, const vector<string>& anim) {
-	return saveTree->Output(ecli, anim);
+fRoot Parser::Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) {
+	return saveTree->Output(ecli, anim, jsondoc_dbginfo, jsonval_dbginfo_eclfile);
 }
 
 //依据产生式id号由stack构造tree
