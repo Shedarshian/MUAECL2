@@ -371,7 +371,7 @@ mVType tNoVars::TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) {
 		else if (auto[begin_it, end_it] = ReadIns::ins.equal_range(name); begin_it != end_it) {
 			//if "anything" or "str call" then no typecheck
 			auto declTypes = begin_it->second.second;
-			if (declTypes == decltype(declTypes){ ReadIns::NumType::String, ReadIns::NumType::Call }) {
+			if (declTypes == decltype(declTypes){ ReadIns::NumType::String_SubName, ReadIns::NumType::Call }) {
 				//TODO only check "str"
 				for (auto tree : insv->branchs)
 					tree->TypeCheck(sub, subs, whileBlock);
@@ -999,6 +999,10 @@ void tRoot::addSubDecl(string name, int lineNo, tSubVars* subv, mType typeReturn
 				throw(ErrFuncRedeclared(lineNo, name));
 		subdecl.insert(make_pair(name, make_tuple(typeReturn, varpara, false)));
 	}
+}
+
+decltype(declval<const multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) tRoot::checkSub(const string& id) const {
+	return subdecl.equal_range(id);
 }
 
 decltype(declval<multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) tRoot::checkSub(const string& id) {

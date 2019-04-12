@@ -386,6 +386,7 @@ public:
 	Op::NonTerm type() const override;
 	void addSub(tSub* s);
 	void addSubDecl(string name, int lineNo, tSubVars* subv, mType typeReturn, bool no_overload);
+	decltype(declval<const multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) checkSub(const string& id) const;
 	decltype(declval<multimap<string, tuple<mType, vector<mType>, bool>>>().equal_range(declval<string>())) checkSub(const string& id);
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	/// <param name="types_param">From right to left.</param>
