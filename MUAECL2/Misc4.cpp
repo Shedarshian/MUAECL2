@@ -14,6 +14,10 @@
 
 using namespace std;
 
+bool is_debugged() {
+	return IsDebuggerPresent();
+}
+
 wstring u8string_to_u16string(const string& u8str) {
 	size_t cch_u16str = MultiByteToWideChar(CP_UTF8, 0, u8str.data(), u8str.size(), nullptr, 0);
 	if (cch_u16str) {

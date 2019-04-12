@@ -12,6 +12,7 @@ private:
 	const string s;
 };
 
+bool is_debugged();
 wstring u8string_to_u16string(const string& u8str);
 string u16string_to_u8string(const wstring& u16str);
 string base64_encode_string(const string& str);

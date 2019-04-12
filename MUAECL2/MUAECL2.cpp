@@ -192,19 +192,25 @@ int main(int argc, char* argv[]) {
 			throw(WrongCmdlineException("no action specified"));
 		}
 	} catch (WrongCmdlineException &e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 		display_help();
 	} catch (ExceptionWithLineNo &e) {
+		if (is_debugged()) throw;
 		cerr << e.lineNo << " " << e.what() << endl;
 	} catch (DecoderException &e) {
+		if (is_debugged()) throw;
 		char str_offs[1024];
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	} catch (ErrDesignApp &e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 	} catch (ErrFileNotFound& e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 	} catch (exception &e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 	}
 #ifdef _DEBUG

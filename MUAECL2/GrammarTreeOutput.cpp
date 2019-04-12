@@ -1889,7 +1889,13 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					++it_numtype) {
 					switch (*it_numtype) {
 					case ReadIns::NumType::Anything: {
-						for (; !queue_param_result.empty(); queue_param_result.pop()) vec_param.push_back(queue_param_result.front());
+						for (; !queue_param_result.empty(); queue_param_result.pop()) {
+							{
+								Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+								if (param_str) param_str->raw_variant = Parameter_string::RawVariant::RawVariant_Str;
+							}
+							vec_param.push_back(queue_param_result.front());
+						}
 						break;
 					}
 					case ReadIns::NumType::Int: {
