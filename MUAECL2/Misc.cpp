@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <functional>
 #include <fstream>
 #include <sstream>

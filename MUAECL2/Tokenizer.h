@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////////////
+ï»¿/////////////////////////////////////////////////////////////////////////////////////
 //***********************************************************************************
 //*   ----  [ \t\n]       ------  [a-zA-Z_]
 //*   |  |                |    |
@@ -39,9 +39,9 @@ using namespace std;
 
 class Tokenizer {
 public:
-	Tokenizer(istream &ReadStream, const string& filename);		//´ÓÊäÈëÁ÷ÖĞ¶ÁÈ¡ÎÄ±¾
+	Tokenizer(istream &ReadStream, const string& filename);		//ä»è¾“å…¥æµä¸­è¯»å–æ–‡æœ¬
 	~Tokenizer();
-	friend Tokenizer& operator>> (Tokenizer& t, Token*& token);		//²»½¨ÒéÊ¹ÓÃ
+	friend Tokenizer& operator>> (Tokenizer& t, Token*& token);		//ä¸å»ºè®®ä½¿ç”¨
 	Token* popToken();
 	Token* peekToken();
 	int debug_lineNo() { return lineNo; }
@@ -51,7 +51,7 @@ private:
 	Token* getToken();
 	Token* bufferToken;
 	char nextChar;
-	//ÔÚ´Ë²½·ÖÎö¼õºÅÓë¸ººÅ£¬×óÀ¨ºÅ ×ó´óÀ¨ºÅ ÓÒ´óÀ¨ºÅ Ã°ºÅ ·ÖºÅ ÔËËã·û ¸³ÖµºóµÄ"-"Îª¸ººÅ£¬´ËÍâÎª¼õºÅ
+	//åœ¨æ­¤æ­¥åˆ†æå‡å·ä¸è´Ÿå·ï¼Œå·¦æ‹¬å· å·¦å¤§æ‹¬å· å³å¤§æ‹¬å· å†’å· åˆ†å· è¿ç®—ç¬¦ èµ‹å€¼åçš„"-"ä¸ºè´Ÿå·ï¼Œæ­¤å¤–ä¸ºå‡å·
 	bool willBeNegative;
 	int lineNo;
 	istream& ReadStream;

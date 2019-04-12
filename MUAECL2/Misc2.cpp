@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Misc.h"
 #include "Misc2.h"
 #include "RawEclGenerator.h"

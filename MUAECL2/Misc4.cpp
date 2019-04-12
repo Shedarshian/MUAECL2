@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <string>
 #include <memory>
 #ifndef WIN32_LEAN_AND_MEAN

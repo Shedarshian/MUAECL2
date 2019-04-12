@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define MUAECL_VERSION_MAJOR 2
 #define MUAECL_VERSION_MINOR 0

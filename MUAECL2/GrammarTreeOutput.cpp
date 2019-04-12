@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <stack>
 #include <queue>
 #include <unordered_map>
@@ -2247,7 +2247,7 @@ string tSub::getDecoratedName() const {
 	}
 }
 
-fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const {
+fSub tSub::Output(const tRoot& root, bool is_debug_compile, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const {
 	if (jsonval_dbginfo_sub.HasMember(u8"srcname")) jsonval_dbginfo_sub.RemoveMember(u8"srcname");
 	jsonval_dbginfo_sub.AddMember(u8"srcname", rapidjson::Value(this->name.c_str(), this->name.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
 
@@ -2262,7 +2262,7 @@ fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapid
 	);
 
 	sub_ctx.stack_difficulty_mask.push(0xFF);
-	if (this->no_overload) {
+	if (!is_debug_compile && this->no_overload) {
 		StmtOutputContext stmt_ctx;
 		uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(Op::mType::Int)) - get_count_id_var(Op::mType::Int);
 		sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_env(10000, false) }, 1);
@@ -2302,7 +2302,7 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 	}
 }
 
-fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+fRoot tRoot::Output(bool is_debug_compile, const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
 	if (!jsonval_dbginfo_eclfile.HasMember(u8"eclsubs")) jsonval_dbginfo_eclfile.AddMember(u8"eclsubs", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
 	rapidjson::Value& jsonval_dbginfo_subs = jsonval_dbginfo_eclfile[u8"eclsubs"];
 	jsonval_dbginfo_subs.Reserve(this->subs.size(), jsondoc_dbginfo.GetAllocator());
@@ -2321,7 +2321,7 @@ fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim, rapi
 
 	vector<fSub> fsubs;
 	for (const tSub* val_tsub : this->subs)
-		fsubs.push_back(val_tsub->Output(*this, jsondoc_dbginfo, map_jsonval_dbginfo_sub.at(val_tsub->getDecoratedName())));
+		fsubs.push_back(val_tsub->Output(*this, is_debug_compile, jsondoc_dbginfo, map_jsonval_dbginfo_sub.at(val_tsub->getDecoratedName())));
 	return fRoot(fsubs, vector<string>(), vector<string>());
 }
 

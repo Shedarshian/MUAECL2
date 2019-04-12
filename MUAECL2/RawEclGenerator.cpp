@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <climits>
 #include <memory>
 #include <algorithm>
@@ -34,14 +34,14 @@ RawEclGenerator::RawEclGenerator(const fRoot& root)
 
 RawEclGenerator::~RawEclGenerator() {}
 
-void RawEclGenerator::generate(string& str, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
-	size_t size = this->generate(nullptr, 0, nullptr, nullptr);
+void RawEclGenerator::generate(string& str, bool is_debug_compile, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+	size_t size = this->generate(nullptr, 0, is_debug_compile, nullptr, nullptr);
 	unique_ptr<char[]> ptr(new char[size ? size : 1]());
-	if (this->generate(ptr.get(), size, &jsondoc_dbginfo, &jsonval_dbginfo_eclfile) != size) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::generate"));
+	if (this->generate(ptr.get(), size, is_debug_compile, &jsondoc_dbginfo, &jsonval_dbginfo_eclfile) != size) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::generate"));
 	str = string(ptr.get(), size);
 }
 
-size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {
+size_t RawEclGenerator::generate(char* ptr, size_t size_buf, bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {
 	size_t size = 0;
 
 	struct {
@@ -69,10 +69,10 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document
 		if (size > UINT32_MAX) throw(exception("Output file too large."));
 		raw_ecl_file_hdr.include_offset = size & ~(uint32_t)0;
 	}
-	size_t size_raw_includes = this->make_raw_includes(nullptr, 0, nullptr, nullptr);
+	size_t size_raw_includes = this->make_raw_includes(nullptr, 0, is_debug_compile, nullptr, nullptr);
 	size += size_raw_includes;
 	if (ptr && size_buf >= size) {
-		if (this->make_raw_includes((ptr += size_raw_includes) - size_raw_includes, size_raw_includes, jsondoc_dbginfo, jsonval_dbginfo_eclfile) != size_raw_includes) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_includes"));
+		if (this->make_raw_includes((ptr += size_raw_includes) - size_raw_includes, size_raw_includes, is_debug_compile, jsondoc_dbginfo, jsonval_dbginfo_eclfile) != size_raw_includes) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_includes"));
 	}
 	align4_data(ptr, size_buf, size);
 	if (ptr && size_buf >= size) {
@@ -127,16 +127,16 @@ size_t RawEclGenerator::generate(char* ptr, size_t size_buf, rapidjson::Document
 	for (const fSub& val_sub : vec_sub) {
 		if (size > UINT32_MAX) throw(exception("Too large generated raw ECL file."));
 		if (ptr_raw_ecl_sub_offsets) *(ptr_raw_ecl_sub_offsets++) = size & ~(uint32_t)0;
-		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub, nullptr, nullptr);
+		size_t size_raw_sub = this->make_raw_sub(nullptr, 0, val_sub, is_debug_compile, nullptr, nullptr);
 		size += size_raw_sub;
 		if (ptr && size_buf >= size) {
-			if (this->make_raw_sub((ptr += size_raw_sub) - size_raw_sub, size_raw_sub, val_sub, jsondoc_dbginfo, &map_jsonval_dbginfo_eclsub.at(val_sub.name)) != size_raw_sub) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_sub"));
+			if (this->make_raw_sub((ptr += size_raw_sub) - size_raw_sub, size_raw_sub, val_sub, is_debug_compile, jsondoc_dbginfo, &map_jsonval_dbginfo_eclsub.at(val_sub.name)) != size_raw_sub) throw(ErrDesignApp("Inconsistent returned size when calling RawEclGenerator::make_raw_sub"));
 		}
 	}
 	return size;
 }
 
-size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {
+size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf, bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const {
 	size_t size = 0;
 
 	struct {
@@ -184,7 +184,7 @@ size_t RawEclGenerator::make_raw_includes(char* ptr, size_t size_buf, rapidjson:
 	return size;
 }
 
-size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const {
+size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const {
 	size_t size = 0;
 
 	struct {
@@ -207,7 +207,7 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 		memcpy(ptr_raw_ecl_sub_hdr, &raw_ecl_sub_hdr, sizeof(raw_ecl_sub_hdr));
 	}
 
-	SubSerializationContext ctx(jsondoc_dbginfo, jsonval_dbginfo_eclsub, sub.count_var, sub.data_entries);
+	SubSerializationContext ctx(is_debug_compile, jsondoc_dbginfo, jsonval_dbginfo_eclsub, sub.count_var, sub.data_entries);
 
 	size += ctx.vec_offs_data_entry[ctx.vec_data_entry.size()] - ctx.vec_offs_data_entry[0];
 	if (ptr && size_buf >= size) {
@@ -236,7 +236,7 @@ size_t RawEclGenerator::make_raw_sub(char* ptr, size_t size_buf, const fSub& sub
 	return size;
 }
 
-SubSerializationContext::SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
+SubSerializationContext::SubSerializationContext(bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries)
 	: jsondoc_dbginfo(jsondoc_dbginfo), jsonval_dbginfo_eclsub(jsonval_dbginfo_eclsub), count_var(count_var) {
 	if (count_var > INT32_MAX / 4) throw(exception("Too many local variables."));
 	mt19937 randengine;
@@ -252,7 +252,7 @@ SubSerializationContext::SubSerializationContext(rapidjson::Document* jsondoc_db
 	this->vec_data_entry.emplace_back(new Ins(40, vector<Parameter*>({ new Parameter_int(count_var * 4) })));
 	this->vec_data_entry.insert(this->vec_data_entry.cend(), data_entries.cbegin(), data_entries.cend());
 	this->vec_data_entry.emplace_back(new Ins(10, vector<Parameter*>()));
-	{
+	if (!is_debug_compile) {
 		vector<Parameter*> vec_param_dummy;
 		unsigned int count_param_dummy = randengine() % 4;
 		for (unsigned int i = 0; i < count_param_dummy; ++i) {

@@ -367,7 +367,7 @@ public:
 	GrammarTree* checkLabel(const string& id);
 	int getLineNo() const override;
 	string getDecoratedName() const;
-	fSub Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const;
+	fSub Output(const tRoot& root, bool is_debug_compile, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const;
 private:
 	bool no_overload;					//是否装饰sub名
 	const string name;
@@ -390,7 +390,7 @@ public:
 	mVType TypeCheck(tSub* sub, tRoot* subs, GrammarTree* whileBlock) override;
 	/// <param name="types_param">From right to left.</param>
 	string getSubDecoratedName(const string& id, const vector<mType>& types_params) const;
-	fRoot Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const;
+	fRoot Output(bool is_debug_compile, const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const;
 private:
 	multimap<string, tuple<mType, vector<mType>, bool>> subdecl;
 	vector<tSub*> subs;

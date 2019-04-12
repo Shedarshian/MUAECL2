@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include <algorithm>
 #include <fstream>
 #include "Parser.h"
@@ -103,20 +103,20 @@ void Parser::initialize() {
 		int index = stoi(s);
 		getline(f, s, ',');
 		if (s != "") {
-			//Èç¹ûÖ¸¶¨ptrÔòÖ±½ÓÁ´½Ó£¬Ìø¹ıÕâĞĞµÄ¶ÁÈ¡
+			//å¦‚æœæŒ‡å®šptråˆ™ç›´æ¥é“¾æ¥ï¼Œè·³è¿‡è¿™è¡Œçš„è¯»å–
 			ptr.insert(index);
 			Action[index] = Action[stoi(s)];
 			getline(f, s);
 		}
 		else {
-			//·ñÔò°´Ë³Ğò¶ÁÈ¡²¢ÈûÈëmapÖĞ
+			//å¦åˆ™æŒ‰é¡ºåºè¯»å–å¹¶å¡å…¥mapä¸­
 			auto m = new map<Op::TokenType, int>();
 			for (int i = 0; i <= (int)Term::End; i++) {
 				getline(f, s, ',');
 				(*m)[(Term)i] = stoi(s);
 			}
 			Action[index] = m;
-			//Å×ÆúÊ£ÏÂµÄÕ¼Î»
+			//æŠ›å¼ƒå‰©ä¸‹çš„å ä½
 			getline(f, s);
 		}
 	}
@@ -143,16 +143,16 @@ tRoot* Parser::analyse() {
 				throw(ErrParsing(t->getlineNo(), n, t->debug_out()));
 			}
 			else if (n == 0) {
-				//½ÓÊÜ
+				//æ¥å—
 				break;
 			}
 			else if (n < 1000) {
-				//ÒÆ¶¯×´Ì¬n½øÕ»
+				//ç§»åŠ¨çŠ¶æ€nè¿›æ ˆ
 				if constexpr (debug) clog << "Token " << t->debug_out() << " Push " << n << " to stack" << endl;
 				s.push(make_pair(n, new tTerminator(tokenizer.popToken())));
 			}
 			else {
-				//°´²úÉúÊ½n-1000¹æÔ¼
+				//æŒ‰äº§ç”Ÿå¼n-1000è§„çº¦
 				if constexpr (debug) clog << "Reading token " << t->debug_out() << " return state " << n - 1000 << endl;
 				auto tree = mergeTree(n - 1000, s);
 				int state = s.top().first;
@@ -164,7 +164,7 @@ tRoot* Parser::analyse() {
 		return saveTree;
 	}
 	catch (...) {
-		//Îö¹¹
+		//ææ„
 		while (!s.empty()) {
 			Template::pop<0>(s);
 		}
@@ -177,7 +177,7 @@ void Parser::TypeCheck() {
 		saveTree->TypeCheck(nullptr, nullptr, nullptr);
 	}
 	catch (...) {
-		//Îö¹¹
+		//ææ„
 		while (!s.empty()) {
 			Template::pop<0>(s);
 		}
@@ -187,11 +187,11 @@ void Parser::TypeCheck() {
 	}
 }
 
-fRoot Parser::Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) {
-	return saveTree->Output(ecli, anim, jsondoc_dbginfo, jsonval_dbginfo_eclfile);
+fRoot Parser::Output(bool is_debug_compile, const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) {
+	return saveTree->Output(is_debug_compile, ecli, anim, jsondoc_dbginfo, jsonval_dbginfo_eclfile);
 }
 
-//ÒÀ¾İ²úÉúÊ½idºÅÓÉstack¹¹Ôìtree
+//ä¾æ®äº§ç”Ÿå¼idå·ç”±stackæ„é€ tree
 GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 	using namespace Template;
 	switch (id) {
@@ -202,21 +202,21 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
 		delete tok;
 		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts, false));
-		//¹¹Ôìº¯ÊıÖĞÌáÈ¡ËùÓĞlabelÓëvar£¬´æµ½subÀï
+		//æ„é€ å‡½æ•°ä¸­æå–æ‰€æœ‰labelä¸varï¼Œå­˜åˆ°subé‡Œ
 		return subs; }
 	case 73: { //subs->no_overload sub id ( subv ) { stmts } subs
 		auto[tok, subv, stmts, subs] = pop<0, 0, 1, 0, 1, 0, 0, 1, 0, 1>(s);
 		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
 		delete tok;
 		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts, true));
-		//¹¹Ôìº¯ÊıÖĞÌáÈ¡ËùÓĞlabelÓëvar£¬´æµ½subÀï
+		//æ„é€ å‡½æ•°ä¸­æå–æ‰€æœ‰labelä¸varï¼Œå­˜åˆ°subé‡Œ
 		return subs; }
 	case 74: { //subs->sub id ( subv ) no_overload { stmts } subs
 		auto[tok, subv, stmts, subs] = pop<0, 1, 0, 1, 0, 0, 0, 1, 0, 1>(s);
 		auto str = tok->getToken()->getId(); auto lineNo = tok->getToken()->getlineNo();
 		delete tok;
 		static_cast<tRoot*>(subs)->addSub(new tSub(str, lineNo, static_cast<tSubVars*>(subv), stmts, true));
-		//¹¹Ôìº¯ÊıÖĞÌáÈ¡ËùÓĞlabelÓëvar£¬´æµ½subÀï
+		//æ„é€ å‡½æ•°ä¸­æå–æ‰€æœ‰labelä¸varï¼Œå­˜åˆ°subé‡Œ
 		return subs; }
 	case 75: { //subs->sub id ( subv ) ; subs
 		auto[tok, subv, subs] = pop<0, 1, 0, 1, 0, 0, 1>(s);
@@ -280,7 +280,7 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 		int lineNo = l->getLineNo(); delete l;
 		return new tNoVars(id - 2, lineNo, stmt, expr); }
 	case 10: //stmt->goto id ;
-		//[0]»¹´æÖ¸ÏòµÄlabel¶ÔÓ¦µÄstmt
+		//[0]è¿˜å­˜æŒ‡å‘çš„labelå¯¹åº”çš„stmt
 		[[fallthrough]];
 	case 11: { //stmt->{ stmts }
 		auto[l, t] = pop<1, 1, 0>(s);
@@ -289,7 +289,7 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 	case 19: //stmt->break ;
 		[[fallthrough]];
 	case 20: { //stmt->continue ;
-		//[0]´æÖ¸ÏòµÄfor¿é
+		//[0]å­˜æŒ‡å‘çš„forå—
 		auto[t] = pop<1, 0>(s);
 		auto lineNo = t->getLineNo(); delete t;
 		return new tNoVars(id - 9, lineNo); }
@@ -417,7 +417,7 @@ GrammarTree* Parser::mergeTree(int id, stack<pair<int, GrammarTree*>>& s) {
 		[[fallthrough]];
 	case 66: { //expr->expr [ expr ]
 		auto[t1, t2, l] = pop<1, 0, 1, 1>(s);
-		//´æ½áÎ²ÓÒÀ¨ºÅµÄĞĞºÅ
+		//å­˜ç»“å°¾å³æ‹¬å·çš„è¡Œå·
 		auto lineNo = l->getLineNo(); delete l;
 		return new tNoVars(id - (63 - 24), lineNo, t2, t1); }
 	case 68: { //expr->( type ) expr

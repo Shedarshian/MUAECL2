@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include <ctime>
 #include <cctype>
 #include "Tokenizer.h"
@@ -31,40 +31,40 @@ Token* Tokenizer::peekToken() {
 }
 
 Token* Tokenizer::getToken(){
-	//while(1)·½±ã¿Õ°×Óë×¢ÊÍ
+	//while(1)æ–¹ä¾¿ç©ºç™½ä¸Žæ³¨é‡Š
 	while (1) {
-		//Èô¶Áµ½¿Õ°×£¬Ôò¼ÌÐø	
+		//è‹¥è¯»åˆ°ç©ºç™½ï¼Œåˆ™ç»§ç»­	
 		if (addLine(nextChar) || nextChar >= 0 && isspace(nextChar)) {	
 			nextChar = ReadStream.get();
 			continue;
 		}
-		//ÈôÎÄµµ½áÊø£¬Ôò·µ»Ø½áÊøtoken
+		//è‹¥æ–‡æ¡£ç»“æŸï¼Œåˆ™è¿”å›žç»“æŸtoken
 		if (nextChar == EOF)
 			return new Token_End(lineNo);
-		//ÈôÔÚÔËËã·û+misc char¼¯ÖÐ
+		//è‹¥åœ¨è¿ç®—ç¬¦+misc charé›†ä¸­
 		if (Op::Ch::OperatorChar.find(nextChar) != Op::Ch::OperatorChar.end()) {
-			//ÊÇÔËËã·û
+			//æ˜¯è¿ç®—ç¬¦
 			string op = "";
-			//Ã»ÓÐ×éºÏµÄÔËËã·û£¬ÈçµãÓëÀ¨ºÅ£¬»òÕß½«À´ÓÐµÄÒ»Ð©ÔËËã·û
+			//æ²¡æœ‰ç»„åˆçš„è¿ç®—ç¬¦ï¼Œå¦‚ç‚¹ä¸Žæ‹¬å·ï¼Œæˆ–è€…å°†æ¥æœ‰çš„ä¸€äº›è¿ç®—ç¬¦
 			if (nextChar == '.' || nextChar == '(' || nextChar == ')' || nextChar == '[' || nextChar == ']' || nextChar == '{' || nextChar == '}' || nextChar == ',' || nextChar == ';' || nextChar == ':') {
 				willBeNegative = !(nextChar == ')' || nextChar == ']');
 				op += nextChar;
 				nextChar = ReadStream.get();
 				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
-			//¼õºÅ¸ººÅ£¬½âÒýÓÃ·û³ËºÅ£¬È¡µØÖ··û°´Î»Óë£¬»òÈÎºÎ¼ÈÊÇÇ°×ºÒ»ÔªÔËËã·ûÒ²ÊÇ¶þÔªÔËËã·ûµÄÔËËã·û
+			//å‡å·è´Ÿå·ï¼Œè§£å¼•ç”¨ç¬¦ä¹˜å·ï¼Œå–åœ°å€ç¬¦æŒ‰ä½ä¸Žï¼Œæˆ–ä»»ä½•æ—¢æ˜¯å‰ç¼€ä¸€å…ƒè¿ç®—ç¬¦ä¹Ÿæ˜¯äºŒå…ƒè¿ç®—ç¬¦çš„è¿ç®—ç¬¦
 			if ((nextChar == '-' || nextChar == '*' || nextChar == '&') && willBeNegative) {
 				op += nextChar;
 				nextChar = ReadStream.get();
-				willBeNegative = true; //ËÆºõÃ»ÓÃ£¬ÌáÊ¾Ò»ÏÂÃ»±ä£¬ÔÊÐí--AÈ¡¶à´Î¸ººÅ
+				willBeNegative = true; //ä¼¼ä¹Žæ²¡ç”¨ï¼Œæç¤ºä¸€ä¸‹æ²¡å˜ï¼Œå…è®¸--Aå–å¤šæ¬¡è´Ÿå·
 				return new Token_Operator(lineNo, Op::Ch::ToOperator("(" + op + ")"));
 			}
-			//&ºÍ|£¬ÒòÎªÓÐ&&=ºÍ||=ËùÒÔÂé·³Ò»Ð©
+			//&å’Œ|ï¼Œå› ä¸ºæœ‰&&=å’Œ||=æ‰€ä»¥éº»çƒ¦ä¸€äº›
 			if (nextChar == '&' || nextChar == '|') {
 				willBeNegative = true;
 				op += nextChar;
 				nextChar = ReadStream.get();
-				//op³¤¶È¿Ï¶¨Îª1
+				//opé•¿åº¦è‚¯å®šä¸º1
 				if (nextChar == op[0]) {
 					op += nextChar;
 					nextChar = ReadStream.get();
@@ -76,17 +76,17 @@ Token* Tokenizer::getToken(){
 				}
 				return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 			}
-			//³ýºÅ
+			//é™¤å·
 			if (nextChar == '/') {
 				op += nextChar;
 				nextChar = ReadStream.get();
-				//ºöÂÔ´Ó"//"¿ªÊ¼µ½"\n"ÎªÖ¹µÄÎÄ±¾
+				//å¿½ç•¥ä»Ž"//"å¼€å§‹åˆ°"\n"ä¸ºæ­¢çš„æ–‡æœ¬
 				if (nextChar == '/') {
 					while (nextChar != '\n' && nextChar != EOF)
 						nextChar = ReadStream.get();
 					continue;
 				}
-				//ºöÂÔ´Ó"/*"¿ªÊ¼µ½"*/"ÎªÖ¹µÄÎÄ±¾
+				//å¿½ç•¥ä»Ž"/*"å¼€å§‹åˆ°"*/"ä¸ºæ­¢çš„æ–‡æœ¬
 				if (nextChar == '*') {
 					bool isStar = false;
 					nextChar = ReadStream.get();
@@ -116,7 +116,7 @@ Token* Tokenizer::getToken(){
 			}
 			return new Token_Operator(lineNo, Op::Ch::ToOperator(op));
 		}
-		//×Ö·û´®
+		//å­—ç¬¦ä¸²
 		if (nextChar == '"') {
 			willBeNegative = false;
 			string s;
@@ -132,16 +132,16 @@ Token* Tokenizer::getToken(){
 			nextChar = ReadStream.get();
 			return new Token_Literal(lineNo, s);
 		}
-		//±êÊ¶·û
+		//æ ‡è¯†ç¬¦
 		if (nextChar >= 'a' && nextChar <= 'z' || nextChar >= 'A' && nextChar <= 'Z' || nextChar == '_') {
 			string s;
 			while (nextChar >= 'a' && nextChar <= 'z' || nextChar >= 'A' && nextChar <= 'Z' || nextChar == '_' || nextChar >= '0' && nextChar <= '9') {
 				s += nextChar;
 				nextChar = ReadStream.get();
 			}
-			//keywordºóÃæÎª¸ººÅ
+			//keywordåŽé¢ä¸ºè´Ÿå·
 			willBeNegative = true;
-			//Èç¹ûÊÇ¼¸ÖÖÔ¤¶¨Òåºê
+			//å¦‚æžœæ˜¯å‡ ç§é¢„å®šä¹‰å®
 			if (s == "__DATE__") {
 				char c[9]; time_t t; tm time;
 				std::time(&t);
@@ -162,29 +162,29 @@ Token* Tokenizer::getToken(){
 				return new Token_Literal(lineNo, lineNo);
 			if (s == "pi")
 				return new Token_Literal(lineNo, (float)3.14159265);
-			//Èç¹ûÊÇbuild-in type
+			//å¦‚æžœæ˜¯build-in type
 			if (auto it = Op::Ch::StringToType.find(s); it != Op::Ch::StringToType.end())
 				return new Token_KeywordType(lineNo, it->second);
-			//Èç¹ûÊÇkeyword
+			//å¦‚æžœæ˜¯keyword
 			if (auto it = Op::Ch::StringToOperator.find(s); it != Op::Ch::StringToOperator.end())
 				return new Token_Operator(lineNo, it->second);
-			//Èç¹ûÊÇconst int
+			//å¦‚æžœæ˜¯const int
 			if (auto it = ReadIns::constint.find(s); it != ReadIns::constint.end())
 				return new Token_Literal(lineNo, it->second);
-			//Èç¹ûÊÇconst float
+			//å¦‚æžœæ˜¯const float
 			if (auto it = ReadIns::constfloat.find(s); it != ReadIns::constfloat.end())
 				return new Token_Literal(lineNo, it->second);
 			willBeNegative = false;
 			return new Token_Identifier(lineNo, s);
 		}
-		//ÊýÖµ
+		//æ•°å€¼
 		if (nextChar >= '0' && nextChar <= '9') {
 			willBeNegative = false;
 			string s;
 			if (nextChar == '0') {
 				nextChar = ReadStream.get();
 				if (nextChar == 'x') {
-					//0x¿ªÍ·Êý×Ö
+					//0xå¼€å¤´æ•°å­—
 					while (1) {
 						nextChar = ReadStream.get();
 						if (nextChar >= '0' && nextChar <= '9' || nextChar >= 'A' && nextChar <= 'F' || nextChar >= 'a' && nextChar <= 'f')
