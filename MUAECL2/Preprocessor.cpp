@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Preprocessor.h"
 #include "Misc.h"
 #include <list>

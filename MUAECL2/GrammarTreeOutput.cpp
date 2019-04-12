@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <stack>
 #include <queue>
 #include <unordered_map>
@@ -885,53 +885,47 @@ void tNoVars::OutputStmt(SubOutputContext& sub_ctx) const {
 			vec_type_result.push_back(val_result->GetMType());
 		}
 		string subname_decorated;
-		try {
-			subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId(), vec_type_result);
-		} catch (out_of_range&) {
-			subname_decorated.clear();
-		}
-		if (!subname_decorated.empty()) {
-			// From left to right.
-			vector<Parameter_call> vec_param;
-			for_each(vec_result.crbegin(), vec_result.crend(),
-				[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
-					vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
-					switch (val_result->GetMType()) {
-					case Op::mType::Void: {
-						if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-						break;
-					}
-					case Op::mType::Int: {
-						if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-						vec_param.emplace_back(vec_param_result[0], false, false);
-						break;
-					}
-					case Op::mType::Float: {
-						if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-						vec_param.emplace_back(vec_param_result[0], true, true);
-						break;
-					}
-					case Op::mType::Point: {
-						if (vec_param_result.size() != 2) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-						vec_param.emplace_back(vec_param_result[0], true, true);
-						vec_param.emplace_back(vec_param_result[1], true, true);
-						break;
-					}
-					case Op::mType::String:
-						throw(ErrDesignApp("dynamic string not supported yet"));
-					default:
-						throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
-					}
+		subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId(), vec_type_result);
+		// From left to right.
+		vector<Parameter_call> vec_param;
+		for_each(vec_result.crbegin(), vec_result.crend(),
+			[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
+				vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
+				switch (val_result->GetMType()) {
+				case Op::mType::Void: {
+					if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					break;
 				}
-			);
-			vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
-			for (const Parameter_call& val_param : vec_param) {
-				paras.push_back(val_param.Duplicate());
+				case Op::mType::Int: {
+					if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					vec_param.emplace_back(vec_param_result[0], false, false);
+					break;
+				}
+				case Op::mType::Float: {
+					if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					vec_param.emplace_back(vec_param_result[0], true, true);
+					break;
+				}
+				case Op::mType::Point: {
+					if (vec_param_result.size() != 2) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					vec_param.emplace_back(vec_param_result[0], true, true);
+					vec_param.emplace_back(vec_param_result[1], true, true);
+					break;
+				}
+				case Op::mType::String:
+					throw(ErrDesignApp("dynamic string not supported yet"));
+				default:
+					throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
+				}
 			}
-			sub_ctx.insert_ins(stmt_ctx, 15, paras, 0);
-			paras.clear();
-			break;
+		);
+		vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
+		for (const Parameter_call& val_param : vec_param) {
+			paras.push_back(val_param.Duplicate());
 		}
+		sub_ctx.insert_ins(stmt_ctx, 15, paras, 0);
+		paras.clear();
+		break;
 	}
 	case 30:// stmt->do stmt while (expr);
 	{
@@ -1392,64 +1386,54 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 				vec_result.push_back(exprf->OutputRvalueExprf(sub_ctx, stmt_ctx, false));
 			}
 		);
-		{
-			// Call subroutine.
-			// From right to left.
-			vector<mType> vec_type_result;
-			vec_type_result.reserve(vec_result.size());
-			for (const shared_ptr<RvalueResult>& val_result : vec_result) {
-				vec_type_result.push_back(val_result->GetMType());
-			}
-			string subname_decorated;
-			try {
-				subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId(), vec_type_result);
-			} catch (out_of_range&) {
-				subname_decorated.clear();
-			}
-			if (!subname_decorated.empty()) {
-				// From left to right.
-				vector<Parameter_call> vec_param;
-				for_each(vec_result.crbegin(), vec_result.crend(),
-					[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
-						vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
-						switch (val_result->GetMType()) {
-						case Op::mType::Void: {
-							if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-							break;
-						}
-						case Op::mType::Int: {
-							if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-							vec_param.emplace_back(vec_param_result[0], false, false);
-							break;
-						}
-						case Op::mType::Float: {
-							if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-							vec_param.emplace_back(vec_param_result[0], true, true);
-							break;
-						}
-						case Op::mType::Point: {
-							if (vec_param_result.size() != 2) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
-							vec_param.emplace_back(vec_param_result[0], true, true);
-							vec_param.emplace_back(vec_param_result[1], true, true);
-							break;
-						}
-						case Op::mType::String:
-							throw(ErrDesignApp("dynamic string not supported yet"));
-						default:
-							throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
-						}
-					}
-				);
-				vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
-				for (const Parameter_call& val_param : vec_param) {
-					paras.push_back(val_param.Duplicate());
-				}
-				sub_ctx.insert_ins(stmt_ctx, 11, paras, 0);
-				paras.clear();
-				return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
-			}
+		// From right to left.
+		vector<mType> vec_type_result;
+		vec_type_result.reserve(vec_result.size());
+		for (const shared_ptr<RvalueResult>& val_result : vec_result) {
+			vec_type_result.push_back(val_result->GetMType());
 		}
-		throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : subroutine not found"));
+		string subname_decorated;
+		subname_decorated = sub_ctx.root->getSubDecoratedName(this->branchs[1]->getToken()->getId(), vec_type_result);
+		// From left to right.
+		vector<Parameter_call> vec_param;
+		for_each(vec_result.crbegin(), vec_result.crend(),
+			[&sub_ctx, &stmt_ctx, &vec_param](const shared_ptr<RvalueResult>& val_result) {
+				vector<shared_ptr<Parameter>> vec_param_result = val_result->ToParameters(sub_ctx, stmt_ctx, stmt_ctx.stackptr_rel_current);
+				switch (val_result->GetMType()) {
+				case Op::mType::Void: {
+					if (vec_param_result.size() != 0) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					break;
+				}
+				case Op::mType::Int: {
+					if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					vec_param.emplace_back(vec_param_result[0], false, false);
+					break;
+				}
+				case Op::mType::Float: {
+					if (vec_param_result.size() != 1) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					vec_param.emplace_back(vec_param_result[0], true, true);
+					break;
+				}
+				case Op::mType::Point: {
+					if (vec_param_result.size() != 2) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : vec_param_result.size() wrong"));
+					vec_param.emplace_back(vec_param_result[0], true, true);
+					vec_param.emplace_back(vec_param_result[1], true, true);
+					break;
+				}
+				case Op::mType::String:
+					throw(ErrDesignApp("dynamic string not supported yet"));
+				default:
+					throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=24 : vec_result : unknown type"));
+				}
+			}
+		);
+		vector<Parameter*> paras({ new Parameter_string(subname_decorated, Parameter_string::RawVariant::RawVariant_Str) });
+		for (const Parameter_call& val_param : vec_param) {
+			paras.push_back(val_param.Duplicate());
+		}
+		sub_ctx.insert_ins(stmt_ctx, 11, paras, 0);
+		paras.clear();
+		return shared_ptr<RvalueResult>(new DiscardedRvalueResult(sub_ctx, stmt_ctx, Op::mType::Void));
 	}
 	case 25:// expr->Unary_op expr
 	{
@@ -1851,7 +1835,7 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 						break;
 					case Op::mType::String: {
 						ReadIns::NumType numtype = *(it_numtype++);
-						is_res_match = numtype == ReadIns::NumType::String || numtype == ReadIns::NumType::EncryptedString;
+						is_res_match = numtype == ReadIns::NumType::String || numtype == ReadIns::NumType::EncryptedString || numtype == ReadIns::NumType::String_SubName;
 						break;
 					}
 					default:
@@ -1889,7 +1873,13 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 					++it_numtype) {
 					switch (*it_numtype) {
 					case ReadIns::NumType::Anything: {
-						for (; !queue_param_result.empty(); queue_param_result.pop()) vec_param.push_back(queue_param_result.front());
+						for (; !queue_param_result.empty(); queue_param_result.pop()) {
+							{
+								Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+								if (param_str) param_str->raw_variant = Parameter_string::RawVariant::RawVariant_Str;
+							}
+							vec_param.push_back(queue_param_result.front());
+						}
 						break;
 					}
 					case ReadIns::NumType::Int: {
@@ -1925,6 +1915,64 @@ shared_ptr<RvalueResult> tNoVars::OutputRvalueExpr(SubOutputContext& sub_ctx, St
 							Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
 							if (!param_str) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : cannot cast queue_param_result.front().get() to type \"Parameter_string*\""));
 							param_str->raw_variant = Parameter_string::RawVariant::RawVariant_En_Str;
+						}
+						vec_param.push_back(queue_param_result.front());
+						queue_param_result.pop();
+						break;
+					}
+					case ReadIns::NumType::String_SubName: {
+						if (queue_param_result.empty()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.empty()"));
+						if (queue_param_result.front()->isFloat()) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : queue_param_result.front()->isFloat()"));
+						{
+							Parameter_string* param_str = dynamic_cast<Parameter_string*>(queue_param_result.front().get());
+							if (!param_str) throw(ErrDesignApp("tNoVars::OutputRvalueExpr : id=34 : cannot cast queue_param_result.front().get() to type \"Parameter_string*\""));
+							param_str->raw_variant = Parameter_string::RawVariant::RawVariant_Str;
+							{
+								// Sub existence check.
+								if (!ReadIns::defaultList.count(param_str->str)) {
+									mType type_ret_sub_str_param;
+									vector<mType> types_param_sub_str_param;
+									bool is_invalid_decorated_name_str_param;
+									string subname_undecorated_sub_str_param(NameDecorator::undecorateSubName(param_str->str, type_ret_sub_str_param, types_param_sub_str_param, is_invalid_decorated_name_str_param));
+									if (is_invalid_decorated_name_str_param) {
+										pair<
+											multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator,
+											multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator
+										> range_subdecl_sub_str_param(sub_ctx.root->checkSub(subname_undecorated_sub_str_param));
+										multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator it_subdecl_sub_str_param;
+										for (
+											it_subdecl_sub_str_param = range_subdecl_sub_str_param.first;
+											it_subdecl_sub_str_param != range_subdecl_sub_str_param.second;
+											++it_subdecl_sub_str_param
+											) {
+											if (get<2>(it_subdecl_sub_str_param->second)) break;
+										}
+										if (it_subdecl_sub_str_param == range_subdecl_sub_str_param.second) {
+											cerr << this->lineNo << " " << "Warning: No sub with decorated name \"" << param_str->str << "\" has been declared." << endl;
+										}
+									} else {
+										pair<
+											multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator,
+											multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator
+										> range_subdecl_sub_str_param(sub_ctx.root->checkSub(subname_undecorated_sub_str_param));
+										multimap<string, tuple<mType, vector<mType>, bool>>::const_iterator it_subdecl_sub_str_param;
+										for (
+											it_subdecl_sub_str_param = range_subdecl_sub_str_param.first;
+											it_subdecl_sub_str_param != range_subdecl_sub_str_param.second;
+											++it_subdecl_sub_str_param
+											) {
+											if (
+												get<0>(it_subdecl_sub_str_param->second) == type_ret_sub_str_param
+												&& get<1>(it_subdecl_sub_str_param->second) == types_param_sub_str_param
+												&& !get<2>(it_subdecl_sub_str_param->second)
+												) break;
+										}
+										if (it_subdecl_sub_str_param == range_subdecl_sub_str_param.second) {
+											cerr << this->lineNo << " " << "Warning: No sub with decorated name \"" << param_str->str << "\" has been declared." << endl;
+										}
+									}
+								}
+							}
 						}
 						vec_param.push_back(queue_param_result.front());
 						queue_param_result.pop();
@@ -2247,7 +2295,7 @@ string tSub::getDecoratedName() const {
 	}
 }
 
-fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const {
+fSub tSub::Output(const tRoot& root, bool is_debug_compile, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_sub) const {
 	if (jsonval_dbginfo_sub.HasMember(u8"srcname")) jsonval_dbginfo_sub.RemoveMember(u8"srcname");
 	jsonval_dbginfo_sub.AddMember(u8"srcname", rapidjson::Value(this->name.c_str(), this->name.size(), jsondoc_dbginfo.GetAllocator()), jsondoc_dbginfo.GetAllocator());
 
@@ -2262,7 +2310,7 @@ fSub tSub::Output(const tRoot& root, rapidjson::Document& jsondoc_dbginfo, rapid
 	);
 
 	sub_ctx.stack_difficulty_mask.push(0xFF);
-	if (this->no_overload) {
+	if (!is_debug_compile && this->no_overload) {
 		StmtOutputContext stmt_ctx;
 		uint32_t id_var_dummy = (sub_ctx.count_var += get_count_id_var(Op::mType::Int)) - get_count_id_var(Op::mType::Int);
 		sub_ctx.insert_ins(stmt_ctx, 42, { new Parameter_env(10000, false) }, 1);
@@ -2302,7 +2350,7 @@ string tRoot::getSubDecoratedName(const string& id, const vector<mType>& types_p
 	}
 }
 
-fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
+fRoot tRoot::Output(bool is_debug_compile, const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const {
 	if (!jsonval_dbginfo_eclfile.HasMember(u8"eclsubs")) jsonval_dbginfo_eclfile.AddMember(u8"eclsubs", rapidjson::Value(rapidjson::Type::kArrayType), jsondoc_dbginfo.GetAllocator());
 	rapidjson::Value& jsonval_dbginfo_subs = jsonval_dbginfo_eclfile[u8"eclsubs"];
 	jsonval_dbginfo_subs.Reserve(this->subs.size(), jsondoc_dbginfo.GetAllocator());
@@ -2321,7 +2369,7 @@ fRoot tRoot::Output(const vector<string>& ecli, const vector<string>& anim, rapi
 
 	vector<fSub> fsubs;
 	for (const tSub* val_tsub : this->subs)
-		fsubs.push_back(val_tsub->Output(*this, jsondoc_dbginfo, map_jsonval_dbginfo_sub.at(val_tsub->getDecoratedName())));
+		fsubs.push_back(val_tsub->Output(*this, is_debug_compile, jsondoc_dbginfo, map_jsonval_dbginfo_sub.at(val_tsub->getDecoratedName())));
 	return fRoot(fsubs, vector<string>(), vector<string>());
 }
 

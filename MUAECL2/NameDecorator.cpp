@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <unordered_map>
 #include <regex>
 #include "NameDecorator.h"

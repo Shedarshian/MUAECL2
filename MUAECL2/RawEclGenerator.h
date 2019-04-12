@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <ostream>
 #include <map>
@@ -20,16 +20,16 @@ public:
 	/// <summary>Generate the raw ECL file and output it to an output stream.</summary>
 	/// <param name="str">A string to which the output is written.</param>
 	/// <param name="jsondoc_dbginfo">The debug information JSON document.</param>
-	void generate(string& str, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const;
+	void generate(string& str, bool is_debug_compile, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile) const;
 private:
 	const fRoot root;
-	size_t generate(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;
-	size_t make_raw_includes(char* ptr, size_t size_buf, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;
-	size_t make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const;
+	size_t generate(char* ptr, size_t size_buf, bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;
+	size_t make_raw_includes(char* ptr, size_t size_buf, bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclfile) const;
+	size_t make_raw_sub(char* ptr, size_t size_buf, const fSub& sub, bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub) const;
 };
 
 struct SubSerializationContext final {
-	SubSerializationContext(rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
+	SubSerializationContext(bool is_debug_compile, rapidjson::Document* jsondoc_dbginfo, rapidjson::Value* jsonval_dbginfo_eclsub, uint32_t count_var, const vector<shared_ptr<fSubDataEntry>>& data_entries);
 	~SubSerializationContext();
 	rapidjson::Document* jsondoc_dbginfo = nullptr;
 	rapidjson::Value* jsonval_dbginfo_eclsub = nullptr;

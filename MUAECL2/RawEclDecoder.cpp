@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <cstdint>
 #include <climits>
 #include <vector>
@@ -551,6 +551,8 @@ void RawEclDecoder::DecodeRawEclParams(
 				++i_param;
 				break;
 			}
+			case ReadIns::NumType::String_SubName:
+				[[fallthrough]];
 			case ReadIns::NumType::String:
 			{
 				if (param_mask & (1 << i_param)) throw(ErrDecoderInvalidParameters(ptr - ptr_initial));
@@ -558,6 +560,29 @@ void RawEclDecoder::DecodeRawEclParams(
 				if (len_str < 0) throw(ErrDecoderInvalidParameters(ptr - ptr_initial));
 				if (size_buf < len_str + 1) throw(ErrDecoderUnexpEof(ptr, size_buf, ptr_initial));
 				params.emplace_back(new DecodedParam_String(string(ptr, len_str)));
+				seek_delta(len_str + 1, ptr, size_buf, ptr_initial);
+				seek_align4(ptr, size_buf, ptr_initial);
+				++i_param;
+				break;
+			}
+			case ReadIns::NumType::EncryptedString:
+			{
+				if (param_mask & (1 << i_param)) throw(ErrDecoderInvalidParameters(ptr - ptr_initial));
+				size_t len_str = strnlen(ptr, size_buf);
+				if (len_str < 0) throw(ErrDecoderInvalidParameters(ptr - ptr_initial));
+				if (size_buf < len_str + 1) throw(ErrDecoderUnexpEof(ptr, size_buf, ptr_initial));
+				{
+					string str(ptr, len_str);
+					char a = 0x77;
+					char b = 0x7;
+					static const char c = 0x10;
+					for (char& ch_str : str) {
+						ch_str ^= a;
+						a += b;
+						b += c;
+					}
+					params.emplace_back(new DecodedParam_String(str));
+				}
 				seek_delta(len_str + 1, ptr, size_buf, ptr_initial);
 				seek_align4(ptr, size_buf, ptr_initial);
 				++i_param;

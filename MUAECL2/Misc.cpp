@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include <functional>
 #include <fstream>
 #include <sstream>
@@ -15,7 +15,7 @@ const map<Op::TokenType, string> Op::Ch::OperatorToString = { { TT::Plus, "+" },
 const map<string, TokenType> Op::Ch::StringToOperator = Op::swap_map(Op::Ch::OperatorToString);
 const map<string, mType> Op::Ch::StringToType = { { "type_error", BT::type_error }, { "void", BT::Void }, { "int", BT::Int }, { "float", BT::Float }, { "point", BT::Point }, { "string", BT::String }, { "initializer_list", BT::inilist } };
 const map<mType, string> Op::Ch::TypeToString = Op::swap_map(Op::Ch::StringToType);
-const map<ReadIns::NumType, mType> Op::Ch::NumTypeToType = { { ReadIns::NumType::Int, mType::Int }, { ReadIns::NumType::Float, mType::Float }, { ReadIns::NumType::EncryptedString, mType::String }, { ReadIns::NumType::String, mType::String } };
+const map<ReadIns::NumType, mType> Op::Ch::NumTypeToType = { { ReadIns::NumType::Int, mType::Int }, { ReadIns::NumType::Float, mType::Float }, { ReadIns::NumType::String, mType::String }, { ReadIns::NumType::EncryptedString, mType::String }, { ReadIns::NumType::String_SubName, mType::String } };
 const map<mType, ReadIns::NumType> Op::Ch::TypeToNumType = { { mType::Int, ReadIns::NumType::Int }, { mType::Float, ReadIns::NumType::Float }, { mType::String, ReadIns::NumType::String } };
 
 string Op::Ch::ToString(TokenType op) { return OperatorToString.find(op)->second; }
@@ -303,8 +303,8 @@ void ReadIns::Read() {
 			vector<NumType> lnt; //输入参数类型表
 			while (!s.eof()) {
 				s >> c;
-				lnt.push_back(c == "en_str" ? NumType::EncryptedString : (c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
-					c == "float" ? NumType::Float : (c == "call" ? NumType::Call : NumType::Anything)))));
+				lnt.push_back(c == "str_subname" ? NumType::String_SubName : (c == "en_str" ? NumType::EncryptedString : (c == "str" ? NumType::String : (c == "int" ? NumType::Int : (
+					c == "float" ? NumType::Float : (c == "call" ? NumType::Call : NumType::Anything))))));
 			}
 			ReadIns::ins.emplace(name, make_pair(n, lnt));
 			ReadIns::insDeltaStackptr.emplace(make_pair(n, lnt), make_pair(stack_consume, stack_produce));

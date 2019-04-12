@@ -87,6 +87,7 @@ struct PreprocessArguments final {
 
 /// <summary>Parsed arguments passed to the compiling routine.</summary>
 struct CompileArguments final {
+	bool is_debug_compile = false;
 	istream* in = nullptr;
 	ostream* out = nullptr;
 	rapidjson::Document* jsondoc_dbginfo = nullptr;
@@ -112,7 +113,8 @@ static const unordered_map<string, cmdarg_def_t> map_cmdarg_def({
 	{ "input-file"s, cmdarg_def_t({ "-i"s, "--input-file"s }, true) },
 	{ "output-file"s, cmdarg_def_t({ "-o"s, "--output-file"s }, true) },
 	{ "search-path"s, cmdarg_def_t({ "-s"s, "--search-path"s }, true, true) },
-	{ "no-preprocess"s, cmdarg_def_t({ "-n"s, "--no-preprocess"s }) }
+	{ "no-preprocess"s, cmdarg_def_t({ "-n"s, "--no-preprocess"s }) },
+	{ "debug-compile"s, cmdarg_def_t({ "-d"s, "--debug-compile"s }) }
 	});
 
 /// <summary>Display help.</summary>
@@ -190,19 +192,25 @@ int main(int argc, char* argv[]) {
 			throw(WrongCmdlineException("no action specified"));
 		}
 	} catch (WrongCmdlineException &e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 		display_help();
 	} catch (ExceptionWithLineNo &e) {
+		if (is_debugged()) throw;
 		cerr << e.lineNo << " " << e.what() << endl;
 	} catch (DecoderException &e) {
+		if (is_debugged()) throw;
 		char str_offs[1024];
 		sprintf_s(str_offs, 1024, "0x%08zX", e.GetOffset());
 		cerr << "Decoder : 0x" << str_offs << " : " << e.what() << endl;
 	} catch (ErrDesignApp &e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 	} catch (ErrFileNotFound& e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 	} catch (exception &e) {
+		if (is_debugged()) throw;
 		cerr << e.what() << endl;
 	}
 #ifdef _DEBUG
@@ -229,6 +237,7 @@ Compile an MUAECL2 source file to a raw ECL file.\n\
     {-s|--search-path} <search-path>                The path in which includes are searched.\n\
                                                     Multiple paths can be specified.\n\
     {-n|--no-preprocess}                            Bypass the preprocessing step.\n\
+	{-d|--debug-compile}							Compile the file for debugging instead of releasing.\n\
 \n\
   MUAECL2 {-p|--preprocess} [options]\n\
 Preprocess (and not compile) an MUAECL2 source file to a preprocessed source file.\n\
@@ -302,6 +311,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		rapidjson::Value& jsonval_dbginfo_eclfile = jsondoc_dbginfo[u8"eclfile"];
 
 		CompileArguments compile_args;
+		compile_args.is_debug_compile = map_cmdarg_input["debug-compile"s].is_specified;
 		compile_args.in = in;
 		compile_args.out = out;
 		compile_args.jsondoc_dbginfo = &jsondoc_dbginfo;
@@ -334,6 +344,7 @@ static void cmd_compile(unordered_map<string, cmdarg_input_t>& map_cmdarg_input)
 		rapidjson::Value& jsonval_dbginfo_eclfile = jsondoc_dbginfo[u8"eclfile"];
 
 		CompileArguments compile_args;
+		compile_args.is_debug_compile = map_cmdarg_input["debug-compile"s].is_specified;
 		compile_args.in = &preprocessed;
 		compile_args.out = out;
 		compile_args.jsondoc_dbginfo = &jsondoc_dbginfo;
@@ -481,9 +492,9 @@ static void compile(CompileArguments& compile_args) {
 		Parser parser(tokenizer);
 		tRoot* tree = parser.analyse();
 		parser.TypeCheck();
-		RawEclGenerator raw_ecl_generator(parser.Output(compile_args.ecli, compile_args.anim, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile));
+		RawEclGenerator raw_ecl_generator(parser.Output(compile_args.is_debug_compile, compile_args.ecli, compile_args.anim, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile));
 		string str_out;
-		raw_ecl_generator.generate(str_out, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
+		raw_ecl_generator.generate(str_out, compile_args.is_debug_compile, *compile_args.jsondoc_dbginfo, *compile_args.jsonval_dbginfo_eclfile);
 		Parser::clear();
 
 		{

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <memory>
 #include <fstream>
 #include <stack>
@@ -18,10 +18,10 @@ public:
 	static void clear() noexcept;
 	tRoot* analyse();
 	void TypeCheck();
-	fRoot Output(const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile);
+	fRoot Output(bool is_debug_compile, const vector<string>& ecli, const vector<string>& anim, rapidjson::Document& jsondoc_dbginfo, rapidjson::Value& jsonval_dbginfo_eclfile);
 private:
 	static GrammarTree* mergeTree(int id, stack<pair<int, GrammarTree*>>& s);
-	//int±íÊ¾ÒÆ¶¯£¬1~999ÎªÈëÕ»£¬1001~1999Îª¹æÔ¼£¬0Îªaccept£¬¸ºÊýÎªerror
+	//intè¡¨ç¤ºç§»åŠ¨ï¼Œ1~999ä¸ºå…¥æ ˆï¼Œ1001~1999ä¸ºè§„çº¦ï¼Œ0ä¸ºacceptï¼Œè´Ÿæ•°ä¸ºerror
 	static map<int, map<Op::TokenType, int>*> Action;
 	static const map<Op::NonTerm, map<int, int>> Goto;
 	static set<int> ptr;

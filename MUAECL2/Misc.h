@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <map>
 #include <set>
@@ -24,7 +24,7 @@ class tNoVars;
 
 class ReadIns {
 public:
-	enum class NumType { Anything, Int, Float, String, EncryptedString, Call };
+	enum class NumType { Anything, Int, Float, String, EncryptedString, String_SubName, Call };
 	static multimap<string, pair<int, vector<NumType>>> ins;			//ins表
 	static map<pair<int, vector<NumType>>, pair<int, int>> insDeltaStackptr;//直接访问堆栈的ins对堆栈指针的影响，值的first为pop数，second为push数。
 	static map<string, pair<int, vector<NumType>>> mode;		//mode表
